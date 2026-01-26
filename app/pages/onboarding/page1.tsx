@@ -1,0 +1,20 @@
+import React from 'react';
+import OnboardingScreen from '../../../components/OnboardingScreen';
+import { useLanguage } from '@/config/languageRef';
+import pageData from '@/data/content';
+
+export default function Page1() {
+  const { languageCode } = useLanguage();
+  const content = (pageData as any)[languageCode]?.page1 || (pageData as any)['en'].page1;
+
+  return (
+    <OnboardingScreen
+      backgroundImage={require('../../../assets/page1bg.png')}
+      title={content.title}
+      subtitle={content.subtitle}
+      nextRoute="/pages/onboarding/page2"
+      currentIndex={0}
+      totalIndex={3}
+    />
+  );
+}

@@ -6,7 +6,6 @@ import LanguageProvider from '@/config/languageRef';
 import * as Localization from 'expo-localization';
 
 
-
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -28,19 +27,19 @@ export default function RootLayout() {
   const languageCode = Localization.getLocales()[0].languageTag.split('-')[0];
 
   return (
-    <LanguageProvider languageCode={languageCode}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name="index" />
-        <Stack.Screen name="page1" />
-        <Stack.Screen name="page2" />
-        <Stack.Screen name="page3" />
-        <Stack.Screen name="page4" />
-      </Stack>
-    </LanguageProvider>
+    <LanguageProvider languageCode={languageCode}><Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="pages/login" />
+      <Stack.Screen name="pages/verification" />
+      <Stack.Screen name="pages/onboarding/page1" />
+      <Stack.Screen name="pages/onboarding/page2" />
+      <Stack.Screen name="pages/onboarding/page3" />
+      <Stack.Screen name="pages/onboarding/page4" />
+      <Stack.Screen name="pages/modal" />
+    </Stack></LanguageProvider>
   );
 }
-

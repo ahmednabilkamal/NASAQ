@@ -1,34 +1,41 @@
-'use client';
-
 import React, { useEffect } from 'react';
-import { View, Image, StyleSheet, Animated } from 'react-native';
+import { View, Image, StyleSheet, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
+
+const { width } = Dimensions.get('window');
 
 export default function Home() {
   const router = useRouter();
-  const fadeAnim = new Animated.Value(0);
+  const imageOpacity = useSharedValue(0);
+  const imageScale = useSharedValue(0.8);
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 1000,
-      useNativeDriver: true,
-    }).start();
+    imageOpacity.value = withTiming(1, { duration: 2000 });
+    imageScale.value = withTiming(1, { duration: 2000 });
 
     const timer = setTimeout(() => {
-      router.replace('/page1');
-    }, 2500);
+      router.replace('/pages/onboarding/page1');
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, []);
 
+  const imageStyle = useAnimatedStyle(() => ({
+    opacity: imageOpacity.value,
+    transform: [{ scale: imageScale.value }],
+  }));
+
   return (
     <View style={styles.container}>
-      <Animated.View style={{ opacity: fadeAnim }}>
+      <Animated.View style={[styles.imageContainer, imageStyle]}>
         <Image
           source={require('../assets/venus-logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
+          style={styles.image}
         />
       </Animated.View>
     </View>
@@ -38,12 +45,19 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#00503C',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logo: {
-    width: 200,
-    height: 100,
+  imageContainer: {
+    width: width * 0.6,
+    height: width * 0.6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
   },
 });

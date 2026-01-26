@@ -1,12 +1,22 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ImageBackground, StyleSheet, SafeAreaView, Dimensions } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, TouchableOpacity, ImageBackground, StyleSheet, Dimensions, I18nManager } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useLanguage } from '@/config/languageRef';
+import pageData from '@/data/content';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    Easing,
+} from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
 
 interface OnboardingScreenProps {
     backgroundImage: any;
     title: string;
+    subtitle?: string;
     nextRoute: string;
     currentIndex: number;
     totalIndex: number;
@@ -15,11 +25,35 @@ interface OnboardingScreenProps {
 export default function OnboardingScreen({
     backgroundImage,
     title,
+    subtitle,
     nextRoute,
     currentIndex,
     totalIndex,
 }: OnboardingScreenProps) {
     const router = useRouter();
+    const { languageCode } = useLanguage();
+
+    const pageKey = `page${currentIndex + 1}`;
+    const content = (pageData as any)[languageCode]?.[pageKey] || (pageData as any)['en'][pageKey];
+
+    const skipText = content.skipText || content.optionalChoice || "Skip";
+    const nextText = content.buttonText || "Next";
+
+    const slideX = useSharedValue(-50);
+    const opacity = useSharedValue(0);
+
+    useEffect(() => {
+        slideX.value = withTiming(0, {
+            duration: 800,
+            easing: Easing.out(Easing.exp)
+        });
+        opacity.value = withTiming(1, { duration: 800 });
+    }, [currentIndex]);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: slideX.value }],
+        opacity: opacity.value,
+    }));
 
     const handleNext = () => {
         if (nextRoute) {
@@ -28,7 +62,7 @@ export default function OnboardingScreen({
     };
 
     const handleSkip = () => {
-        router.push('/page4' as any);
+        router.push('/pages/onboarding/page4' as any);
     };
 
     return (
@@ -37,12 +71,12 @@ export default function OnboardingScreen({
                 <SafeAreaView style={styles.overlay}>
                     <View style={styles.topBar}>
                         <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
-                            <Text style={styles.skipText}>تخطي</Text>
+                            <Text style={styles.skipText}>{skipText}</Text>
                         </TouchableOpacity>
                     </View>
 
                     <View style={styles.bottomContainer}>
-                        <View style={styles.pagination}>
+                        <Animated.View style={[styles.pagination, animatedStyle]}>
                             {Array.from({ length: totalIndex }).map((_, index) => (
                                 <View
                                     key={index}
@@ -52,12 +86,15 @@ export default function OnboardingScreen({
                                     ]}
                                 />
                             ))}
-                        </View>
+                        </Animated.View>
 
-                        <Text style={styles.title}>{title}</Text>
+                        <Animated.View style={[styles.textContainer, animatedStyle]}>
+                            <Text style={styles.title}>{title}</Text>
+                            {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+                        </Animated.View>
 
                         <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
-                            <Text style={styles.nextButtonText}>التالي</Text>
+                            <Text style={styles.nextButtonText}>{nextText}</Text>
                         </TouchableOpacity>
                     </View>
                 </SafeAreaView>
@@ -81,7 +118,8 @@ const styles = StyleSheet.create({
     topBar: {
         paddingHorizontal: 20,
         paddingTop: 40,
-        alignItems: 'flex-end',
+        flexDirection: 'row',
+        justifyContent: I18nManager.isRTL ? 'flex-start' : 'flex-end',
         marginVertical: 25,
     },
     skipButton: {
@@ -100,10 +138,14 @@ const styles = StyleSheet.create({
     bottomContainer: {
         paddingHorizontal: 25,
         paddingBottom: 40,
-        alignItems: 'flex-end',
+        alignItems: 'stretch',
+    },
+    textContainer: {
+        marginBottom: 35,
+        alignItems: 'flex-start',
     },
     pagination: {
-        flexDirection: 'row-reverse',
+        flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row',
         marginBottom: 25,
         gap: 8,
         alignSelf: 'center',
@@ -126,9 +168,21 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 23,
         fontFamily: 'Cairo_700Bold',
-        textAlign: 'right',
-        marginBottom: 35,
-        lineHeight: 23,
+        textAlign: I18nManager.isRTL ? 'left' : 'right',
+        lineHeight: 32,
+        letterSpacing: 0,
+        textShadowColor: 'rgba(0, 0, 0, 0.75)',
+        textShadowOffset: { width: -1, height: 1 },
+        textShadowRadius: 10,
+    },
+    subtitle: {
+        width: '100%',
+        color: '#FFFFFF',
+        fontSize: 23,
+        fontFamily: 'Cairo_700Bold',
+        textAlign: I18nManager.isRTL ? 'left' : 'right',
+        marginTop: 5,
+        lineHeight: 32,
         letterSpacing: 0,
         textShadowColor: 'rgba(0, 0, 0, 0.75)',
         textShadowOffset: { width: -1, height: 1 },
