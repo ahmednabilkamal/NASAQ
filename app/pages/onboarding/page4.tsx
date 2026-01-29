@@ -14,7 +14,7 @@ export default function Home() {
       <Text style={styles.text}>{content.title}</Text>
       <TouchableOpacity
         style={styles.button}
-        onPress={() => router.push('/pages/login')}
+        onPress={() => router.push('/pages/onboarding/page5')}
       >
         <Text style={styles.buttonText}>{content.buttonText}</Text>
       </TouchableOpacity>

@@ -42,3 +42,22 @@ export const Fonts = Platform.select({
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
 });
+
+
+
+export const bodyTypeData = {
+  male: [
+    { key: 1, source: require("../assets/menbodytype11.png") },
+    { key: 2, source: require("../assets/malebodytype12.png") },
+    { key: 3, source: require("../assets/malevbodytype13.png") },
+    { key: 4, source: require("../assets/menbodytype21.png") },
+    { key: 5, source: require("../assets/malebodytype22.png") },
+  ],
+  female: [
+    { key: 1, source: require("../assets/womenbodytype11.png") },
+    { key: 2, source: require("../assets/womenbodytype12.png") },
+    { key: 3, source: require("../assets/womenbodytype13.png") },
+    { key: 4, source: require("../assets/womenbodytype21.png") },
+    { key: 5, source: require("../assets/womernbodytype22.png") },
+  ]
+}
