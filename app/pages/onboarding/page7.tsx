@@ -1,30 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import React from 'react';
+import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import EvaluationLayout from '../../../components/EvaluationLayout';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useGender } from '@/config/genderContext';
-
+import { useGenderSelection } from './hooks/useGenderSelection';
 
 export default function GenderPage() {
     const router = useRouter();
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.genderSelection || (pageData as any)['en'].genderSelection;
-    const { gender, setGender } = useGender();
-
-    const [selected, setSelected] = useState<'male' | 'female' | null>(gender);
-
-    useEffect(() => {
-        if (selected) {
-            setGender(selected);
-        }
-    }, [selected]);
+    const { selected, setSelected } = useGenderSelection();
 
     return (
         <SafeAreaView style={styles.container}>
-
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
@@ -33,7 +23,7 @@ export default function GenderPage() {
                 onNext={() => router.push('/pages/onboarding/page8' as any)}
                 nextButtonText={content.nextButton}
             >
-                <View >
+                <View>
                     <View style={styles.cardsRow}>
                         <TouchableOpacity
                             style={[styles.card, selected === 'male' && styles.cardSelected]}
@@ -56,7 +46,6 @@ export default function GenderPage() {
                 </View>
             </EvaluationLayout>
         </SafeAreaView>
-
     );
 }
 
@@ -96,12 +85,6 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    placeholderText: {
-        fontSize: 12,
-        color: '#999',
-        textAlign: 'center',
-        fontFamily: 'Cairo_400Regular',
     },
     avatar: {
         width: '100%',

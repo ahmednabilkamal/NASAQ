@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
     View,
     Text,
@@ -16,11 +16,12 @@ import { useRouter } from 'expo-router';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useAuthForm } from './hooks/useAuthForm';
 
 export default function AuthScreen() {
     const router = useRouter();
     const { languageCode } = useLanguage();
-    const [isLogin, setIsLogin] = useState(true);
+    const { isLogin, setAuthMode, toggleAuthMode, handleNext } = useAuthForm();
 
     const content = (pageData as any)[languageCode];
     const loginContent = content.login;
@@ -49,11 +50,10 @@ export default function AuthScreen() {
                     <Text style={styles.title}>{currentContent.title}</Text>
                     <Text style={styles.subtitle}>{currentContent.subtitle}</Text>
 
-                    {/* Tab Switcher */}
                     <View style={styles.tabContainer}>
                         <TouchableOpacity
                             style={[styles.tab, isLogin && styles.activeTab]}
-                            onPress={() => setIsLogin(true)}
+                            onPress={() => setAuthMode(true)}
                         >
                             <Text style={[styles.tabText, isLogin && styles.activeTabText]}>
                                 {loginContent.title}
@@ -61,7 +61,7 @@ export default function AuthScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.tab, !isLogin && styles.activeTab]}
-                            onPress={() => setIsLogin(false)}
+                            onPress={() => setAuthMode(false)}
                         >
                             <Text style={[styles.tabText, !isLogin && styles.activeTabText]}>
                                 {registerContent.title}
@@ -151,7 +151,7 @@ export default function AuthScreen() {
 
                         <TouchableOpacity
                             style={styles.nextButton}
-                            onPress={() => router.push('/pages/verification' as any)}
+                            onPress={handleNext}
                         >
                             <Text style={styles.nextButtonText}>{loginContent.nextButton}</Text>
                         </TouchableOpacity>
@@ -175,7 +175,7 @@ export default function AuthScreen() {
                                 {isLogin ? loginContent.footerText : registerContent.footerText}
                                 <Text
                                     style={styles.footerLink}
-                                    onPress={() => setIsLogin(!isLogin)}
+                                    onPress={toggleAuthMode}
                                 >
                                     {isLogin ? loginContent.footerLink : registerContent.footerLink}
                                 </Text>

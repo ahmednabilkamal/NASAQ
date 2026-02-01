@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TextInput, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import EvaluationLayout from '../../../components/EvaluationLayout';
@@ -6,31 +6,17 @@ import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGender } from '@/config/genderContext';
+import { useMeasurements } from './hooks/useMeasurements';
 
 export default function MeasurementsPage() {
     const router = useRouter();
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.personalMeasurements || (pageData as any)['en'].personalMeasurements;
     const { gender } = useGender();
-
-    const [measurements, setMeasurements] = useState({
-        shoulder: '18',
-        chest: '26',
-        waist: '15',
-        arm: '8',
-        hip: '8',
-        thigh: '8',
-        leg: '8',
-    });
-
-    const handleUpdate = (field: string, value: string) => {
-        setMeasurements((prev) => ({ ...prev, [field]: value }));
-    };
+    const { measurements, updateMeasurement } = useMeasurements();
 
     return (
         <SafeAreaView style={styles.container}>
-
-
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
@@ -42,13 +28,13 @@ export default function MeasurementsPage() {
                 <View style={styles.container}>
                     <View style={styles.contentRow}>
                         <View style={styles.inputsColumn}>
-                            <MeasurementInput label={content.shoulder} value={measurements.shoulder} onChange={(v: string) => handleUpdate('shoulder', v)} unit={content.unit} />
-                            <MeasurementInput label={content.chest} value={measurements.chest} onChange={(v: string) => handleUpdate('chest', v)} unit={content.unit} color="#E0E0E0" highlight />
-                            <MeasurementInput label={content.waist} value={measurements.waist} onChange={(v: string) => handleUpdate('waist', v)} unit={content.unit} />
-                            <MeasurementInput label={content.arm} value={measurements.arm} onChange={(v: string) => handleUpdate('arm', v)} unit={content.unit} />
-                            <MeasurementInput label={content.buttocks} value={measurements.hip} onChange={(v: string) => handleUpdate('hip', v)} unit={content.unit} />
-                            <MeasurementInput label={content.thigh} value={measurements.thigh} onChange={(v: string) => handleUpdate('thigh', v)} unit={content.unit} />
-                            <MeasurementInput label={content.leg} value={measurements.leg} onChange={(v: string) => handleUpdate('leg', v)} unit={content.unit} />
+                            <MeasurementInput label={content.shoulder} value={measurements.shoulder} onChange={(v: string) => updateMeasurement('shoulder', v)} unit={content.unit} />
+                            <MeasurementInput label={content.chest} value={measurements.chest} onChange={(v: string) => updateMeasurement('chest', v)} unit={content.unit} color="#E0E0E0" highlight />
+                            <MeasurementInput label={content.waist} value={measurements.waist} onChange={(v: string) => updateMeasurement('waist', v)} unit={content.unit} />
+                            <MeasurementInput label={content.arm} value={measurements.arm} onChange={(v: string) => updateMeasurement('arm', v)} unit={content.unit} />
+                            <MeasurementInput label={content.buttocks} value={measurements.hip} onChange={(v: string) => updateMeasurement('hip', v)} unit={content.unit} />
+                            <MeasurementInput label={content.thigh} value={measurements.thigh} onChange={(v: string) => updateMeasurement('thigh', v)} unit={content.unit} />
+                            <MeasurementInput label={content.leg} value={measurements.leg} onChange={(v: string) => updateMeasurement('leg', v)} unit={content.unit} />
                         </View>
 
                         <View style={styles.diagramColumn}>
@@ -66,7 +52,6 @@ export default function MeasurementsPage() {
                 </View>
             </EvaluationLayout>
         </SafeAreaView>
-
     );
 }
 
@@ -138,10 +123,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#E0E0E0',
         borderStyle: 'dashed',
-    },
-    placeholderText: {
-        color: '#999',
-        fontFamily: 'Cairo_400Regular',
     },
     avatar: {
         width: '100%',
