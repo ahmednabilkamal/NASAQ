@@ -15,12 +15,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import BottomNav from '@/components/BottomNav';
+import { useAuth } from '@/config/authContext';
+
 
 export default function ProfileScreen() {
     const router = useRouter();
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.profile || (pageData as any)['en'].profile;
     const isRTL = I18nManager.isRTL;
+    const { user, logout } = useAuth();
+
 
     const [darkMode, setDarkMode] = useState(false);
 
@@ -47,19 +51,19 @@ export default function ProfileScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                {/* Profile Info */}
+                {}
                 <View style={styles.profileCard}>
                     <Image
                         source={require('@/assets/page1bg.png')}
                         style={styles.avatar}
                     />
                     <View style={styles.profileText}>
-                        <Text style={styles.name}>نور حسن</Text>
-                        <Text style={styles.email}>nourhasan12@gmail.com</Text>
+                        <Text style={styles.name}>{user?.name || "نور حسن"}</Text>
+                        <Text style={styles.email}>{user?.email || "nourhasan12@gmail.com"}</Text>
                     </View>
                 </View>
 
-                {/* Section: Personal Info */}
+                {}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <Ionicons name="person-outline" size={18} color="#666" />
@@ -84,7 +88,7 @@ export default function ProfileScreen() {
                     </View>
                 </View>
 
-                {/* Section: Settings */}
+                {}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <Ionicons name="settings-outline" size={18} color="#666" />
@@ -115,7 +119,7 @@ export default function ProfileScreen() {
                     </View>
                 </View>
 
-                {/* Section: Support */}
+                {}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <Ionicons name="headset-outline" size={18} color="#666" />
@@ -127,6 +131,18 @@ export default function ProfileScreen() {
                         <MenuItem label={content.privacy} icon="shield-checkmark-outline" onPress={() => { }} />
                     </View>
                 </View>
+
+                {}
+                <TouchableOpacity
+                    style={styles.logoutButton}
+                    onPress={() => {
+                        logout();
+                        router.replace('/pages/login');
+                    }}
+                >
+                    <Ionicons name="log-out-outline" size={22} color="#E11D48" />
+                    <Text style={styles.logoutText}>Logout</Text>
+                </TouchableOpacity>
             </ScrollView>
             <BottomNav />
         </SafeAreaView>
@@ -219,5 +235,23 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
+    },
+    logoutButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        backgroundColor: '#FFF',
+        borderRadius: 15,
+        paddingVertical: 15,
+        marginTop: 10,
+        marginBottom: 30,
+        borderWidth: 1,
+        borderColor: '#FFE4E6',
+    },
+    logoutText: {
+        fontSize: 16,
+        fontFamily: 'Cairo_700Bold',
+        color: '#E11D48',
     },
 });

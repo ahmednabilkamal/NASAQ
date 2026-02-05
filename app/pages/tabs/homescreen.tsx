@@ -13,16 +13,19 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomNav from '@/components/BottomNav';
+import { useAuth } from '@/config/authContext';
+
 
 
 const HomeScreen = () => {
+    const { user } = useAuth();
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>Home Screen</Text>
             </View>
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                <Text style={styles.welcomeText}>Welcome to Venus Style</Text>
+                <Text style={styles.welcomeText}>Welcome {user?.name || "to Venus Style"}</Text>
             </ScrollView>
             <BottomNav />
         </SafeAreaView>

@@ -13,7 +13,7 @@ export default function Page3() {
       title={content.title}
       subtitle={content.subtitle}
       nextRoute="/pages/onboarding/page4"
-      // nextRoute="/pages/tabs/HomeScreen"
+      
       currentIndex={2}
       totalIndex={3}
     />

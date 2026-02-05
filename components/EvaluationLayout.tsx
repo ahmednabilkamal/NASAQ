@@ -28,7 +28,7 @@ export default function EvaluationLayout({
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* Header */}
+            {}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
                     <View style={styles.iconCircle}>
@@ -55,14 +55,14 @@ export default function EvaluationLayout({
                 </TouchableOpacity>
             </View>
 
-            {/* Content */}
+            {}
             <View style={styles.content}>
                 <Text style={styles.title}>{title}</Text>
                 {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
                 <View style={styles.mainContent}>{children}</View>
             </View>
 
-            {/* Footer */}
+            {}
             <View style={styles.footer}>
                 <TouchableOpacity style={styles.nextButton} onPress={onNext}>
                     <Text style={styles.nextButtonText}>{nextButtonText}</Text>

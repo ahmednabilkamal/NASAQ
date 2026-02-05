@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 15,
         elevation: 8,
-        // height: width * 1.1,
+        
     },
     imageContainer: {
         flex: 1,

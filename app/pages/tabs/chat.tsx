@@ -8,7 +8,7 @@ export default function ChatListScreen() {
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
                 <Text style={styles.title}>Messages</Text>
-                {/* Chat list implementation would go here */}
+                {}
             </View>
             <BottomNav />
         </SafeAreaView>

@@ -19,7 +19,7 @@ export default function Home() {
     imageScale.value = withTiming(1, { duration: 2000 });
 
     const timer = setTimeout(() => {
-      router.replace('/pages/onboarding/page1');
+      router.replace('/pages/login');
     }, 2000);
 
     return () => clearTimeout(timer);
