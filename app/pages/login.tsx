@@ -11,6 +11,7 @@ import {
     I18nManager,
     Image,
     ScrollView,
+    ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '@/config/languageRef';
@@ -21,7 +22,23 @@ import { useAuthForm } from './hooks/useAuthForm';
 export default function AuthScreen() {
     const router = useRouter();
     const { languageCode } = useLanguage();
-    const { isLogin, setAuthMode, toggleAuthMode, handleNext } = useAuthForm();
+    const {
+        isLogin,
+        setAuthMode,
+        toggleAuthMode,
+        handleNext,
+        identifier,
+        setIdentifier,
+        password,
+        setPassword,
+        name,
+        setName,
+        mobile,
+        setMobile,
+        confirmPassword,
+        setConfirmPassword,
+        loading
+    } = useAuthForm();
 
     const content = (pageData as any)[languageCode];
     const loginContent = content.login;
@@ -79,6 +96,8 @@ export default function AuthScreen() {
                                         placeholder="محمد علي اسامة"
                                         placeholderTextColor="#999"
                                         textAlign={isRTL ? 'right' : 'left'}
+                                        value={name}
+                                        onChangeText={setName}
                                     />
                                 </View>
                             </View>
@@ -95,6 +114,8 @@ export default function AuthScreen() {
                                     placeholder={isLogin ? "محمد علي اسامة" : "example@mail.com"}
                                     placeholderTextColor="#999"
                                     textAlign={isRTL ? 'right' : 'left'}
+                                    value={identifier}
+                                    onChangeText={setIdentifier}
                                 />
                             </View>
                         </View>
@@ -109,6 +130,8 @@ export default function AuthScreen() {
                                         placeholderTextColor="#999"
                                         keyboardType="phone-pad"
                                         textAlign={isRTL ? 'right' : 'left'}
+                                        value={mobile}
+                                        onChangeText={setMobile}
                                     />
                                 </View>
                             </View>
@@ -123,6 +146,8 @@ export default function AuthScreen() {
                                     placeholderTextColor="#999"
                                     secureTextEntry
                                     textAlign={isRTL ? 'right' : 'left'}
+                                    value={password}
+                                    onChangeText={setPassword}
                                 />
                             </View>
                         </View>
@@ -144,6 +169,8 @@ export default function AuthScreen() {
                                         placeholderTextColor="#999"
                                         secureTextEntry
                                         textAlign={isRTL ? 'right' : 'left'}
+                                        value={confirmPassword}
+                                        onChangeText={setConfirmPassword}
                                     />
                                 </View>
                             </View>
@@ -152,8 +179,13 @@ export default function AuthScreen() {
                         <TouchableOpacity
                             style={styles.nextButton}
                             onPress={handleNext}
+                            disabled={loading}
                         >
-                            <Text style={styles.nextButtonText}>{loginContent.nextButton}</Text>
+                            {loading ? (
+                                <ActivityIndicator color="#FFF" />
+                            ) : (
+                                <Text style={styles.nextButtonText}>{isLogin ? loginContent.nextButton : registerContent.nextButton}</Text>
+                            )}
                         </TouchableOpacity>
 
                         <View style={styles.dividerRow}>
@@ -184,7 +216,7 @@ export default function AuthScreen() {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+        </SafeAreaView >
     );
 }
 

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
+import { saveOnboardingStep, setOnboardingCompleted } from '@/config/navigationFlow';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -48,6 +49,9 @@ export default function OnboardingScreen({
             easing: Easing.out(Easing.exp)
         });
         opacity.value = withTiming(1, { duration: 800 });
+
+        // Save current onboarding step
+        saveOnboardingStep(currentIndex + 1);
     }, [currentIndex]);
 
     const animatedStyle = useAnimatedStyle(() => ({
@@ -55,14 +59,21 @@ export default function OnboardingScreen({
         opacity: opacity.value,
     }));
 
-    const handleNext = () => {
+    const handleNext = async () => {
         if (nextRoute) {
             router.push(nextRoute as any);
+        } else if (currentIndex === 2) {
+            await setOnboardingCompleted();
+            console.log('✅ Onboarding completed, navigating to login');
+            router.push('/pages/login' as any);
         }
     };
 
-    const handleSkip = () => {
-        router.push('/pages/onboarding/page4' as any);
+    const handleSkip = async () => {
+        // Skip to login after marking onboarding as complete
+        await setOnboardingCompleted();
+        console.log('⏭️ Onboarding skipped, navigating to login');
+        router.push('/pages/login' as any);
     };
 
     return (

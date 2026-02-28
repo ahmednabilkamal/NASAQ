@@ -20,7 +20,12 @@ export default function GenderPage() {
                 subtitle={content.subtitle}
                 currentStep={1}
                 totalSteps={10}
-                onNext={() => router.push('/pages/onboarding/page8' as any)}
+                onNext={() => {
+                    if (selected) {
+                        router.push('/pages/onboarding/page8' as any);
+                    }
+                }}
+                isNextDisabled={!selected}
                 nextButtonText={content.nextButton}
             >
                 <View>

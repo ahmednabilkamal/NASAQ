@@ -1,6 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, TextInput, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, Image, LayoutChangeEvent } from 'react-native';
 import { useRouter } from 'expo-router';
+import Svg, { Line, Circle } from 'react-native-svg';
 import EvaluationLayout from '../../../components/EvaluationLayout';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
@@ -8,12 +9,63 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGender } from '@/config/genderContext';
 import { useMeasurements } from './hooks/useMeasurements';
 
+// Coordinates as ratios (0 to 1) - works on any screen size
+// bodyXRatio/bodyYRatio = dot position on body as percentage of container
+// inputYRatio = input row vertical position as percentage of container
+
+const FEMALE_POINTS = {
+    shoulder: { bodyXRatio: 0.62, bodyYRatio: 0.185, inputYRatio: 0.14 },
+    chest: { bodyXRatio: 0.74, bodyYRatio: 0.255, inputYRatio: 0.22 },
+    arm: { bodyXRatio: 0.550, bodyYRatio: 0.395, inputYRatio: 0.32 },
+    waist: { bodyXRatio: 0.610, bodyYRatio: 0.402, inputYRatio: 0.40 },
+    hip: { bodyXRatio: 0.750, bodyYRatio: 0.490, inputYRatio: 0.50 },
+    thigh: { bodyXRatio: 0.630, bodyYRatio: 0.630, inputYRatio: 0.62 },
+    leg: { bodyXRatio: 0.660, bodyYRatio: 0.790, inputYRatio: 0.75 },
+};
+
+const MALE_POINTS = {
+    shoulder: { bodyXRatio: 0.670, bodyYRatio: 0.200, inputYRatio: 0.14 },
+    chest: { bodyXRatio: 0.775, bodyYRatio: 0.275, inputYRatio: 0.25 },
+    arm: { bodyXRatio: 0.550, bodyYRatio: 0.370, inputYRatio: 0.32 },
+    waist: { bodyXRatio: 0.750, bodyYRatio: 0.419, inputYRatio: 0.42 },
+    hip: { bodyXRatio: 0.785, bodyYRatio: 0.520, inputYRatio: 0.52 },
+    thigh: { bodyXRatio: 0.600, bodyYRatio: 0.640, inputYRatio: 0.62 },
+    leg: { bodyXRatio: 0.600, bodyYRatio: 0.765, inputYRatio: 0.72 },
+};
+
+const INPUT_X_RATIO = 0.35; 
+
 export default function MeasurementsPage() {
     const router = useRouter();
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.personalMeasurements || (pageData as any)['en'].personalMeasurements;
     const { gender } = useGender();
     const { measurements, updateMeasurement } = useMeasurements();
+
+    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
+    const points = gender === 'female' ? FEMALE_POINTS : MALE_POINTS;
+
+    const measurementItems = [
+        { key: 'shoulder', label: content.shoulder, value: measurements.shoulder, point: points.shoulder },
+        { key: 'chest', label: content.chest, value: measurements.chest, point: points.chest, highlight: true },
+        { key: 'waist', label: content.waist, value: measurements.waist, point: points.waist },
+        { key: 'arm', label: content.arm, value: measurements.arm, point: points.arm },
+        { key: 'hip', label: content.buttocks, value: measurements.hip, point: points.hip },
+        { key: 'thigh', label: content.thigh, value: measurements.thigh, point: points.thigh },
+        { key: 'leg', label: content.leg, value: measurements.leg, point: points.leg },
+    ];
+
+    const handleLayout = (event: LayoutChangeEvent) => {
+        const { width, height } = event.nativeEvent.layout;
+        setDimensions({ width, height });
+    };
+
+    // Calculate actual positions from ratios
+    const getPosition = (xRatio: number, yRatio: number) => ({
+        x: xRatio * dimensions.width,
+        y: yRatio * dimensions.height,
+    });
 
     return (
         <SafeAreaView style={styles.container}>
@@ -25,47 +77,78 @@ export default function MeasurementsPage() {
                 onNext={() => router.push('/pages/onboarding/page9' as any)}
                 nextButtonText={content.nextButton}
             >
-                <View style={styles.container}>
-                    <View style={styles.contentRow}>
-                        <View style={styles.inputsColumn}>
-                            <MeasurementInput label={content.shoulder} value={measurements.shoulder} onChange={(v: string) => updateMeasurement('shoulder', v)} unit={content.unit} />
-                            <MeasurementInput label={content.chest} value={measurements.chest} onChange={(v: string) => updateMeasurement('chest', v)} unit={content.unit} color="#E0E0E0" highlight />
-                            <MeasurementInput label={content.waist} value={measurements.waist} onChange={(v: string) => updateMeasurement('waist', v)} unit={content.unit} />
-                            <MeasurementInput label={content.arm} value={measurements.arm} onChange={(v: string) => updateMeasurement('arm', v)} unit={content.unit} />
-                            <MeasurementInput label={content.buttocks} value={measurements.hip} onChange={(v: string) => updateMeasurement('hip', v)} unit={content.unit} />
-                            <MeasurementInput label={content.thigh} value={measurements.thigh} onChange={(v: string) => updateMeasurement('thigh', v)} unit={content.unit} />
-                            <MeasurementInput label={content.leg} value={measurements.leg} onChange={(v: string) => updateMeasurement('leg', v)} unit={content.unit} />
-                        </View>
+                <View style={styles.mainContainer} onLayout={handleLayout}>
+                    {/* Body Image - using stretch to fill container exactly */}
+                    <Image
+                        source={gender === 'female'
+                            ? require('../../../assets/femalefigurine.png')
+                            : require('../../../assets/male_figurine.png')
+                        }
+                        style={styles.bodyImage}
+                        resizeMode="contain"
+                    />
 
-                        <View style={styles.diagramColumn}>
-                            <View style={styles.diagramPlaceholder}>
-                                <Image
-                                    source={gender === 'female'
-                                        ? require('../../../assets/male_figurine.png')
-                                        : require('../../../assets/male_figurine.png')
-                                    }
-                                    style={styles.avatar}
-                                />
-                            </View>
-                        </View>
-                    </View>
+                    {/* Only render SVG and inputs after we have dimensions */}
+                    {dimensions.width > 0 && (
+                        <>
+                            {/* SVG Layer for Lines and Dots */}
+                            <Svg style={StyleSheet.absoluteFill}>
+                                {measurementItems.map((item) => {
+                                    const bodyPos = getPosition(item.point.bodyXRatio, item.point.bodyYRatio);
+                                    const inputPos = getPosition(INPUT_X_RATIO, item.point.inputYRatio + 0.04);
+
+                                    return (
+                                        <React.Fragment key={item.key}>
+                                            {/* Line from input to body */}
+                                            <Line
+                                                x1={inputPos.x}
+                                                y1={inputPos.y}
+                                                x2={bodyPos.x}
+                                                y2={bodyPos.y}
+                                                stroke="#888"
+                                                strokeWidth="1"
+                                            />
+                                            {/* Dot on body */}
+                                            <Circle
+                                                cx={bodyPos.x}
+                                                cy={bodyPos.y}
+                                                r="5"
+                                                fill="#000"
+                                            />
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </Svg>
+
+                            {/* Input boxes - absolutely positioned */}
+                            {measurementItems.map((item) => {
+                                const inputY = item.point.inputYRatio * dimensions.height;
+
+                                return (
+                                    <View
+                                        key={item.key}
+                                        style={[
+                                            styles.inputWrapper,
+                                            { top: inputY, left: 5 }
+                                        ]}
+                                    >
+                                        <Text style={styles.label}>{item.label}: {content.unit}</Text>
+                                        <TextInput
+                                            style={[styles.valueInput, item.highlight && styles.inputHighlight]}
+                                            value={item.value}
+                                            onChangeText={(v) => updateMeasurement(item.key as any, v)}
+                                            keyboardType="numeric"
+                                            placeholder="0"
+                                            placeholderTextColor="#999"
+                                        />
+                                    </View>
+                                );
+                            })}
+                        </>
+                    )}
                 </View>
             </EvaluationLayout>
         </SafeAreaView>
-    );
-}
-
-function MeasurementInput({ label, value, onChange, unit, color = 'transparent', highlight = false }: any) {
-    return (
-        <View style={styles.inputItem}>
-            <Text style={styles.inputLabel} numberOfLines={1}>{label}: {unit}</Text>
-            <TextInput
-                style={[styles.input, highlight && styles.inputHighlight]}
-                value={value}
-                onChangeText={onChange}
-                keyboardType="numeric"
-            />
-        </View>
     );
 }
 
@@ -73,60 +156,48 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    contentRow: {
-        flexDirection: 'row',
+    mainContainer: {
         flex: 1,
+        position: 'relative',
     },
-    inputsColumn: {
-        flex: 1.2,
-        justifyContent: 'center',
+    bodyImage: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: '55%',
+        height: '100%',
     },
-    diagramColumn: {
-        flex: 1.5,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    inputItem: {
+    inputWrapper: {
+        position: 'absolute',
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-start',
-        marginBottom: 10,
-        gap: 8,
+        gap: 6,
     },
-    inputLabel: {
-        fontSize: 12,
+    label: {
+        fontSize: 11,
         fontFamily: 'Cairo_400Regular',
-        color: '#666',
-        width: 75,
+        color: '#333',
+        width: 65,
+        textAlign: 'right',
     },
-    input: {
-        width: 40,
-        height: 35,
-        backgroundColor: '#F5F5F5',
+    valueInput: {
+        width: 48,
+        height: 34,
+        backgroundColor: '#FFF',
         borderRadius: 8,
         textAlign: 'center',
         fontSize: 14,
         fontFamily: 'Cairo_700Bold',
+        paddingHorizontal: 4,
+        paddingVertical: 0,
+        borderWidth: 1.5,
+        borderColor: '#DDD',
+        color: '#000',
     },
     inputHighlight: {
-        borderWidth: 1,
+        borderWidth: 2,
         borderColor: '#000',
         backgroundColor: '#FFF',
     },
-    diagramPlaceholder: {
-        width: '100%',
-        height: '80%',
-        backgroundColor: '#F9F9F9',
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#E0E0E0',
-        borderStyle: 'dashed',
-    },
-    avatar: {
-        width: '100%',
-        height: '100%',
-        resizeMode: 'contain',
-    }
 });

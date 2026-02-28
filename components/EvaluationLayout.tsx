@@ -13,6 +13,7 @@ interface EvaluationLayoutProps {
     totalSteps: number;
     onNext: () => void;
     nextButtonText?: string;
+    isNextDisabled?: boolean;
 }
 
 export default function EvaluationLayout({
@@ -23,12 +24,13 @@ export default function EvaluationLayout({
     totalSteps,
     onNext,
     nextButtonText = 'التالي',
+    isNextDisabled = false,
 }: EvaluationLayoutProps) {
     const router = useRouter();
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* Header */}
+            {}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
                     <View style={styles.iconCircle}>
@@ -55,17 +57,23 @@ export default function EvaluationLayout({
                 </TouchableOpacity>
             </View>
 
-            {/* Content */}
+            {}
             <View style={styles.content}>
                 <Text style={styles.title}>{title}</Text>
                 {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
                 <View style={styles.mainContent}>{children}</View>
             </View>
 
-            {/* Footer */}
+            {}
             <View style={styles.footer}>
-                <TouchableOpacity style={styles.nextButton} onPress={onNext}>
-                    <Text style={styles.nextButtonText}>{nextButtonText}</Text>
+                <TouchableOpacity
+                    style={[styles.nextButton, isNextDisabled && styles.nextButtonDisabled]}
+                    onPress={onNext}
+                    disabled={isNextDisabled}
+                >
+                    <Text style={[styles.nextButtonText, isNextDisabled && styles.nextButtonTextDisabled]}>
+                        {nextButtonText}
+                    </Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
@@ -155,5 +163,11 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: 18,
         fontFamily: 'Cairo_700Bold',
+    },
+    nextButtonDisabled: {
+        backgroundColor: '#CCC',
+    },
+    nextButtonTextDisabled: {
+        color: '#999',
     },
 });

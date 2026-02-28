@@ -33,7 +33,7 @@ export default function AddCardScreen() {
             </View>
 
             <View style={styles.content}>
-                {/* Visual Card Representation */}
+                {}
                 <View style={styles.cardPreview}>
                     <Image
                         source={require('@/assets/page1bg.png')}
@@ -41,7 +41,7 @@ export default function AddCardScreen() {
                     />
                 </View>
 
-                {/* Form */}
+                {}
                 <View style={styles.form}>
                     <View style={styles.inputWrapper}>
                         <Text style={styles.label}>{content.cardNumber}<Text style={styles.required}>*</Text></Text>

@@ -11,7 +11,7 @@ export default function BottomNav() {
 
     const tabs = [
         { id: 'home', icon: 'home-outline', activeIcon: 'home', label: 'Home', route: '/pages/tabs/homescreen' },
-        { id: 'saved', icon: 'heart-outline', activeIcon: 'heart', label: 'Saved', route: '/pages/tabs/stylists' }, // Using stylists as placeholder for saved
+        { id: 'saved', icon: 'heart-outline', activeIcon: 'heart', label: 'Saved', route: '/pages/tabs/favorites' },
         { id: 'scan', icon: 'scan-outline', activeIcon: 'scan', label: 'Scan', route: '', isCenter: true },
         { id: 'chat', icon: 'chatbubble-outline', activeIcon: 'chatbubble', label: 'Chat', route: '/pages/tabs/chat' },
         { id: 'profile', icon: 'person-outline', activeIcon: 'person', label: 'Profile', route: '/pages/tabs/profile' },
@@ -57,25 +57,25 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 0,
         width: width,
-        // paddingHorizontal: 20,
-        // paddingBottom: 25,
+
+
         backgroundColor: 'transparent',
     },
     navBar: {
         flexDirection: 'row',
         height: 100,
         backgroundColor: '#FFF',
-        // borderRadius: 35,
-        // borderBottomEndRadius:40,
-        // borderBottomStartRadius:40,
+
+
+
         alignItems: 'center',
         justifyContent: 'space-around',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.1,
-        // shadowRadius: 20,
+
         elevation: 10,
-        // padding:30
+
     },
     tabItem: {
         alignItems: 'center',
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
         borderRadius: 100,
         borderColor: "white",
         backgroundColor: "white",
-        // padding:10
+
 
     },
     centerButton: {

@@ -5,52 +5,65 @@ import EvaluationLayout from '../../../components/EvaluationLayout';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useGender } from '@/config/genderContext';
 
-const TONES = [
-    { id: '1', name: 'Tone 1', image: require('../../../assets/femalecolor1.png') },
-    { id: '2', name: 'Tone 2', image: require('../../../assets/femalecolor2.png') },
-    { id: '3', name: 'Tone 3', image: require('../../../assets/femalecolor3.png') },
-    { id: '4', name: 'Tone 4', image: require('../../../assets/femalecolor4.png') },
-];
+const TONES = {
+    female: [
+        { id: '1', name: 'Tone 1', image: require('../../../assets/femalecolor1.png') },
+        { id: '2', name: 'Tone 2', image: require('../../../assets/femalecolor2.png') },
+        { id: '3', name: 'Tone 3', image: require('../../../assets/femalecolor3.png') },
+        { id: '4', name: 'Tone 4', image: require('../../../assets/femalecolor4.png') },
+    ],
+    male: [
+        { id: '1', name: 'Tone 1', image: require('../../../assets/malecolor1.png') },
+        { id: '2', name: 'Tone 2', image: require('../../../assets/malecolor2.png') },
+        { id: '3', name: 'Tone 3', image: require('../../../assets/malecolor3.png') },
+        { id: '4', name: 'Tone 4', image: require('../../../assets/malecolor4.png') },
+    ]
+};
 
 export default function SkinTonePage() {
     const router = useRouter();
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.skinTone || (pageData as any)['en'].skinTone;
+    const { gender } = useGender();
 
     const [selected, setSelected] = useState<string | null>(null);
 
+    // Get the appropriate tones based on gender
+    const currentTones = gender === 'male' ? TONES.male : TONES.female;
+
     return (
         <SafeAreaView style={{ flex: 1 }}>
-        <EvaluationLayout
-            title={content.title}
-            subtitle={content.subtitle}
-            currentStep={9}
-            totalSteps={10}
-            onNext={() => router.push('/pages/onboarding/page11' as any)}
-            nextButtonText={content.nextButton}
-        >
-            <View style={styles.container}>
-                <FlatList
-                    data={TONES}
-                    numColumns={3}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.listContent}
-                    columnWrapperStyle={styles.columnWrapper}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={[styles.card, selected === item.id && styles.cardSelected]}
-                            onPress={() => setSelected(item.id)}
-                        >
-                            <View style={styles.imageContainer}>
-                                <Image source={item.image} style={styles.toneImage} resizeMode="contain" />
-                            </View>
-                            <Text style={styles.toneName}>{item.name}</Text>
-                        </TouchableOpacity>
-                    )}
-                />
-            </View>
-        </EvaluationLayout>
+            <EvaluationLayout
+                title={content.title}
+                subtitle={content.subtitle}
+                currentStep={9}
+                totalSteps={10}
+                onNext={() => router.push('/pages/onboarding/page11' as any)}
+                nextButtonText={content.nextButton}
+            >
+                <View style={styles.container}>
+                    <FlatList
+                        data={currentTones}
+                        numColumns={3}
+                        keyExtractor={(item) => item.id}
+                        contentContainerStyle={styles.listContent}
+                        columnWrapperStyle={styles.columnWrapper}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                style={[styles.card, selected === item.id && styles.cardSelected]}
+                                onPress={() => setSelected(item.id)}
+                            >
+                                <View style={styles.imageContainer}>
+                                    <Image source={item.image} style={styles.toneImage} resizeMode="contain" />
+                                </View>
+                                <Text style={styles.toneName}>{item.name}</Text>
+                            </TouchableOpacity>
+                        )}
+                    />
+                </View>
+            </EvaluationLayout>
         </SafeAreaView>
     );
 }
