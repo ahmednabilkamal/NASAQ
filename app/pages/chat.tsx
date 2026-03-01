@@ -38,7 +38,7 @@ export default function ChatScreen() {
     const MessageItem = ({ item }: any) => {
         const isUser = item.sender === 'user';
         return (
-            <View style={[styles.messageContainer, isUser ? styles.userMessageContainer : styles.stylistMessageContainer]}>
+            <View style={[styles.messageContainer, isUser ? styles.messageContainer : styles.messageContainer]}>
                 {!isUser && (
                     <Image
                         source={require('@/assets/stylewomen1.png')}
@@ -277,13 +277,16 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
     },
     messageContainer: {
+        flex:1,
+        // backgroundColor:"yellow",
         flexDirection: 'row',
         marginBottom: 20,
+        width:'100%',
         alignItems: 'flex-end',
     },
     messageWrapper: {
         flex: 1,
-        maxWidth: '70%',
+        // maxWidth: '70%',
     },
     userWrapper: {
         alignItems: 'flex-start',
