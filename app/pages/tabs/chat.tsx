@@ -1,17 +1,17 @@
+import BottomNav from '@/components/BottomNav';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
     FlatList,
     Image,
-    TouchableOpacity,
+    StyleSheet,
+    Text,
     TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import BottomNav from '@/components/BottomNav';
 
 // Mock conversations data
 const CONVERSATIONS = [

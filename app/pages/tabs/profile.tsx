@@ -1,21 +1,21 @@
-import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-    ScrollView,
-    Switch,
-    I18nManager,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useLanguage } from '@/config/languageRef';
-import pageData from '@/data/content';
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/config/authContext';
+import { useLanguage } from '@/config/languageRef';
+import pageData from '@/data/content';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import {
+    I18nManager,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
     const router = useRouter();
@@ -310,6 +310,24 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
+    },
+    logoutButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        backgroundColor: '#FFF',
+        borderRadius: 15,
+        paddingVertical: 15,
+        marginTop: 10,
+        marginBottom: 30,
+        borderWidth: 1,
+        borderColor: '#FFE4E6',
+    },
+    logoutText: {
+        fontSize: 16,
+        fontFamily: 'Cairo_700Bold',
+        color: '#E11D48',
     },
     logoutButton: {
         flexDirection: 'row',

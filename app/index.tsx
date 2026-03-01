@@ -1,13 +1,13 @@
-import React, { useEffect } from 'react';
-import { View, Image, StyleSheet, Dimensions } from 'react-native';
-import { useRouter } from 'expo-router';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-} from 'react-native-reanimated';
 import { useAuth } from '@/config/authContext';
 import { getInitialRoute } from '@/config/navigationFlow';
+import { useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
+import { Dimensions, Image, StyleSheet, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 

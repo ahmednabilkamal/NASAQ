@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    FlatList,
-    Image,
-    I18nManager,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import BottomNav from '@/components/BottomNav';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
-import BottomNav from '@/components/BottomNav';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import {
+    FlatList,
+    I18nManager,
+    Image,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const MOCK_STYLISTS = [
     { id: '1', name: 'داليا فؤاد', specialty: 'استايل كاجوال | كلاسيك | محتشم', price: '66', rating: '4.9', image: require('@/assets/stylewomen1.png'), isFavorite: true },

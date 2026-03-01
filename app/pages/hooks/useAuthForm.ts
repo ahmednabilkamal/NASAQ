@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useAuth } from '@/config/authContext';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 
 export const useAuthForm = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -10,7 +11,15 @@ export const useAuthForm = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const [identifier, setIdentifier] = useState('');
+    const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
+    const [mobile, setMobile] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+
     const router = useRouter();
+    const { login, register } = useAuth();
 
     const toggleAuthMode = () => setIsLogin(prev => !prev);
     const setAuthMode = (mode: boolean) => setIsLogin(mode);
@@ -28,6 +37,17 @@ export const useAuthForm = () => {
 
     return {
         isLogin,
+        identifier,
+        setIdentifier,
+        password,
+        setPassword,
+        name,
+        setName,
+        mobile,
+        setMobile,
+        confirmPassword,
+        setConfirmPassword,
+        loading,
         identifier,
         setIdentifier,
         password,

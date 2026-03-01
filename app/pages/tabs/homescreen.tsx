@@ -1,16 +1,16 @@
+import BottomNav from '@/components/BottomNav';
+import { HeroBanner, HomeHeader, ServicePackageCard, StylistCard } from '@/components/home';
+import { useAuth } from '@/config/authContext';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
     FlatList,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import BottomNav from '@/components/BottomNav';
-import { useAuth } from '@/config/authContext';
-import { HomeHeader, HeroBanner, StylistCard, ServicePackageCard } from '@/components/home';
 
 // Sample data for stylists
 const STYLISTS_DATA = [

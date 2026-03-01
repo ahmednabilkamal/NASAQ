@@ -1,11 +1,12 @@
-import React, { useEffect } from 'react';
+import { AuthProvider } from '@/config/authContext';
+import { GenderProvider } from '@/config/genderContext';
+import LanguageProvider from '@/config/languageRef';
+import { Cairo_400Regular, Cairo_700Bold, useFonts } from '@expo-google-fonts/cairo';
+import * as Localization from 'expo-localization';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useFonts, Cairo_400Regular, Cairo_700Bold } from '@expo-google-fonts/cairo';
-import LanguageProvider from '@/config/languageRef';
-import * as Localization from 'expo-localization';
-import { GenderProvider } from '@/config/genderContext';
-import { AuthProvider } from '@/config/authContext';
+import React, { useEffect } from 'react';
+
 
 
 
