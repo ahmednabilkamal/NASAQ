@@ -8,6 +8,7 @@ import pageData from '@/data/content';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGender } from '@/config/genderContext';
 import { useMeasurements } from './hooks/useMeasurements';
+import { useAuth } from '@/config/authContext';
 
 // Coordinates as ratios (0 to 1) - works on any screen size
 // bodyXRatio/bodyYRatio = dot position on body as percentage of container
@@ -33,7 +34,7 @@ const MALE_POINTS = {
     leg: { bodyXRatio: 0.600, bodyYRatio: 0.765, inputYRatio: 0.72 },
 };
 
-const INPUT_X_RATIO = 0.35; 
+const INPUT_X_RATIO = 0.35;
 
 export default function MeasurementsPage() {
     const router = useRouter();
@@ -41,6 +42,25 @@ export default function MeasurementsPage() {
     const content = (pageData as any)[languageCode]?.personalMeasurements || (pageData as any)['en'].personalMeasurements;
     const { gender } = useGender();
     const { measurements, updateMeasurement } = useMeasurements();
+    const { updateProfile } = useAuth();
+    const [saving, setSaving] = useState(false);
+
+    const handleNext = async () => {
+        setSaving(true);
+        try {
+            const body_measurements: any = {};
+            Object.keys(measurements).forEach(key => {
+                body_measurements[key] = Number(measurements[key as keyof typeof measurements]);
+            });
+            await updateProfile({ body_measurements });
+            router.push('/pages/onboarding/styleIdentity' as any);
+
+        } catch (error) {
+            console.error('Failed to save measurements:', error);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
@@ -72,10 +92,12 @@ export default function MeasurementsPage() {
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
-                currentStep={7}
-                totalSteps={10}
-                onNext={() => router.push('/pages/onboarding/page9' as any)}
-                nextButtonText={content.nextButton}
+                currentStep={6}
+                totalSteps={7}
+
+
+                onNext={handleNext}
+                nextButtonText={saving ? '...' : content.nextButton}
             >
                 <View style={styles.mainContainer} onLayout={handleLayout}>
                     {/* Body Image - using stretch to fill container exactly */}

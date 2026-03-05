@@ -60,12 +60,16 @@ export default function OnboardingScreen({
     }));
 
     const handleNext = async () => {
-        if (nextRoute) {
-            router.push(nextRoute as any);
-        } else if (currentIndex === 2) {
+        if (nextRoute === '/pages/login') {
             await setOnboardingCompleted();
             console.log('✅ Onboarding completed, navigating to login');
-            router.push('/pages/login' as any);
+            router.replace('/pages/login' as any);
+        } else if (nextRoute) {
+            router.push(nextRoute as any);
+        } else if (currentIndex === totalIndex - 1) {
+            await setOnboardingCompleted();
+            console.log('✅ Onboarding completed, navigating to login');
+            router.replace('/pages/login' as any);
         }
     };
 
@@ -73,7 +77,7 @@ export default function OnboardingScreen({
         // Skip to login after marking onboarding as complete
         await setOnboardingCompleted();
         console.log('⏭️ Onboarding skipped, navigating to login');
-        router.push('/pages/login' as any);
+        router.replace('/pages/login' as any);
     };
 
     return (

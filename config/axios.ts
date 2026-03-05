@@ -11,17 +11,17 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to add auth token
+import Toast from 'react-native-toast-message';
+
+// Request interceptor ... existing code ...
 api.interceptors.request.use(async (config) => {
   try {
-    // Try to get token asynchronously
     const token = await getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
   } catch (error) {
-    console.error('Error getting token in interceptor:', error);
-    // Fallback to sync method if async fails
+    // SILENT fail - syncToken fallback will attempt or request will fail 401
     const syncToken = getAccessTokenSync();
     if (syncToken) {
       config.headers.Authorization = `Bearer ${syncToken}`;
@@ -31,6 +31,37 @@ api.interceptors.request.use(async (config) => {
 }, (error) => {
   return Promise.reject(error);
 });
+
+// Response interceptor to handle errors globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    let message = error.response?.data?.message || error.message || 'Something went wrong';
+
+    // Check for validation errors and format them nicely
+    if (error.response?.data?.errors) {
+      const errors = error.response.data.errors;
+      const errorStrings = Object.keys(errors).map(key => {
+        const fieldErrors = errors[key];
+        return Array.isArray(fieldErrors) ? fieldErrors.join(' ') : fieldErrors;
+      });
+      if (errorStrings.length > 0) {
+        message = errorStrings.join('\n');
+      }
+    }
+
+    Toast.show({
+      type: 'error',
+      text1: 'خطأ', // Header in Arabic
+      text2: message,
+      position: 'bottom',
+      visibilityTime: 4000,
+      bottomOffset: 60, // A bit higher than the absolute bottom
+    });
+
+    return Promise.reject(error);
+  }
+);
 
 export default api;
 

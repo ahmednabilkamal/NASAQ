@@ -6,12 +6,31 @@ import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGenderSelection } from './hooks/useGenderSelection';
+import { useAuth } from '@/config/authContext';
+import { useState } from 'react';
 
 export default function GenderPage() {
     const router = useRouter();
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.genderSelection || (pageData as any)['en'].genderSelection;
     const { selected, setSelected } = useGenderSelection();
+    const { updateProfile } = useAuth();
+    const [saving, setSaving] = useState(false);
+
+    const handleNext = async () => {
+        if (!selected) return;
+        setSaving(true);
+        try {
+            await updateProfile({ gender: selected });
+            router.push('/pages/onboarding/heightSelection' as any);
+
+
+        } catch (error) {
+            console.error('Failed to save gender:', error);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -19,15 +38,12 @@ export default function GenderPage() {
                 title={content.title}
                 subtitle={content.subtitle}
                 currentStep={1}
-                totalSteps={10}
-                onNext={() => {
-                    if (selected) {
-                        router.push('/pages/onboarding/page8' as any);
-                    }
-                }}
+                totalSteps={7}
+                onNext={handleNext}
                 isNextDisabled={!selected}
-                nextButtonText={content.nextButton}
+                nextButtonText={saving ? '...' : content.nextButton}
             >
+
                 <View>
                     <View style={styles.cardsRow}>
                         <TouchableOpacity

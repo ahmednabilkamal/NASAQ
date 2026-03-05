@@ -7,6 +7,7 @@ import pageData from '@/data/content';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGender } from '@/config/genderContext';
 import { bodyTypeData } from '@/constants/theme';
+import { useAuth } from '@/config/authContext';
 
 export default function BodyShapePage() {
     const router = useRouter();
@@ -16,16 +17,34 @@ export default function BodyShapePage() {
 
     const currentListData = gender === "male" ? bodyTypeData.male : bodyTypeData.female;
     const [selected, setSelected] = useState<number | null>(null);
+    const { updateProfile } = useAuth();
+    const [saving, setSaving] = useState(false);
+
+    const handleNext = async () => {
+        if (selected === null) return;
+        setSaving(true);
+        try {
+            const shapeObj = currentListData.find(item => item.key === selected);
+            const shapeValue = shapeObj ? shapeObj.value : selected.toString();
+            await updateProfile({ body_shape: shapeValue });
+            router.push('/pages/onboarding/bodyMeasurement' as any);
+        } catch (error) {
+            console.error('Failed to save body shape:', error);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     return (
         <SafeAreaView style={styles.safeArea}>
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
-                currentStep={8}
-                totalSteps={10}
-                onNext={() => router.push('/pages/onboarding/page10' as any)}
-                nextButtonText={content.nextButton}
+                currentStep={5}
+                totalSteps={7}
+
+                onNext={handleNext}
+                nextButtonText={saving ? '...' : content.nextButton}
             >
                 <View style={styles.container}>
                     <FlatList

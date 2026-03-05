@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -8,6 +8,8 @@ import {
     ScrollView,
     Dimensions,
     I18nManager,
+    ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -15,49 +17,60 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import ProfileBar from '@/components/ProfileBar';
+import apiService, { Stylist, StylistService } from '@/config/apiService';
 
 const { width } = Dimensions.get('window');
 
-// Service packages data
-const SERVICES = [
-    {
-        id: '1',
-        title: 'طقم واحد',
-        subtitle: 'ملابس 24 ساعة',
-        price: 350,
-        featured: true,
-    },
-    {
-        id: '2',
-        title: 'مناسبة خاصة',
-        subtitle: 'ملابس 24 ساعة',
-        price: 350,
-        featured: false,
-    },
-    {
-        id: '3',
-        title: 'خزانة كاملة',
-        subtitle: 'ملابس 24 ساعة',
-        price: 350,
-        featured: false,
-    },
-    {
-        id: '4',
-        title: 'خزانة كاملة',
-        subtitle: 'ملابس 24 ساعة',
-        price: 350,
-        featured: false,
-    },
-];
-
 export default function StylistDetailScreen() {
     const router = useRouter();
-    const { id } = useLocalSearchParams();
+    const { id } = useLocalSearchParams<{ id?: string }>();
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.stylistDetail || (pageData as any)['en'].stylistDetail;
     const isRTL = I18nManager.isRTL;
 
     const [activeTab, setActiveTab] = useState('about');
+    const [stylist, setStylist] = useState<Stylist | null>(null);
+    const [services, setServices] = useState<StylistService[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [isFavorite, setIsFavorite] = useState(false);
+
+    useEffect(() => {
+        if (!id) { return; }
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const [stylistRes, favsRes] = await Promise.all([
+                    apiService.getStylistById(id),
+                    apiService.getFavorites()
+                ]);
+
+                const data: Stylist = stylistRes?.data ?? stylistRes;
+                setStylist(data);
+                if (Array.isArray(data?.services)) {
+                    setServices(data.services);
+                }
+
+                // Check if this stylist is in favorites
+                const favorites = favsRes.data || [];
+                setIsFavorite(favorites.some(f => String(f.id) === String(id)));
+            } catch (error: any) {
+                console.error('Stylist detail fetch error:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [id]);
+
+    const handleToggleFavorite = async () => {
+        if (!id) return;
+        try {
+            const res = await apiService.toggleFavorite(id);
+            setIsFavorite(res.data.is_favorite);
+        } catch (error) {
+            console.error('Toggle favorite error:', error);
+        }
+    };
 
     const Tabs = [
         { id: 'about', label: content.about || 'عن المنسقة' },
@@ -66,42 +79,65 @@ export default function StylistDetailScreen() {
         { id: 'services', label: content.services || 'الخدمات' },
     ];
 
-    const handleContact = () => {
-        router.push('/pages/chat' as any);
+    const handleContact = async () => {
+        if (!id) { return; }
+        try {
+            const res = await apiService.startConversation(Number(id));
+            const conversation = (res?.data as any) ?? res;
+            const conversationId = conversation?.id;
+            router.push(`/pages/chat?id=${conversationId}` as any);
+        } catch (error) {
+            console.error('Start conversation error:', error);
+            router.push('/pages/chat' as any);
+        }
     };
 
-    const ServiceCard = ({ item }: { item: typeof SERVICES[0] }) => (
-        <View style={[styles.serviceCard, item.featured && styles.serviceCardFeatured]}>
+    const ServiceCard = ({ item }: { item: StylistService }) => (
+        <View style={styles.serviceCard}>
             <View style={styles.serviceIconContainer}>
-                <Ionicons
-                    name="chevron-back"
-                    size={18}
-                    color={item.featured ? '#FFF' : '#064E3B'}
-                />
+                <Ionicons name="chevron-back" size={18} color="#064E3B" />
             </View>
             <View style={styles.serviceContent}>
-                <Text style={[styles.serviceTitle, item.featured && styles.serviceTitleFeatured]}>
-                    {item.title}
-                </Text>
-                <Text style={[styles.serviceSubtitle, item.featured && styles.serviceSubtitleFeatured]}>
-                    {item.subtitle}
-                </Text>
+                <Text style={styles.serviceTitle}>{item.title}</Text>
+                {item.category?.name ? (
+                    <Text style={styles.serviceSubtitle}>{item.category.name}</Text>
+                ) : null}
             </View>
-            <View style={[styles.servicePriceBadge, item.featured && styles.servicePriceBadgeFeatured]}>
+            <View style={styles.servicePriceBadge}>
                 <Ionicons name="pricetag" size={12} color="#064E3B" />
                 <Text style={styles.servicePriceText}>{item.price}</Text>
             </View>
         </View>
     );
 
+    if (loading) {
+        return (
+            <SafeAreaView style={[styles.container, styles.centerContent]}>
+                <ActivityIndicator size="large" color="#064E3B" />
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.container}>
-            <ProfileBar />
+            <View style={styles.customHeader}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.headerIconButton}>
+                    <Ionicons name="chevron-forward" size={24} color="#333" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>{content.title || 'تفاصيل المنسقة'}</Text>
+                <TouchableOpacity onPress={handleToggleFavorite} style={styles.headerIconButton}>
+                    <Ionicons
+                        name={isFavorite ? "heart" : "heart-outline"}
+                        size={24}
+                        color={isFavorite ? "#E11D48" : "#333"}
+                    />
+                </TouchableOpacity>
+            </View>
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Header Image */}
                 <View style={styles.headerImageContainer}>
                     <Image
-                        source={require('@/assets/stylewomen1.png')}
+                        source={stylist?.image ? { uri: stylist.image } : require('@/assets/stylewomen1.png')}
                         style={styles.headerImage}
                     />
                 </View>
@@ -109,20 +145,33 @@ export default function StylistDetailScreen() {
                 {/* Info Section */}
                 <View style={styles.infoContainer}>
                     <View style={styles.nameRow}>
-                        <Text style={styles.nameText}>داليا فؤاد</Text>
-                        <Text style={styles.priceText}>100ر.س / ساعة</Text>
+                        <Text style={styles.nameText}>{stylist?.name ?? ''}</Text>
+                        {stylist?.price != null && (
+                            <Text style={styles.priceText}>{stylist.price} ر.س / ساعة</Text>
+                        )}
                     </View>
-                    <Text style={styles.specialtyText}>(أسلوب راقٍ يليق بكل مناسبة)</Text>
+                    {stylist?.bio ? (
+                        <Text style={styles.specialtyText}>({stylist.bio})</Text>
+                    ) : null}
 
                     <View style={styles.statsRow}>
-                        <View style={styles.statItem}>
-                            <Ionicons name="time-outline" size={16} color="#999" />
-                            <Text style={styles.statText}>خبرة أكثر من سنتين</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Ionicons name="star" size={16} color="#FFD700" />
-                            <Text style={styles.statText}>4.5 استايل كاجوال | كلاسيك | محتشم</Text>
-                        </View>
+                        {stylist?.rating != null && (
+                            <View style={styles.statItem}>
+                                <Ionicons name="star" size={16} color="#FFD700" />
+                                <Text style={styles.statText}>
+                                    {stylist.rating}
+                                    {stylist.fashion_styles?.length
+                                        ? ' | ' + stylist.fashion_styles.map((s: any) => s.name).join(' | ')
+                                        : ''}
+                                </Text>
+                            </View>
+                        )}
+                        {stylist?.clients_count != null && (
+                            <View style={styles.statItem}>
+                                <Ionicons name="people-outline" size={16} color="#999" />
+                                <Text style={styles.statText}>{stylist.clients_count} عميلة</Text>
+                            </View>
+                        )}
                     </View>
                 </View>
 
@@ -151,7 +200,7 @@ export default function StylistDetailScreen() {
                 <View style={styles.tabContent}>
                     {activeTab === 'about' && (
                         <Text style={styles.aboutText}>
-                            نقدم حلول تنسيق ملائمة تناسب مختلف المناسبات، مع اهتمام دقيق بكافة التفاصيل وجودة الاختيار. استشاري خبيرة الموضة ومنسقة أزياء متميزة تفهم احتياجات المرأة العصرية وأنماط حياتها المختلفة، تعتمد على رؤية احترافية لتجمع بين أحدث الصيحات والهوية الشخصية، مع الحرص على اختيار الأقمشة والخامات التي تمنح الراحة والأناقة في آن واحد.
+                            {stylist?.about ?? 'لا توجد معلومات متاحة'}
                         </Text>
                     )}
 
@@ -160,46 +209,24 @@ export default function StylistDetailScreen() {
                             <Image source={require('@/assets/stylewomen1.png')} style={styles.portfolioImage} />
                             <Image source={require('@/assets/stylewomen2.png')} style={styles.portfolioImage} />
                             <Image source={require('@/assets/stylewomen3.png')} style={styles.portfolioImage} />
-                            <Image source={require('@/assets/stylewomen1.png')} style={styles.portfolioImage} />
                         </View>
                     )}
 
                     {activeTab === 'reviews' && (
                         <View style={styles.reviewsContainer}>
-                            <View style={styles.reviewCard}>
-                                <View style={styles.reviewHeader}>
-                                    <View style={styles.reviewRating}>
-                                        {[1, 2, 3, 4, 5].map((star) => (
-                                            <Ionicons key={star} name="star" size={14} color="#FFD700" />
-                                        ))}
-                                    </View>
-                                    <Text style={styles.reviewerName}>سارة محمد</Text>
-                                </View>
-                                <Text style={styles.reviewText}>
-                                    خدمة رائعة واختيارات مميزة جداً، أنصح الجميع بالتجربة
-                                </Text>
-                            </View>
-                            <View style={styles.reviewCard}>
-                                <View style={styles.reviewHeader}>
-                                    <View style={styles.reviewRating}>
-                                        {[1, 2, 3, 4, 5].map((star) => (
-                                            <Ionicons key={star} name="star" size={14} color={star <= 4 ? "#FFD700" : "#DDD"} />
-                                        ))}
-                                    </View>
-                                    <Text style={styles.reviewerName}>نورة أحمد</Text>
-                                </View>
-                                <Text style={styles.reviewText}>
-                                    تنسيقات جميلة ومتنوعة تناسب جميع المناسبات
-                                </Text>
-                            </View>
+                            <Text style={styles.noDataText}>لا توجد تقييمات بعد</Text>
                         </View>
                     )}
 
                     {activeTab === 'services' && (
                         <View style={styles.servicesGrid}>
-                            {SERVICES.map((service) => (
-                                <ServiceCard key={service.id} item={service} />
-                            ))}
+                            {services.length > 0 ? (
+                                services.map((service) => (
+                                    <ServiceCard key={String(service.id)} item={service} />
+                                ))
+                            ) : (
+                                <Text style={styles.noDataText}>لا توجد خدمات متاحة</Text>
+                            )}
                         </View>
                     )}
                 </View>
@@ -223,10 +250,36 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#FFF',
     },
+    centerContent: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    customHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        backgroundColor: '#FFF',
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontFamily: 'Cairo_700Bold',
+        color: '#000',
+    },
+    headerIconButton: {
+        width: 40,
+        height: 40,
+        backgroundColor: '#F8F9FA',
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     headerImageContainer: {
         height: 280,
         width: '100%',
-        position: 'relative',
     },
     headerImage: {
         width: '100%',
@@ -319,33 +372,6 @@ const styles = StyleSheet.create({
     reviewsContainer: {
         gap: 15,
     },
-    reviewCard: {
-        backgroundColor: '#F9F9F9',
-        padding: 15,
-        borderRadius: 12,
-    },
-    reviewHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    reviewerName: {
-        fontSize: 14,
-        fontFamily: 'Cairo_700Bold',
-        color: '#333',
-    },
-    reviewRating: {
-        flexDirection: 'row',
-        gap: 2,
-    },
-    reviewText: {
-        fontSize: 13,
-        fontFamily: 'Cairo_400Regular',
-        color: '#666',
-        textAlign: 'right',
-        lineHeight: 22,
-    },
     servicesGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -358,10 +384,6 @@ const styles = StyleSheet.create({
         padding: 15,
         borderWidth: 1,
         borderColor: '#E5E5E5',
-    },
-    serviceCardFeatured: {
-        backgroundColor: '#064E3B',
-        borderColor: '#064E3B',
     },
     serviceIconContainer: {
         width: 32,
@@ -383,17 +405,11 @@ const styles = StyleSheet.create({
         color: '#333',
         textAlign: 'right',
     },
-    serviceTitleFeatured: {
-        color: '#FFF',
-    },
     serviceSubtitle: {
         fontSize: 11,
         fontFamily: 'Cairo_400Regular',
         color: '#888',
         textAlign: 'right',
-    },
-    serviceSubtitleFeatured: {
-        color: 'rgba(255,255,255,0.7)',
     },
     servicePriceBadge: {
         flexDirection: 'row',
@@ -405,13 +421,17 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
         gap: 4,
     },
-    servicePriceBadgeFeatured: {
-        backgroundColor: '#FFF',
-    },
     servicePriceText: {
         fontSize: 13,
         fontFamily: 'Cairo_700Bold',
         color: '#064E3B',
+    },
+    noDataText: {
+        fontFamily: 'Cairo_400Regular',
+        fontSize: 14,
+        color: '#999',
+        textAlign: 'center',
+        paddingVertical: 20,
     },
     footer: {
         position: 'absolute',

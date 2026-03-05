@@ -71,12 +71,58 @@ export const resetOnboarding = async (): Promise<void> => {
 };
 
 /**
+ * Check if user profile is complete (measurements, styles, etc.)
+ */
+export const isProfileComplete = (user: any): boolean => {
+    if (!user) return false;
+
+    // Check for mandatory onboarding data
+    const hasMeasurements = user.body_measurements && Object.keys(user.body_measurements).length > 0;
+    const hasStyles = user.fashion_styles && user.fashion_styles.length > 0;
+
+    return !!(user.gender && user.height && user.weight && user.skin_tones && user.body_shape && hasMeasurements && hasStyles);
+};
+
+/**
+ * Determine the next onboarding step or null if complete
+ */
+export const getNextOnboardingStep = (user: any): string => {
+    if (!user) return '/pages/onboarding/genderSelection';
+    if (!user.gender) return '/pages/onboarding/genderSelection';
+    if (!user.height) return '/pages/onboarding/heightSelection';
+    if (!user.weight) return '/pages/onboarding/weightSelection';
+    if (!user.skin_tones) return '/pages/onboarding/colorSelection';
+    if (!user.body_shape) return '/pages/onboarding/bodyShape';
+    const hasMeasurements = user.body_measurements && Object.keys(user.body_measurements).length > 0;
+    if (!hasMeasurements) return '/pages/onboarding/bodyMeasurement';
+    const hasStyles = user.fashion_styles && user.fashion_styles.length > 0;
+    if (!hasStyles) return '/pages/onboarding/styleIdentity';
+    return '/pages/tabs/homescreen';
+};
+
+
+/**
  * Determine the initial route based on app state
  * @param isAuthenticated - Whether user is authenticated
+ * @param user - User profile object
  * @returns The route to navigate to
  */
-export const getInitialRoute = async (isAuthenticated: boolean): Promise<string> => {
-    // Start directly from onboarding page1
+export const getInitialRoute = async (isAuthenticated: boolean, user?: any): Promise<string> => {
+    if (isAuthenticated) {
+        if (!isProfileComplete(user)) {
+            console.log('⚠️ Profile incomplete, directing to onboarding');
+            return getNextOnboardingStep(user);
+        }
+        return '/pages/tabs/homescreen';
+    }
+
+
+    // Check if onboarding is already completed
+    const completed = await hasCompletedOnboarding();
+    if (completed) {
+        return '/pages/login';
+    }
+
     return '/pages/onboarding/page1';
 };
 

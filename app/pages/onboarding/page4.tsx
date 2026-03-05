@@ -14,10 +14,12 @@ export default function Home() {
       <Text style={styles.text}>{content.title}</Text>
       <TouchableOpacity
         style={styles.button}
-        onPress={() => router.push('/pages/onboarding/page5')}
+        onPress={() => router.push('/pages/onboarding/genderSelection')}
+
       >
         <Text style={styles.buttonText}>{content.buttonText}</Text>
       </TouchableOpacity>
+
     </View>
   );
 }

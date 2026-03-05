@@ -47,17 +47,17 @@ export const Fonts = Platform.select({
 
 export const bodyTypeData = {
   male: [
-    { key: 1, source: require("../assets/menbodytype11.png") },
-    { key: 2, source: require("../assets/malebodytype12.png") },
-    { key: 3, source: require("../assets/malevbodytype13.png") },
-    { key: 4, source: require("../assets/menbodytype21.png") },
-    { key: 5, source: require("../assets/malebodytype22.png") },
+    { key: 1, value: "hourglass", source: require("../assets/menbodytype11.png") },
+    { key: 2, value: "pear", source: require("../assets/malebodytype12.png") },
+    { key: 3, value: "apple", source: require("../assets/malevbodytype13.png") },
+    { key: 4, value: "rectangle", source: require("../assets/menbodytype21.png") },
+    { key: 5, value: "inverted_triangle", source: require("../assets/malebodytype22.png") },
   ],
   female: [
-    { key: 1, source: require("../assets/womenbodytype11.png") },
-    { key: 2, source: require("../assets/womenbodytype12.png") },
-    { key: 3, source: require("../assets/womenbodytype13.png") },
-    { key: 4, source: require("../assets/womenbodytype21.png") },
-    { key: 5, source: require("../assets/womernbodytype22.png") },
+    { key: 1, value: "hourglass", source: require("../assets/womenbodytype11.png") },
+    { key: 2, value: "pear", source: require("../assets/womenbodytype12.png") },
+    { key: 3, value: "apple", source: require("../assets/womenbodytype13.png") },
+    { key: 4, value: "rectangle", source: require("../assets/womenbodytype21.png") },
+    { key: 5, value: "inverted_triangle", source: require("../assets/womernbodytype22.png") },
   ]
 }

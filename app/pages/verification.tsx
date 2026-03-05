@@ -9,19 +9,25 @@ import {
     KeyboardAvoidingView,
     Platform,
     I18nManager,
+    ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import Toast from 'react-native-toast-message';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import authService from '@/config/authService';
 
 export default function VerificationScreen() {
     const router = useRouter();
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.verification || (pageData as any)['en'].verification;
+    const { login: loginParam } = useLocalSearchParams<{ login?: string }>();
 
     const isRTL = I18nManager.isRTL;
     const [code, setCode] = useState(['', '', '', '', '']);
+    const [loading, setLoading] = useState(false);
+    const [resending, setResending] = useState(false);
     const inputs = useRef<Array<TextInput | null>>([]);
 
     const handleCodeChange = (text: string, index: number) => {
@@ -37,6 +43,44 @@ export default function VerificationScreen() {
     const handleKeyPress = (e: any, index: number) => {
         if (e.nativeEvent.key === 'Backspace' && !code[index] && index > 0) {
             inputs.current[index - 1]?.focus();
+        }
+    };
+
+    const handleVerify = async () => {
+        const otp = code.join('');
+        if (otp.length < 5) {
+            Toast.show({ type: 'error', text1: 'خطأ', text2: 'يرجى إدخال رمز التحقق كاملاً' });
+            return;
+        }
+        if (!loginParam) {
+            Toast.show({ type: 'error', text1: 'خطأ', text2: 'لم يتم العثور على بيانات التحقق' });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const result = await authService.verifyOtp({ login: loginParam, otp });
+            console.log('OTP Verification Response:', result);
+            // Token is stored by verifyOtp; navigate to onboarding starting with gender selection
+            router.replace('/pages/onboarding/genderSelection' as any);
+
+        } catch (error: any) {
+            // Handled globally
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResendOtp = async () => {
+        if (!loginParam) { return; }
+        setResending(true);
+        try {
+            await authService.sendOtp({ login: loginParam });
+            Toast.show({ type: 'success', text1: 'تم', text2: 'تم إرسال رمز التحقق مرة أخرى' });
+        } catch (error: any) {
+            // Handled by axios interceptor
+        } finally {
+            setResending(false);
         }
     };
 
@@ -62,6 +106,10 @@ export default function VerificationScreen() {
                     <Text style={styles.title}>{content.title}</Text>
                     <Text style={styles.subtitle}>{content.subtitle}</Text>
 
+                    {loginParam ? (
+                        <Text style={styles.loginHint}>{loginParam}</Text>
+                    ) : null}
+
                     <View style={[styles.codeContainer, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                         {code.map((digit, index) => (
                             <View key={index} style={styles.digitBox}>
@@ -80,17 +128,26 @@ export default function VerificationScreen() {
                     </View>
 
                     <TouchableOpacity
-                        style={styles.verifyButton}
-                        onPress={() => router.push('/pages/onboarding/page1' as any)}
+                        style={[styles.verifyButton, loading && styles.verifyButtonDisabled]}
+                        onPress={handleVerify}
+                        disabled={loading}
                     >
-                        <Text style={styles.verifyButtonText}>Verify</Text>
+                        {loading ? (
+                            <ActivityIndicator color="#FFF" />
+                        ) : (
+                            <Text style={styles.verifyButtonText}>تحقق</Text>
+                        )}
                     </TouchableOpacity>
 
                     <View style={styles.footer}>
-                        <TouchableOpacity>
+                        <TouchableOpacity onPress={handleResendOtp} disabled={resending}>
                             <Text style={styles.footerText}>
                                 {content.footerText}
-                                <Text style={styles.footerLink}>{content.footerLink}</Text>
+                                {resending ? (
+                                    <ActivityIndicator size="small" color="#064E3B" />
+                                ) : (
+                                    <Text style={styles.footerLink}>{content.footerLink}</Text>
+                                )}
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -141,8 +198,14 @@ const styles = StyleSheet.create({
         fontFamily: 'Cairo_400Regular',
         color: '#666',
         textAlign: 'center',
-        marginBottom: 40,
+        marginBottom: 10,
         lineHeight: 20,
+    },
+    loginHint: {
+        fontSize: 14,
+        fontFamily: 'Cairo_700Bold',
+        color: '#064E3B',
+        marginBottom: 30,
     },
     codeContainer: {
         gap: 12,
@@ -151,7 +214,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     digitBox: {
-        width: 55,
+        flex: 1,
         height: 65,
         backgroundColor: '#FFF',
         borderRadius: 12,
@@ -180,6 +243,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 30,
+    },
+    verifyButtonDisabled: {
+        opacity: 0.7,
     },
     verifyButtonText: {
         color: '#FFF',

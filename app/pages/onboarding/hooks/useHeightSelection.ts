@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { PanResponder } from 'react-native';
 
 interface UseHeightSelectionProps {
@@ -16,14 +16,22 @@ export const useHeightSelection = ({
 }: UseHeightSelectionProps = {}) => {
     const [unit, setUnit] = useState<'cm' | 'ft'>('cm');
     const [height, setHeight] = useState(initialHeight);
+    const startHeightRef = useRef(initialHeight);
 
     const panResponder = useMemo(() => PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
-        onPanResponderMove: (evt, gestureState) => {
+        onPanResponderGrant: (evt, gestureState) => {
             const relativeY = Math.max(0, Math.min(sliderHeight, evt.nativeEvent.locationY));
             const newHeight = Math.round(maxHeight - (relativeY / sliderHeight) * (maxHeight - minHeight));
             setHeight(newHeight);
+            startHeightRef.current = newHeight;
+        },
+        onPanResponderMove: (evt, gestureState) => {
+            const heightChange = (gestureState.dy / sliderHeight) * (maxHeight - minHeight);
+            const newHeight = Math.round(startHeightRef.current - heightChange);
+            const clampedHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
+            setHeight(clampedHeight);
         },
     }), [sliderHeight, minHeight, maxHeight]);
 

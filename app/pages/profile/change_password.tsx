@@ -12,6 +12,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import authService from '@/config/authService';
+import { ActivityIndicator } from 'react-native';
+import Toast from 'react-native-toast-message';
 
 export default function ChangePasswordScreen() {
     const router = useRouter();
@@ -21,10 +24,31 @@ export default function ChangePasswordScreen() {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-    const handleUpdate = () => {
-        // Update password logic
-        router.back();
+    const handleUpdate = async () => {
+        if (!newPassword || !confirmPassword) {
+            Toast.show({ type: 'error', text1: 'خطأ', text2: 'يرجى إدخال كلمة المرور الجديدة' });
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            Toast.show({ type: 'error', text1: 'خطأ', text2: 'كلمة المرور غير متطابقة' });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await authService.updateProfile({
+                password: newPassword,
+            } as any);
+            Toast.show({ type: 'success', text1: 'نجاح', text2: 'تم تغيير كلمة المرور بنجاح' });
+            router.back();
+        } catch (error: any) {
+            // Error handled globally
+        } finally {
+            setLoading(false);
+        }
     };
 
     const PasswordInput = ({ label, value, onChange, show, setShow, placeholder }: any) => (
@@ -93,10 +117,13 @@ export default function ChangePasswordScreen() {
                     </View>
                 </ScrollView>
 
-                {/* Update Button */}
                 <View style={styles.footer}>
-                    <TouchableOpacity style={styles.updateButton} onPress={handleUpdate}>
-                        <Text style={styles.updateButtonText}>تحديث</Text>
+                    <TouchableOpacity
+                        style={[styles.updateButton, loading && { opacity: 0.7 }]}
+                        onPress={handleUpdate}
+                        disabled={loading}
+                    >
+                        {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.updateButtonText}>تحديث</Text>}
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>

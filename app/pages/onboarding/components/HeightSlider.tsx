@@ -9,7 +9,7 @@ interface HeightSliderProps {
 export const HeightSlider: React.FC<HeightSliderProps> = ({ height, panHandlers }) => {
     return (
         <View style={styles.scaleContainer} {...panHandlers}>
-            <View style={styles.scaleRuler}>
+            <View style={styles.scaleRuler} pointerEvents="none">
                 {[190, 180, 170, 160, 150, 140].map((val) => (
                     <View key={val} style={styles.scaleMark}>
                         <Text style={styles.scaleLabel}>{val}</Text>
@@ -18,8 +18,8 @@ export const HeightSlider: React.FC<HeightSliderProps> = ({ height, panHandlers 
                 ))}
             </View>
 
-            <View style={[styles.activeLine, { top: ((190 - height) / (190 - 140)) * 240 }]} />
-            <View style={[styles.activeCircle, { top: ((190 - height) / (190 - 140)) * 240 - 4 }]} />
+            <View style={[styles.activeLine, { top: ((190 - height) / (190 - 140)) * 240 }]} pointerEvents="none" />
+            <View style={[styles.activeCircle, { top: ((190 - height) / (190 - 140)) * 240 - 4 }]} pointerEvents="none" />
         </View>
     );
 };

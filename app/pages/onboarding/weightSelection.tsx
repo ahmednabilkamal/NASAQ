@@ -9,6 +9,8 @@ import { UnitToggle } from './components/UnitToggle';
 import { BMISection } from './components/BMISection';
 import { WeightSlider } from './components/WeightSlider';
 import { useWeightSelection } from './hooks/useWeightSelection';
+import { useAuth } from '@/config/authContext';
+import { useState } from 'react';
 
 export default function WeightPage() {
     const router = useRouter();
@@ -16,6 +18,22 @@ export default function WeightPage() {
     const content = (pageData as any)[languageCode]?.weightSelection || (pageData as any)['en'].weightSelection;
 
     const { unit, setUnit, weight, panHandlers } = useWeightSelection();
+    const { updateProfile } = useAuth();
+    const [saving, setSaving] = useState(false);
+
+    const handleNext = async () => {
+        setSaving(true);
+        try {
+            // Convert weight if needed or just send it
+            await updateProfile({ weight: Number(weight) });
+            router.push('/pages/onboarding/colorSelection' as any);
+
+        } catch (error) {
+            console.error('Failed to save weight:', error);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -23,10 +41,12 @@ export default function WeightPage() {
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
-                currentStep={4}
-                totalSteps={10}
-                onNext={() => router.push('/pages/onboarding/page6' as any)}
-                nextButtonText={content.nextButton}
+                currentStep={3}
+                totalSteps={7}
+
+
+                onNext={handleNext}
+                nextButtonText={saving ? '...' : content.nextButton}
             >
                 <View style={{ flex: 1 }}>
                     <UnitToggle

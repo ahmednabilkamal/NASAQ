@@ -1,9 +1,11 @@
 import BottomNav from '@/components/BottomNav';
 import { HeroBanner, HomeHeader, ServicePackageCard, StylistCard } from '@/components/home';
 import { useAuth } from '@/config/authContext';
+import apiService, { Banner, Stylist, RecommendedService } from '@/config/apiService';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     FlatList,
     ScrollView,
     StyleSheet,
@@ -12,74 +14,57 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Sample data for stylists
-const STYLISTS_DATA = [
-    {
-        id: '1',
-        name: 'داليا فؤاد',
-        rating: 4.9,
-        clientCount: 66,
-        tags: ['ستايل', 'كاجوال', 'كلاسيكي'],
-        image: require('@/assets/stylewomen1.png'),
-    },
-    {
-        id: '2',
-        name: 'داليا فؤاد',
-        rating: 4.9,
-        clientCount: 66,
-        tags: ['ستايل', 'كاجوال', 'كلاسيكي', 'محتشم'],
-        image: require('@/assets/stylewomen2.png'),
-    },
-    {
-        id: '3',
-        name: 'سارة أحمد',
-        rating: 4.8,
-        clientCount: 45,
-        tags: ['عصري', 'رسمي', 'سهرات'],
-        image: require('@/assets/stylewomen3.png'),
-    },
-];
-
-// Sample data for service packages
-const PACKAGES_DATA = [
-    {
-        id: '1',
-        title: 'طقم واحد',
-        subtitle: 'ملابس 24 ساعة',
-        price: 350,
-        icon: 'shirt-outline' as const,
-        featured: true,
-    },
-    {
-        id: '2',
-        title: 'مناسبة خاصة',
-        subtitle: 'ملابس 24 ساعة',
-        price: 350,
-        icon: 'sparkles-outline' as const,
-        featured: false,
-    },
-    {
-        id: '3',
-        title: 'خزانة كاملة',
-        subtitle: 'ملابس 24 ساعة',
-        price: 350,
-        icon: 'cube-outline' as const,
-        featured: false,
-    },
-];
-
 const HomeScreen = () => {
     const { user } = useAuth();
     const router = useRouter();
 
-    const handleStylistPress = (stylistId: string) => {
+    const [banners, setBanners] = useState<Banner[]>([]);
+    const [stylists, setStylists] = useState<Stylist[]>([]);
+    const [packages, setPackages] = useState<RecommendedService[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchHomeData = async () => {
+            setLoading(true);
+            try {
+                const [bannersRes, stylistsRes, packagesRes] = await Promise.allSettled([
+                    apiService.getBanners(),
+                    apiService.getTrustedStylists(),
+                    apiService.getRecommendedServices({ per_page: 6 }),
+                ]);
+
+                if (bannersRes.status === 'fulfilled') {
+                    const data = bannersRes.value?.data;
+                    setBanners(Array.isArray(data) ? data : []);
+                }
+                if (stylistsRes.status === 'fulfilled') {
+                    const data = stylistsRes.value?.data;
+                    setStylists(Array.isArray(data) ? data : []);
+                }
+                if (packagesRes.status === 'fulfilled') {
+                    const data = packagesRes.value?.data;
+                    setPackages(Array.isArray(data) ? data : []);
+                }
+            } catch (error) {
+                console.error('HomeScreen fetch error:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchHomeData();
+    }, []);
+
+    const handleStylistPress = (stylistId: number | string) => {
         router.push(`/pages/stylist_detail?id=${stylistId}` as any);
     };
 
-    const handlePackagePress = (packageId: string) => {
-        // Handle package selection
+    const handlePackagePress = (packageId: number | string) => {
         console.log('Package pressed:', packageId);
     };
+
+    // Hero banner: use first banner from API or a static fallback
+    const heroBanner = banners[0];
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -91,72 +76,82 @@ const HomeScreen = () => {
                 onNotificationPress={() => router.push('/pages/notifications' as any)}
             />
 
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                {/* Hero Banner */}
-                <HeroBanner
-                    title="اختيار الفئة المناسبة لجسمك بفرق أكثر من القطعة نفسها."
-                    subtitle=""
-                    buttonText="عرض الكل"
-                    imageUri={require('@/assets/stylewomen1.png')}
-                    onPress={() => console.log('Banner pressed')}
-                />
-
-                {/* Expert Stylists Section */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionLink}>عرض الكل</Text>
-                        <Text style={styles.sectionTitle}>منسقات بيق بون الخبير</Text>
-                    </View>
-
-                    <FlatList
-                        data={STYLISTS_DATA}
-                        keyExtractor={(item) => item.id}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        inverted
-                        contentContainerStyle={styles.stylistsList}
-                        renderItem={({ item }) => (
-                            <StylistCard
-                                name={item.name}
-                                imageUri={item.image}
-                                rating={item.rating}
-                                clientCount={item.clientCount}
-                                tags={item.tags}
-                                onPress={() => handleStylistPress(item.id)}
-                            />
-                        )}
+            {loading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#064E3B" />
+                </View>
+            ) : (
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Hero Banner */}
+                    <HeroBanner
+                        title={heroBanner?.title ?? 'اختيار الفئة المناسبة لجسمك بفرق أكثر من القطعة نفسها.'}
+                        subtitle=""
+                        buttonText="عرض الكل"
+                        imageUri={heroBanner?.image ? { uri: heroBanner.image } : require('@/assets/stylewomen1.png')}
+                        onPress={() => console.log('Banner pressed')}
                     />
-                </View>
 
-                {/* Service Packages Section */}
-                <View style={styles.section}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionLink}></Text>
-                        <Text style={styles.sectionTitle}>باقات مصممة لاحتياجاتك</Text>
-                    </View>
+                    {/* Expert Stylists Section */}
+                    {stylists.length > 0 && (
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <Text style={styles.sectionLink}>View all.</Text>
+                                <Text style={styles.sectionTitle}>Stylists trusted by many</Text>
+                            </View>
 
-                    <View style={styles.packagesContainer}>
-                        {PACKAGES_DATA.map((pkg) => (
-                            <ServicePackageCard
-                                key={pkg.id}
-                                title={pkg.title}
-                                subtitle={pkg.subtitle}
-                                price={pkg.price}
-                                icon={pkg.icon}
-                                featured={pkg.featured}
-                                onPress={() => handlePackagePress(pkg.id)}
+                            <FlatList
+                                data={stylists}
+                                keyExtractor={(item) => String(item.id)}
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.stylistsList}
+                                renderItem={({ item }) => (
+                                    <StylistCard
+                                        name={item.name}
+                                        subtitle={item.bio}
+                                        imageUri={item.image ? { uri: item.image } : require('@/assets/stylewomen1.png')}
+                                        rating={typeof item.rating === 'number' ? item.rating : parseFloat(String(item.rating ?? '0'))}
+                                        clientCount={item.clients_count ?? 0}
+                                        price={item.price}
+                                        tags={item.fashion_styles?.map((s: any) => s.name) ?? []}
+                                        onPress={() => handleStylistPress(item.id)}
+                                    />
+                                )}
                             />
-                        ))}
-                    </View>
-                </View>
+                        </View>
+                    )}
 
-                {/* Bottom spacing for BottomNav */}
-                <View style={styles.bottomSpacer} />
-            </ScrollView>
+                    {/* Service Packages Section */}
+                    {packages.length > 0 && (
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <Text style={styles.sectionTitle}>Packages designed for your needs</Text>
+                            </View>
+
+                            <View style={styles.packagesGrid}>
+                                {packages.map((pkg, index) => (
+                                    <ServicePackageCard
+                                        key={String(pkg.id)}
+                                        title={pkg.title}
+                                        subtitle="Available 24 hours"
+                                        price={typeof pkg.price === 'number' ? pkg.price : parseFloat(String(pkg.price ?? '0'))}
+                                        variant={index % 3 === 1 ? 'dark' : 'light'}
+                                        onPress={() => handlePackagePress(pkg.id)}
+                                    />
+                                ))}
+                            </View>
+                        </View>
+                    )}
+
+
+                    {/* Bottom spacing for BottomNav */}
+                    <View style={styles.bottomSpacer} />
+                </ScrollView>
+            )}
 
             <BottomNav />
         </SafeAreaView>
@@ -169,6 +164,11 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F8F9FB',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     scrollView: {
         flex: 1,
@@ -199,9 +199,13 @@ const styles = StyleSheet.create({
     stylistsList: {
         paddingHorizontal: 20,
     },
-    packagesContainer: {
+    packagesGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
         paddingHorizontal: 20,
     },
+
     bottomSpacer: {
         height: 80,
     },

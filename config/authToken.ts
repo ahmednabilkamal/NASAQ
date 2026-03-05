@@ -1,23 +1,23 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
-const TOKEN_KEY = '@venus_access_token';
+const TOKEN_KEY = 'venus_access_token';
 
 // In-memory cache for faster access
 let accessTokenCache: string | null = null;
 
 /**
- * Set access token - stores in both AsyncStorage and memory cache
+ * Set access token - stores in both SecureStore and memory cache
  * @param token - The access token to store, or null to clear
  */
 export const setAccessToken = async (token: string | null): Promise<void> => {
   try {
     accessTokenCache = token;
     if (token) {
-      await AsyncStorage.setItem(TOKEN_KEY, token);
-      console.log('✅ Token stored successfully');
+      await SecureStore.setItemAsync(TOKEN_KEY, token);
+      console.log('✅ Token stored securely');
     } else {
-      await AsyncStorage.removeItem(TOKEN_KEY);
-      console.log('✅ Token removed successfully');
+      await SecureStore.deleteItemAsync(TOKEN_KEY);
+      console.log('✅ Token removed securely');
     }
   } catch (error) {
     console.error('❌ Error storing token:', error);
@@ -26,7 +26,7 @@ export const setAccessToken = async (token: string | null): Promise<void> => {
 };
 
 /**
- * Get access token - returns from memory cache or AsyncStorage
+ * Get access token - returns from memory cache or SecureStore
  * @returns The access token or null if not found
  */
 export const getAccessToken = async (): Promise<string | null> => {
@@ -36,8 +36,8 @@ export const getAccessToken = async (): Promise<string | null> => {
       return accessTokenCache;
     }
 
-    // Otherwise, load from AsyncStorage
-    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    // Otherwise, load from SecureStore
+    const token = await SecureStore.getItemAsync(TOKEN_KEY);
     accessTokenCache = token;
     return token;
   } catch (error) {
@@ -56,15 +56,15 @@ export const getAccessTokenSync = (): string | null => {
 };
 
 /**
- * Initialize token from AsyncStorage on app start
+ * Initialize token from SecureStore on app start
  * Call this early in the app lifecycle
  */
 export const initializeToken = async (): Promise<string | null> => {
   try {
-    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    const token = await SecureStore.getItemAsync(TOKEN_KEY);
     accessTokenCache = token;
     if (token) {
-      console.log('✅ Token loaded from storage');
+      console.log('✅ Token loaded from secure storage');
     }
     return token;
   } catch (error) {
@@ -78,7 +78,7 @@ export const initializeToken = async (): Promise<string | null> => {
  */
 export const clearAuthData = async (): Promise<void> => {
   try {
-    await AsyncStorage.removeItem(TOKEN_KEY);
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
     accessTokenCache = null;
     console.log('✅ Auth data cleared');
   } catch (error) {

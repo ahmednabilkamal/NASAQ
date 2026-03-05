@@ -8,6 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { UnitToggle } from './components/UnitToggle';
 import { HeightSlider } from './components/HeightSlider';
 import { useHeightSelection } from './hooks/useHeightSelection';
+import { useAuth } from '@/config/authContext';
+import { useState } from 'react';
 
 export default function HeightPage() {
     const router = useRouter();
@@ -15,6 +17,22 @@ export default function HeightPage() {
     const content = (pageData as any)[languageCode]?.heightSelection || (pageData as any)['en'].heightSelection;
 
     const { unit, setUnit, height, panHandlers } = useHeightSelection();
+    const { updateProfile } = useAuth();
+    const [saving, setSaving] = useState(false);
+
+    const handleNext = async () => {
+        setSaving(true);
+        try {
+            await updateProfile({ height: Number(height) });
+            router.push('/pages/onboarding/weightSelection' as any);
+
+
+        } catch (error) {
+            console.error('Failed to save height:', error);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const unitOptions = [
         { label: content.unitCm, value: 'cm' },
@@ -26,10 +44,12 @@ export default function HeightPage() {
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
-                currentStep={5}
-                totalSteps={10}
-                onNext={() => router.push('/pages/onboarding/page7' as any)}
-                nextButtonText={content.nextButton}
+                currentStep={2}
+                totalSteps={7}
+
+
+                onNext={handleNext}
+                nextButtonText={saving ? '...' : content.nextButton}
             >
                 <View style={styles.container}>
                     <UnitToggle

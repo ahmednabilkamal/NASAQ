@@ -6,20 +6,22 @@ import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGender } from '@/config/genderContext';
+import { useAuth } from '@/config/authContext';
 
 const TONES = {
     female: [
-        { id: '1', name: 'Tone 1', image: require('../../../assets/femalecolor1.png') },
-        { id: '2', name: 'Tone 2', image: require('../../../assets/femalecolor2.png') },
-        { id: '3', name: 'Tone 3', image: require('../../../assets/femalecolor3.png') },
-        { id: '4', name: 'Tone 4', image: require('../../../assets/femalecolor4.png') },
+        { id: '1', name: 'Tone 1', value: 'light', image: require('../../../assets/femalecolor1.png') },
+        { id: '2', name: 'Tone 2', value: 'fair', image: require('../../../assets/femalecolor2.png') },
+        { id: '3', name: 'Tone 3', value: 'medium', image: require('../../../assets/femalecolor3.png') },
+        { id: '4', name: 'Tone 4', value: 'tan', image: require('../../../assets/femalecolor4.png') },
     ],
     male: [
-        { id: '1', name: 'Tone 1', image: require('../../../assets/malecolor1.png') },
-        { id: '2', name: 'Tone 2', image: require('../../../assets/malecolor2.png') },
-        { id: '3', name: 'Tone 3', image: require('../../../assets/malecolor3.png') },
-        { id: '4', name: 'Tone 4', image: require('../../../assets/malecolor4.png') },
+        { id: '1', name: 'Tone 1', value: 'light', image: require('../../../assets/malecolor1.png') },
+        { id: '2', name: 'Tone 2', value: 'fair', image: require('../../../assets/malecolor2.png') },
+        { id: '3', name: 'Tone 3', value: 'medium', image: require('../../../assets/malecolor3.png') },
+        { id: '4', name: 'Tone 4', value: 'tan', image: require('../../../assets/malecolor4.png') },
     ]
+
 };
 
 export default function SkinTonePage() {
@@ -29,6 +31,24 @@ export default function SkinTonePage() {
     const { gender } = useGender();
 
     const [selected, setSelected] = useState<string | null>(null);
+    const { updateProfile } = useAuth();
+    const [saving, setSaving] = useState(false);
+
+    const handleNext = async () => {
+        if (!selected) return;
+        setSaving(true);
+        try {
+            const tone = currentTones.find(t => t.id === selected)?.value || 'medium';
+            await updateProfile({ skin_tones: tone });
+
+            router.push('/pages/onboarding/bodyShape' as any);
+
+        } catch (error) {
+            console.error('Failed to save skin tone:', error);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     // Get the appropriate tones based on gender
     const currentTones = gender === 'male' ? TONES.male : TONES.female;
@@ -38,10 +58,12 @@ export default function SkinTonePage() {
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
-                currentStep={9}
-                totalSteps={10}
-                onNext={() => router.push('/pages/onboarding/page11' as any)}
-                nextButtonText={content.nextButton}
+                currentStep={4}
+                totalSteps={7}
+
+
+                onNext={handleNext}
+                nextButtonText={saving ? '...' : content.nextButton}
             >
                 <View style={styles.container}>
                     <FlatList

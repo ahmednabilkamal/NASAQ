@@ -13,7 +13,7 @@ const { width } = Dimensions.get('window');
 
 export default function Home() {
   const router = useRouter();
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
   const imageOpacity = useSharedValue(0);
   const imageScale = useSharedValue(0.8);
 
@@ -28,7 +28,7 @@ export default function Home() {
       console.log('🚀 Determining initial route...');
       console.log('Is Authenticated:', isAuthenticated);
 
-      const route = await getInitialRoute(isAuthenticated);
+      const route = await getInitialRoute(isAuthenticated, user);
       console.log('📍 Navigating to:', route);
 
       router.replace(route as any);

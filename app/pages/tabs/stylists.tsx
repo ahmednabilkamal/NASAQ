@@ -1,10 +1,12 @@
 import BottomNav from '@/components/BottomNav';
+import apiService, { Stylist } from '@/config/apiService';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     FlatList,
     I18nManager,
     Image,
@@ -16,14 +18,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const MOCK_STYLISTS = [
-    { id: '1', name: 'داليا فؤاد', specialty: 'استايل كاجوال | كلاسيك | محتشم', price: '66', rating: '4.9', image: require('@/assets/stylewomen1.png'), isFavorite: true },
-    { id: '2', name: 'سارة أحمد', specialty: 'استايل كاجوال | كلاسيك | محتشم', price: '66', rating: '4.9', image: require('@/assets/stylewomen2.png'), isFavorite: true },
-    { id: '3', name: 'نور محمد', specialty: 'استايل كاجوال | كلاسيك | محتشم', price: '66', rating: '4.9', image: require('@/assets/stylewomen3.png'), isFavorite: false },
-    { id: '4', name: 'ليلى حسن', specialty: 'استايل كاجوال | كلاسيك | محتشم', price: '66', rating: '4.9', image: require('@/assets/stylewomen1.png'), isFavorite: true },
-    { id: '5', name: 'مريم علي', specialty: 'استايل كاجوال | كلاسيك | محتشم', price: '66', rating: '4.9', image: require('@/assets/stylewomen2.png'), isFavorite: false },
-];
-
 export default function StylistsScreen() {
     const router = useRouter();
     const { languageCode } = useLanguage();
@@ -31,32 +25,62 @@ export default function StylistsScreen() {
     const isRTL = I18nManager.isRTL;
 
     const [search, setSearch] = useState('');
-    const [favorites, setFavorites] = useState<string[]>(
-        MOCK_STYLISTS.filter(s => s.isFavorite).map(s => s.id)
-    );
+    const [stylists, setStylists] = useState<Stylist[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [favorites, setFavorites] = useState<string[]>([]);
+
+    const fetchStylists = useCallback(async (searchQuery?: string) => {
+        setLoading(true);
+        try {
+            const res = await apiService.getStylists({ per_page: 20, search: searchQuery });
+            const data = res?.data;
+            setStylists(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error('Stylists fetch error:', error);
+            setStylists([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchStylists();
+    }, [fetchStylists]);
+
+    // Debounced search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchStylists(search.trim() || undefined);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [search, fetchStylists]);
 
     const toggleFavorite = (id: string) => {
-        if (favorites.includes(id)) {
-            setFavorites(favorites.filter(f => f !== id));
-        } else {
-            setFavorites([...favorites, id]);
-        }
+        setFavorites(prev =>
+            prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
+        );
     };
 
-    const StylistCard = ({ item }: { item: any }) => {
-        const isFav = favorites.includes(item.id);
+    const StylistCard = ({ item }: { item: Stylist }) => {
+        const id = String(item.id);
+        const isFav = favorites.includes(id);
+        const tags = item.fashion_styles?.map((s: any) => s.name) ?? [];
+
         return (
             <TouchableOpacity
                 style={styles.card}
-                onPress={() => router.push({ pathname: '/pages/stylist_detail', params: { id: item.id } } as any)}
+                onPress={() => router.push({ pathname: '/pages/stylist_detail', params: { id } } as any)}
             >
-                <Image source={item.image} style={styles.stylistImage} />
+                <Image
+                    source={item.image ? { uri: item.image } : require('@/assets/stylewomen1.png')}
+                    style={styles.stylistImage}
+                />
 
                 <View style={styles.cardContent}>
                     <View style={styles.cardHeader}>
                         <TouchableOpacity
                             style={styles.favoriteButton}
-                            onPress={() => toggleFavorite(item.id)}
+                            onPress={() => toggleFavorite(id)}
                         >
                             <Ionicons
                                 name={isFav ? "heart" : "heart-outline"}
@@ -68,18 +92,22 @@ export default function StylistsScreen() {
                     </View>
 
                     <Text style={styles.stylistSpecialty} numberOfLines={1}>
-                        {item.specialty}
+                        {tags.join(' | ') || item.bio || ''}
                     </Text>
 
                     <View style={styles.cardFooter}>
-                        <View style={styles.priceContainer}>
-                            <Text style={styles.priceText}>{item.price}</Text>
-                            <Text style={styles.currencyText}>ر.س</Text>
-                        </View>
-                        <View style={styles.ratingContainer}>
-                            <Text style={styles.ratingText}>{item.rating}</Text>
-                            <Ionicons name="star" size={14} color="#FFD700" />
-                        </View>
+                        {item.price != null && (
+                            <View style={styles.priceContainer}>
+                                <Text style={styles.priceText}>{item.price}</Text>
+                                <Text style={styles.currencyText}>ر.س</Text>
+                            </View>
+                        )}
+                        {item.rating != null && (
+                            <View style={styles.ratingContainer}>
+                                <Text style={styles.ratingText}>{item.rating}</Text>
+                                <Ionicons name="star" size={14} color="#FFD700" />
+                            </View>
+                        )}
                     </View>
                 </View>
             </TouchableOpacity>
@@ -115,13 +143,24 @@ export default function StylistsScreen() {
             </View>
 
             {/* Stylists List */}
-            <FlatList
-                data={MOCK_STYLISTS}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => <StylistCard item={item} />}
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={false}
-            />
+            {loading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#064E3B" />
+                </View>
+            ) : (
+                <FlatList
+                    data={stylists}
+                    keyExtractor={(item) => String(item.id)}
+                    renderItem={({ item }) => <StylistCard item={item} />}
+                    contentContainerStyle={styles.listContent}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>لا توجد نتائج</Text>
+                        </View>
+                    }
+                />
+            )}
 
             <BottomNav />
         </SafeAreaView>
@@ -170,6 +209,11 @@ const styles = StyleSheet.create({
         height: 48,
         backgroundColor: '#FFF',
         borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingContainer: {
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -242,5 +286,15 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontFamily: 'Cairo_400Regular',
         color: '#064E3B',
+    },
+    emptyContainer: {
+        flex: 1,
+        alignItems: 'center',
+        paddingTop: 60,
+    },
+    emptyText: {
+        fontFamily: 'Cairo_400Regular',
+        fontSize: 16,
+        color: '#999',
     },
 });

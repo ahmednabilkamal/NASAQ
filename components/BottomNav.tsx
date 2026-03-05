@@ -10,11 +10,11 @@ export default function BottomNav() {
     const pathname = usePathname();
 
     const tabs = [
-        { id: 'home', icon: 'home-outline', activeIcon: 'home', label: 'Home', route: '/pages/tabs/homescreen' },
-        { id: 'saved', icon: 'heart-outline', activeIcon: 'heart', label: 'Saved', route: '/pages/tabs/favorites' },
-        { id: 'scan', icon: 'scan-outline', activeIcon: 'scan', label: 'Scan', route: '', isCenter: true },
-        { id: 'chat', icon: 'chatbubble-outline', activeIcon: 'chatbubble', label: 'Chat', route: '/pages/tabs/chat' },
         { id: 'profile', icon: 'person-outline', activeIcon: 'person', label: 'Profile', route: '/pages/tabs/profile' },
+        { id: 'orders', icon: 'bag-outline', activeIcon: 'bag', label: 'Orders', route: '/pages/orders' },
+        { id: 'home', icon: 'home', activeIcon: 'home', label: 'Home', route: '/pages/tabs/homescreen', isCenter: true },
+        { id: 'favorites', icon: 'heart-outline', activeIcon: 'heart', label: 'Favorites', route: '/pages/tabs/favorites' },
+        { id: 'chat', icon: 'chatbox-ellipses-outline', activeIcon: 'chatbox-ellipses', label: 'Chat', route: '/pages/tabs/chat' },
     ];
 
     return (
@@ -25,9 +25,13 @@ export default function BottomNav() {
 
                     if (tab.isCenter) {
                         return (
-                            <TouchableOpacity key={tab.id} style={styles.centerButtonContainer}>
+                            <TouchableOpacity
+                                key={tab.id}
+                                style={styles.centerButtonContainer}
+                                onPress={() => tab.route && router.push(tab.route as any)}
+                            >
                                 <View style={styles.centerButton}>
-                                    <Ionicons name="scan" size={30} color="#FFF" />
+                                    <Ionicons name="home" size={28} color="#FFF" />
                                 </View>
                             </TouchableOpacity>
                         );
@@ -41,8 +45,8 @@ export default function BottomNav() {
                         >
                             <Ionicons
                                 name={(isActive ? tab.activeIcon : tab.icon) as any}
-                                size={24}
-                                color={isActive ? '#064E3B' : '#999'}
+                                size={26}
+                                color={isActive ? '#064E3B' : '#666'}
                             />
                         </TouchableOpacity>
                     );
@@ -50,6 +54,7 @@ export default function BottomNav() {
             </View>
         </View>
     );
+
 }
 
 const styles = StyleSheet.create({
@@ -63,19 +68,18 @@ const styles = StyleSheet.create({
     },
     navBar: {
         flexDirection: 'row',
-        height: 100,
+        height: 75,
         backgroundColor: '#FFF',
-
-
-
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
         alignItems: 'center',
         justifyContent: 'space-around',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-
-        elevation: 10,
-
+        shadowOffset: { width: 0, height: -10 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 15,
+        paddingHorizontal: 10,
     },
     tabItem: {
         alignItems: 'center',
@@ -83,15 +87,11 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     centerButtonContainer: {
-        marginTop: -80,
+        marginTop: -55,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 10,
         borderRadius: 100,
-        borderColor: "white",
-        backgroundColor: "white",
-
-
+        backgroundColor: "transparent",
     },
     centerButton: {
         width: 65,
@@ -100,7 +100,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#064E3B',
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 5,
-        borderColor: '#F8F9FB',
+        shadowColor: '#064E3B',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 8,
+        borderWidth: 6,
+        borderColor: '#FFF',
     },
 });

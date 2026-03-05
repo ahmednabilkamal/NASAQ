@@ -4,7 +4,7 @@ import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     I18nManager,
     Image,
@@ -19,13 +19,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
     const router = useRouter();
-    const { languageCode, setLanguageCode } = useLanguage();
+    const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.profile || (pageData as any)['en'].profile;
     const isRTL = I18nManager.isRTL;
-    const { user, logout } = useAuth();
+    const { user, logout, refreshUser } = useAuth();
 
     const [darkMode, setDarkMode] = useState(false);
     const [isArabic, setIsArabic] = useState(languageCode === 'ar');
+
+    useEffect(() => {
+        refreshUser();
+    }, []);
 
     const MenuItem = ({ icon, label, onPress, rightElement }: any) => (
         <TouchableOpacity style={styles.menuItem} onPress={onPress}>
@@ -64,12 +68,41 @@ export default function ProfileScreen() {
                     <View style={styles.profileInfo}>
                         <Text style={styles.name}>{user?.name || "نور حسن"}</Text>
                         <Text style={styles.email}>{user?.email || "nourhasan12@gmail.com"}</Text>
+
+                        {(user?.instagram || user?.twitter || user?.facebook) && (
+                            <View style={styles.socialRow}>
+                                {user?.instagram && (
+                                    <View style={styles.socialIconMini}>
+                                        <Ionicons name="logo-instagram" size={14} color="#E1306C" />
+                                    </View>
+                                )}
+                                {user?.twitter && (
+                                    <View style={styles.socialIconMini}>
+                                        <Ionicons name="logo-twitter" size={14} color="#1DA1F2" />
+                                    </View>
+                                )}
+                                {user?.facebook && (
+                                    <View style={styles.socialIconMini}>
+                                        <Ionicons name="logo-facebook" size={14} color="#4267B2" />
+                                    </View>
+                                )}
+                            </View>
+                        )}
                     </View>
-                    <Image
-                        source={require('@/assets/stylewomen1.png')}
-                        style={styles.avatar}
-                    />
+                    <View style={styles.avatarContainer}>
+                        {user?.image ? (
+                            <Image
+                                source={{ uri: user.image }}
+                                style={styles.avatar}
+                            />
+                        ) : (
+                            <View style={styles.avatarFallback}>
+                                <Ionicons name="person" size={30} color="#666" />
+                            </View>
+                        )}
+                    </View>
                 </View>
+
 
                 {/* Personal Info Section */}
                 <View style={styles.section}>
@@ -160,7 +193,6 @@ export default function ProfileScreen() {
                             selected={isArabic}
                             onPress={() => {
                                 setIsArabic(true);
-                                setLanguageCode('ar');
                             }}
                         />
                         <LanguageOption
@@ -168,7 +200,6 @@ export default function ProfileScreen() {
                             selected={!isArabic}
                             onPress={() => {
                                 setIsArabic(false);
-                                setLanguageCode('en');
                             }}
                         />
                     </View>
@@ -217,12 +248,33 @@ const styles = StyleSheet.create({
         paddingVertical: 20,
         marginBottom: 20,
     },
-    avatar: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#E1E1E1',
+    avatarContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#F0F0F0',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
+    avatar: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+    },
+    avatarFallback: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 40,
+        backgroundColor: '#E5E7EB',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
     profileInfo: {
         marginRight: 15,
         alignItems: 'flex-end',
@@ -329,22 +381,20 @@ const styles = StyleSheet.create({
         fontFamily: 'Cairo_700Bold',
         color: '#E11D48',
     },
-    logoutButton: {
+    socialRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 10,
-        backgroundColor: '#FFF',
-        borderRadius: 15,
-        paddingVertical: 15,
-        marginTop: 10,
-        marginBottom: 30,
-        borderWidth: 1,
-        borderColor: '#FFE4E6',
+        gap: 8,
+        marginTop: 5,
+        justifyContent: 'flex-end',
     },
-    logoutText: {
-        fontSize: 16,
-        fontFamily: 'Cairo_700Bold',
-        color: '#E11D48',
+    socialIconMini: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#F3F4F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
     },
 });

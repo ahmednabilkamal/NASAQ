@@ -17,13 +17,13 @@ export const WeightSlider: React.FC<WeightSliderProps> = ({ weight, panHandlers 
 
     return (
         <View style={styles.rulerContainer} {...panHandlers}>
-            <View style={styles.rulerLine} />
-            <View style={styles.rulerNumbers}>
+            <View style={styles.rulerLine} pointerEvents="none" />
+            <View style={styles.rulerNumbers} pointerEvents="none">
                 {marks.map((n) => (
                     <Text key={n} style={styles.rulerNumber}>{n}</Text>
                 ))}
             </View>
-            <View style={[styles.activePointer, { left: position }]} />
+            <View style={[styles.activePointer, { left: position }]} pointerEvents="none" />
         </View>
     );
 };

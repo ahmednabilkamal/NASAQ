@@ -1,71 +1,72 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     FlatList,
     TouchableOpacity,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '@/components/BottomNav';
 import StylistCard from '@/components/home/StylistCard';
-
-// Sample data for favorite stylists
-const FAVORITE_STYLISTS = [
-    {
-        id: '1',
-        name: 'داليا فؤاد',
-        rating: 4.9,
-        clientCount: 66,
-        tags: ['ستايل', 'كاجوال', 'كلاسيكي'],
-        image: require('@/assets/stylewomen1.png'),
-    },
-    {
-        id: '2',
-        name: 'داليا فؤاد',
-        rating: 4.9,
-        clientCount: 66,
-        tags: ['ستايل', 'كاجوال', 'كلاسيكي', 'محتشم'],
-        image: require('@/assets/stylewomen2.png'),
-    },
-    {
-        id: '3',
-        name: 'داليا فؤاد',
-        rating: 4.9,
-        clientCount: 66,
-        tags: ['ستايل', 'كاجوال', 'كلاسيكي'],
-        image: require('@/assets/stylewomen3.png'),
-    },
-];
+import apiService, { Stylist } from '@/config/apiService';
 
 export default function FavoritesScreen() {
     const router = useRouter();
-    const [favorites, setFavorites] = useState(FAVORITE_STYLISTS);
+    const [favorites, setFavorites] = useState<Stylist[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const handleStylistPress = (stylistId: string) => {
+    const fetchFavorites = async () => {
+        setLoading(true);
+        try {
+            const res = await apiService.getFavorites();
+            setFavorites(res.data || []);
+        } catch (error) {
+            console.error('Fetch favorites error:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchFavorites();
+    }, []);
+
+    const handleStylistPress = (stylistId: number | string) => {
         router.push(`/pages/stylist_detail?id=${stylistId}` as any);
     };
 
-    const handleRemoveFavorite = (stylistId: string) => {
-        setFavorites(favorites.filter(s => s.id !== stylistId));
+    const handleRemoveFavorite = async (stylistId: number | string) => {
+        try {
+            await apiService.toggleFavorite(stylistId);
+            setFavorites(prev => prev.filter(s => String(s.id) !== String(stylistId)));
+        } catch (error) {
+            console.error('Remove favorite error:', error);
+        }
     };
 
-    const renderStylist = ({ item }: { item: typeof FAVORITE_STYLISTS[0] }) => (
-        <View style={styles.cardWrapper}>
-            <StylistCard
-                name={item.name}
-                imageUri={item.image}
-                rating={item.rating}
-                clientCount={item.clientCount}
-                tags={item.tags}
-                onPress={() => handleStylistPress(item.id)}
-                isFavorite={true}
-                onFavoriteToggle={() => handleRemoveFavorite(item.id)}
-            />
-        </View>
-    );
+    const renderStylist = ({ item }: { item: Stylist }) => {
+        const id = String(item.id);
+        const tags = item.fashion_styles?.map((s: any) => s.name) ?? [];
+
+        return (
+            <View style={styles.cardWrapper}>
+                <StylistCard
+                    name={item.name}
+                    imageUri={item.image ? { uri: item.image } : require('@/assets/stylewomen1.png')}
+                    rating={Number(item.rating ?? 0)}
+                    clientCount={Number(item.clients_count ?? 0)}
+                    tags={tags}
+                    onPress={() => handleStylistPress(item.id)}
+                    isFavorite={true}
+                    onFavoriteToggle={() => handleRemoveFavorite(item.id)}
+                />
+            </View>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -82,10 +83,14 @@ export default function FavoritesScreen() {
             </View>
 
             {/* Favorites Grid */}
-            {favorites.length > 0 ? (
+            {loading ? (
+                <View style={styles.emptyContainer}>
+                    <ActivityIndicator size="large" color="#064E3B" />
+                </View>
+            ) : favorites.length > 0 ? (
                 <FlatList
                     data={favorites}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => String(item.id)}
                     renderItem={renderStylist}
                     numColumns={2}
                     contentContainerStyle={styles.listContent}

@@ -1,8 +1,10 @@
 import BottomNav from '@/components/BottomNav';
+import apiService, { Conversation } from '@/config/apiService';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     FlatList,
     Image,
     StyleSheet,
@@ -13,97 +15,70 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Mock conversations data
-const CONVERSATIONS = [
-    {
-        id: '1',
-        name: 'داليا فؤاد',
-        lastMessage: 'داليا فؤاد تكتب..',
-        time: '14:28',
-        unreadCount: 1,
-        isOnline: true,
-        avatar: require('@/assets/stylewomen1.png'),
-    },
-    {
-        id: '2',
-        name: 'داليا فؤاد',
-        lastMessage: 'داليا فؤاد تكتب..',
-        time: '14:28',
-        unreadCount: 1,
-        isOnline: true,
-        avatar: require('@/assets/stylewomen2.png'),
-    },
-    {
-        id: '3',
-        name: 'داليا فؤاد',
-        lastMessage: 'داليا فؤاد تكتب..',
-        time: '14:28',
-        unreadCount: 1,
-        isOnline: true,
-        avatar: require('@/assets/stylewomen3.png'),
-    },
-    {
-        id: '4',
-        name: 'داليا فؤاد',
-        lastMessage: 'داليا فؤاد تكتب..',
-        time: '14:28',
-        unreadCount: 1,
-        isOnline: true,
-        avatar: require('@/assets/stylewomen1.png'),
-    },
-    {
-        id: '5',
-        name: 'داليا فؤاد',
-        lastMessage: 'داليا فؤاد تكتب..',
-        time: '14:28',
-        unreadCount: 1,
-        isOnline: true,
-        avatar: require('@/assets/stylewomen2.png'),
-    },
-    {
-        id: '6',
-        name: 'داليا فؤاد',
-        lastMessage: 'داليا فؤاد تكتب..',
-        time: '14:28',
-        unreadCount: 1,
-        isOnline: false,
-        avatar: require('@/assets/stylewomen3.png'),
-    },
-];
-
 export default function ChatListScreen() {
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
+    const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const handleChatPress = (conversationId: string) => {
+    useEffect(() => {
+        const fetchConversations = async () => {
+            setLoading(true);
+            try {
+                const res = await apiService.listConversations();
+                const data = res?.data;
+                setConversations(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error('Conversations fetch error:', error);
+                setConversations([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchConversations();
+    }, []);
+
+    const filteredConversations = conversations.filter(c =>
+        !searchQuery || (c.stylist?.name ?? '').includes(searchQuery)
+    );
+
+    const handleChatPress = (conversationId: number | string) => {
         router.push(`/pages/chat?id=${conversationId}` as any);
     };
 
-    const renderConversation = ({ item }: { item: typeof CONVERSATIONS[0] }) => (
+    const renderConversation = ({ item }: { item: Conversation }) => (
         <TouchableOpacity
             style={styles.conversationItem}
             onPress={() => handleChatPress(item.id)}
             activeOpacity={0.7}
         >
             <View style={styles.timeContainer}>
-                <Text style={styles.timeText}>{item.time}</Text>
-                {item.unreadCount > 0 && (
+                {item.created_at ? (
+                    <Text style={styles.timeText}>
+                        {new Date(item.created_at).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                ) : null}
+                {(item.unread_count ?? 0) > 0 && (
                     <View style={styles.unreadBadge}>
-                        <Text style={styles.unreadText}>{item.unreadCount}</Text>
+                        <Text style={styles.unreadText}>{item.unread_count}</Text>
                     </View>
                 )}
             </View>
 
             <View style={styles.conversationInfo}>
-                <Text style={styles.conversationName}>{item.name}</Text>
-                <Text style={styles.lastMessage} numberOfLines={1}>
-                    {item.lastMessage}
-                </Text>
+                <Text style={styles.conversationName}>{item.stylist?.name ?? 'منسقة'}</Text>
+                {item.last_message ? (
+                    <Text style={styles.lastMessage} numberOfLines={1}>
+                        {item.last_message}
+                    </Text>
+                ) : null}
             </View>
 
             <View style={styles.avatarContainer}>
-                <Image source={item.avatar} style={styles.avatar} />
-                {item.isOnline && <View style={styles.onlineIndicator} />}
+                <Image
+                    source={item.stylist?.image ? { uri: item.stylist.image } : require('@/assets/stylewomen1.png')}
+                    style={styles.avatar}
+                />
             </View>
         </TouchableOpacity>
     );
@@ -126,13 +101,24 @@ export default function ChatListScreen() {
             </View>
 
             {/* Conversations List */}
-            <FlatList
-                data={CONVERSATIONS}
-                keyExtractor={(item) => item.id}
-                renderItem={renderConversation}
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={false}
-            />
+            {loading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#064E3B" />
+                </View>
+            ) : (
+                <FlatList
+                    data={filteredConversations}
+                    keyExtractor={(item) => String(item.id)}
+                    renderItem={renderConversation}
+                    contentContainerStyle={styles.listContent}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>لا توجد محادثات</Text>
+                        </View>
+                    }
+                />
+            )}
 
             <BottomNav />
         </SafeAreaView>
@@ -163,6 +149,11 @@ const styles = StyleSheet.create({
         fontFamily: 'Cairo_400Regular',
         color: '#333',
     },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     listContent: {
         paddingBottom: 100,
     },
@@ -181,17 +172,6 @@ const styles = StyleSheet.create({
         width: 55,
         height: 55,
         borderRadius: 27.5,
-    },
-    onlineIndicator: {
-        position: 'absolute',
-        top: 2,
-        right: 2,
-        width: 14,
-        height: 14,
-        borderRadius: 7,
-        backgroundColor: '#4CAF50',
-        borderWidth: 2,
-        borderColor: '#FFF',
     },
     conversationInfo: {
         flex: 1,
@@ -231,5 +211,15 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontFamily: 'Cairo_700Bold',
         color: '#FFF',
+    },
+    emptyContainer: {
+        flex: 1,
+        alignItems: 'center',
+        paddingTop: 60,
+    },
+    emptyText: {
+        fontFamily: 'Cairo_400Regular',
+        fontSize: 16,
+        color: '#999',
     },
 });

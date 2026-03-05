@@ -2,9 +2,11 @@ import React from 'react';
 import OnboardingScreen from '../../../components/OnboardingScreen';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
+import { useAuth } from '@/config/authContext';
 
 export default function Page3() {
   const { languageCode } = useLanguage();
+  const { isAuthenticated } = useAuth();
   const content = (pageData as any)[languageCode]?.page3 || (pageData as any)['en'].page3;
 
   return (
@@ -12,10 +14,11 @@ export default function Page3() {
       backgroundImage={require('../../../assets/page3bg.png')}
       title={content.title}
       subtitle={content.subtitle}
-      nextRoute="/pages/onboarding/page4"
-      
+      nextRoute={isAuthenticated ? "/pages/onboarding/genderSelection" : "/pages/login"}
+
       currentIndex={2}
       totalIndex={3}
     />
   );
 }
+

@@ -4,16 +4,18 @@ import { Ionicons } from '@expo/vector-icons';
 
 interface StylistCardProps {
     name: string;
+    subtitle?: string;
     imageUri?: any;
     rating: number;
     clientCount: number;
+    price?: number | string;
     tags: string[];
     onPress?: () => void;
     isFavorite?: boolean;
     onFavoriteToggle?: () => void;
 }
 
-export default function StylistCard({ name, imageUri, rating, clientCount, tags, onPress, isFavorite: initialFavorite = false, onFavoriteToggle }: StylistCardProps) {
+export default function StylistCard({ name, subtitle, imageUri, rating, clientCount, price, tags, onPress, isFavorite: initialFavorite = false, onFavoriteToggle }: StylistCardProps) {
     const [isFavorite, setIsFavorite] = useState(initialFavorite);
 
     const handleFavoritePress = (e: any) => {
@@ -33,8 +35,8 @@ export default function StylistCard({ name, imageUri, rating, clientCount, tags,
                     </View>
                 )}
                 <View style={styles.ratingBadge}>
+                    <Ionicons name="star" size={10} color="#FFB800" />
                     <Text style={styles.ratingText}>{rating}</Text>
-                    <Ionicons name="star" size={10} color="#FFD700" />
                 </View>
                 <TouchableOpacity
                     style={styles.favoriteButton}
@@ -44,45 +46,48 @@ export default function StylistCard({ name, imageUri, rating, clientCount, tags,
                     <Ionicons
                         name={isFavorite ? "heart" : "heart-outline"}
                         size={20}
-                        color={isFavorite ? "#FF4458" : "#FFF"}
+                        color={isFavorite ? "#FF4458" : "#999"}
                     />
                 </TouchableOpacity>
             </View>
 
             <View style={styles.infoContainer}>
                 <Text style={styles.name} numberOfLines={1}>{name}</Text>
-
-                <Text style={styles.tags} numberOfLines={2}>
-                    {tags.join(' | ')}
+                <Text style={styles.tags} numberOfLines={1}>
+                    {subtitle || (tags.length > 0 ? tags[0] : 'Expert Stylist')}
                 </Text>
 
                 <View style={styles.statsRow}>
                     <View style={styles.clientCount}>
-                        <Ionicons name="people-outline" size={14} color="#666" />
+                        <Text style={styles.totalLabel}>Total </Text>
                         <Text style={styles.clientCountText}>{clientCount}</Text>
                     </View>
+                    {price && (
+                        <Text style={styles.clientCountText}>SAR {price}</Text>
+                    )}
                 </View>
             </View>
         </TouchableOpacity>
     );
 }
 
+
 const styles = StyleSheet.create({
     container: {
-        width: 140,
+        width: 170,
         backgroundColor: '#fff',
-        borderRadius: 16,
-        marginRight: 12,
+        borderRadius: 20,
+        marginRight: 16,
         overflow: 'hidden',
-        elevation: 3,
+        elevation: 2,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
     },
     imageContainer: {
         width: '100%',
-        height: 130,
+        height: 160,
         position: 'relative',
     },
     image: {
@@ -92,60 +97,62 @@ const styles = StyleSheet.create({
     imagePlaceholder: {
         width: '100%',
         height: '100%',
-        backgroundColor: '#F5F5F5',
+        backgroundColor: '#F3F4F6',
         justifyContent: 'center',
         alignItems: 'center',
     },
     ratingBadge: {
         position: 'absolute',
-        top: 8,
-        left: 8,
+        bottom: 10,
+        left: 10,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.95)',
-        paddingHorizontal: 6,
-        paddingVertical: 3,
-        borderRadius: 10,
-        gap: 2,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        gap: 4,
     },
     ratingText: {
         fontSize: 11,
         fontFamily: 'Cairo_600SemiBold',
-        color: '#333',
+        color: '#FFF',
     },
     favoriteButton: {
         position: 'absolute',
-        top: 8,
-        right: 8,
+        top: 10,
+        right: 10,
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: 'rgba(0,0,0,0.3)',
+        backgroundColor: 'rgba(255,255,255,0.8)',
         justifyContent: 'center',
         alignItems: 'center',
     },
     infoContainer: {
-        padding: 10,
+        padding: 12,
     },
     name: {
-        fontSize: 13,
+        fontSize: 14,
         fontFamily: 'Cairo_700Bold',
-        color: '#333',
+        color: '#111',
         textAlign: 'right',
     },
     tags: {
-        fontSize: 10,
+        fontSize: 11,
         fontFamily: 'Cairo_400Regular',
-        color: '#888',
+        color: '#666',
         textAlign: 'right',
         marginTop: 2,
-        lineHeight: 16,
     },
     statsRow: {
         flexDirection: 'row',
-        justifyContent: 'flex-end',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        marginTop: 6,
+        marginTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#F0F0F0',
+        paddingTop: 8,
     },
     clientCount: {
         flexDirection: 'row',
@@ -154,7 +161,13 @@ const styles = StyleSheet.create({
     },
     clientCountText: {
         fontSize: 11,
-        fontFamily: 'Cairo_400Regular',
-        color: '#666',
+        fontFamily: 'Cairo_600SemiBold',
+        color: '#888',
     },
+    totalLabel: {
+        fontSize: 11,
+        fontFamily: 'Cairo_400Regular',
+        color: '#999',
+    }
 });
+

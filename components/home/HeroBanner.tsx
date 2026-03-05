@@ -18,18 +18,10 @@ export default function HeroBanner({ title, subtitle, buttonText, imageUri, onPr
             <View style={styles.bannerContent}>
                 <LinearGradient
                     colors={['#064E3B', '#047857']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                    start={{ x: 0, y: 1 }}
+                    end={{ x: 1, y: 0 }}
                     style={styles.gradient}
                 >
-                    <View style={styles.textContainer}>
-                        <Text style={styles.title}>{title}</Text>
-                        <Text style={styles.subtitle}>{subtitle}</Text>
-                        <TouchableOpacity style={styles.button} onPress={onPress}>
-                            <Text style={styles.buttonText}>{buttonText}</Text>
-                        </TouchableOpacity>
-                    </View>
-
                     {imageUri && (
                         <View style={styles.imageContainer}>
                             <ImageBackground
@@ -39,7 +31,20 @@ export default function HeroBanner({ title, subtitle, buttonText, imageUri, onPr
                             />
                         </View>
                     )}
+
+                    <View style={styles.textContainer}>
+                        <Text style={styles.title}>{title}</Text>
+                        <Text style={styles.subtitle}>{subtitle}</Text>
+                    </View>
+
+                    <View style={styles.dotsContainer}>
+                        <View style={[styles.dot, styles.dotActive]} />
+                        <View style={styles.dot} />
+                        <View style={styles.dot} />
+                        <View style={styles.dot} />
+                    </View>
                 </LinearGradient>
+
             </View>
         </View>
     );
@@ -61,48 +66,61 @@ const styles = StyleSheet.create({
     },
     gradient: {
         flexDirection: 'row',
-        minHeight: 160,
-        padding: 20,
+        minHeight: 180,
+        padding: 24,
+        alignItems: 'center',
+    },
+    imageContainer: {
+        width: 140,
+        height: 180,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    image: {
+        width: '120%',
+        height: '110%',
+        position: 'absolute',
+        bottom: -10,
+        left: -20,
     },
     textContainer: {
         flex: 1,
         justifyContent: 'center',
+        alignItems: 'flex-start',
     },
     title: {
-        fontSize: 18,
+        fontSize: 20,
         fontFamily: 'Cairo_700Bold',
         color: '#fff',
-        textAlign: 'right',
+        textAlign: 'left',
         lineHeight: 28,
+        marginBottom: 8,
     },
     subtitle: {
-        fontSize: 13,
+        fontSize: 12,
         fontFamily: 'Cairo_400Regular',
-        color: 'rgba(255,255,255,0.85)',
-        textAlign: 'right',
-        marginTop: 4,
+        color: 'rgba(255,255,255,0.8)',
+        textAlign: 'left',
     },
     button: {
-        backgroundColor: '#fff',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        alignSelf: 'flex-end',
-        marginTop: 12,
+        display: 'none', // Hide button as per image 3 (it uses dots instead)
     },
-    buttonText: {
-        fontSize: 12,
-        fontFamily: 'Cairo_600SemiBold',
-        color: '#064E3B',
+    dotsContainer: {
+        flexDirection: 'row',
+        gap: 6,
+        position: 'absolute',
+        bottom: 12,
+        alignSelf: 'center',
     },
-    imageContainer: {
-        width: 120,
-        height: 140,
-        justifyContent: 'flex-end',
-        alignItems: 'center',
+    dot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: 'rgba(255,255,255,0.3)',
     },
-    image: {
-        width: '100%',
-        height: '100%',
-    },
+    dotActive: {
+        width: 16,
+        backgroundColor: '#FFF',
+    }
 });
+

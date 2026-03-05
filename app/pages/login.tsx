@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useAuth } from '@/config/authContext';
 import { useAuthForm } from './hooks/useAuthForm';
 
 export default function AuthScreen() {
@@ -39,6 +40,25 @@ export default function AuthScreen() {
         setConfirmPassword,
         loading
     } = useAuthForm();
+
+    const { isAuthenticated, loading: authLoading, getOnboardingStep, user } = useAuth();
+
+
+    React.useEffect(() => {
+        if (!authLoading && isAuthenticated) {
+            const nextStep = getOnboardingStep(user);
+            router.replace(nextStep || '/pages/tabs/homescreen' as any);
+        }
+    }, [isAuthenticated, authLoading, user]);
+
+
+    if (authLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF' }}>
+                <ActivityIndicator size="large" color="#064E3B" />
+            </View>
+        );
+    }
 
     const content = (pageData as any)[languageCode];
     const loginContent = content.login;

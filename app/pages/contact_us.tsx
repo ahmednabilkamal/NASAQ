@@ -10,10 +10,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '@/config/languageRef';
+import { useAuth } from '@/config/authContext';
 import pageData from '@/data/content';
 
 export default function ContactUsScreen() {
     const router = useRouter();
+    const { user } = useAuth();
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.profile || (pageData as any)['en'].profile;
     const isRTL = I18nManager.isRTL;
@@ -37,7 +39,7 @@ export default function ContactUsScreen() {
             </View>
             <View style={styles.socialText}>
                 <Text style={styles.socialLabel}>{label}</Text>
-                <Text style={styles.socialHandle}>{handle}</Text>
+                <Text style={styles.socialHandle}>{handle || 'Not set'}</Text>
             </View>
         </TouchableOpacity>
     );
@@ -56,22 +58,57 @@ export default function ContactUsScreen() {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>دعم العملاء</Text>
                     <View style={styles.card}>
-                        <ContactItem icon="call-outline" label="رقم التواصل" value="+20 25268652" />
+                        <ContactItem
+                            icon="call-outline"
+                            label="رقم التواصل"
+                            value={user?.phone || '+20 25268652'}
+                        />
                         <View style={styles.divider} />
-                        <ContactItem icon="mail-outline" label="عنوان البريد الإلكتروني" value="help@gmail.com" />
+                        <ContactItem
+                            icon="mail-outline"
+                            label="عنوان البريد الإلكتروني"
+                            value={user?.email || 'help@venus.com'}
+                        />
                     </View>
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>وسائل التواصل الإجتماعي</Text>
-                    <View style={styles.card}>
-                        <SocialItem icon="logo-instagram" label="إنستجرام" handle="@baraband" color="#E1306C" />
-                        <View style={styles.divider} />
-                        <SocialItem icon="logo-twitter" label="تويتر" handle="@baraband" color="#1DA1F2" />
-                        <View style={styles.divider} />
-                        <SocialItem icon="logo-facebook" label="فيس بوك" handle="@baraband" color="#4267B2" />
+                {(user?.instagram || user?.twitter || user?.facebook) && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>وسائل التواصل الإجتماعي</Text>
+                        <View style={styles.card}>
+                            {user?.instagram && (
+                                <SocialItem
+                                    icon="logo-instagram"
+                                    label="إنستجرام"
+                                    handle={user.instagram}
+                                    color="#E1306C"
+                                />
+                            )}
+                            {user?.twitter && (
+                                <View>
+                                    <View style={styles.divider} />
+                                    <SocialItem
+                                        icon="logo-twitter"
+                                        label="تويتر"
+                                        handle={user.twitter}
+                                        color="#1DA1F2"
+                                    />
+                                </View>
+                            )}
+                            {user?.facebook && (
+                                <View>
+                                    <View style={styles.divider} />
+                                    <SocialItem
+                                        icon="logo-facebook"
+                                        label="فيس بوك"
+                                        handle={user.facebook}
+                                        color="#4267B2"
+                                    />
+                                </View>
+                            )}
+                        </View>
                     </View>
-                </View>
+                )}
             </View>
         </SafeAreaView>
     );

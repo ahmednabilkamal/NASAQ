@@ -1,23 +1,26 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import authService, { LoginData, RegisterData, UpdateProfileData } from './authService';
+import { initializeToken, clearAuthData } from './authToken';
 
-interface User {
-    id: string;
+// ── Types ──────────────────────────────────────────────────────────────────
+
+export interface User {
+    id: number | string;
     name: string;
     email: string;
-    mobile?: string;
-}
-
-interface LoginData {
-    email: string;
-    password: string;
-}
-
-interface RegisterData {
-    name: string;
-    email: string;
-    phone: string;
-    password: string;
-    password_confirmation: string;
+    phone?: string;
+    gender?: string;
+    height?: number;
+    weight?: number;
+    skin_tones?: string;
+    body_shape?: string;
+    body_measurements?: Record<string, number>;
+    fashion_styles?: number[];
+    role?: string;
+    instagram?: string;
+    twitter?: string;
+    facebook?: string;
+    [key: string]: any;
 }
 
 interface AuthContextType {
@@ -28,49 +31,97 @@ interface AuthContextType {
     register: (data: RegisterData) => Promise<void>;
     logout: () => Promise<void>;
     refreshUser: () => Promise<void>;
+    updateProfile: (data: UpdateProfileData) => Promise<void>;
+    getOnboardingStep: (user: User | null) => string | null;
 }
+
+
+// ── Context ────────────────────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    const refreshUser = async () => {
-        // No API call - just mock user data
-        console.log('ℹ️ Mock user refresh (No API)');
-        setLoading(false);
+    /** Fetch the authenticated user's profile and store it in state. */
+    const refreshUser = async (): Promise<void> => {
+        try {
+            const data = await authService.getProfile();
+            const profile: User = data?.data ?? data?.user ?? data;
+            setUser(profile);
+        } catch (error) {
+            console.error('❌ Failed to refresh user profile:', error);
+            setUser(null);
+        }
     };
 
-    // Initialize on app start
+    /** On app start, try to restore the session from stored token. */
     useEffect(() => {
         const initialize = async () => {
-            console.log('🚀 Initializing authentication (No API)...');
-            setLoading(false);
+            setLoading(true);
+            try {
+                const token = await initializeToken();
+                if (token) {
+                    await refreshUser();
+                }
+            } catch (error) {
+                console.error('❌ Auth initialization error:', error);
+            } finally {
+                setLoading(false);
+            }
         };
         initialize();
     }, []);
 
-    const login = async (data: LoginData) => {
-        // Mock login - just set a dummy user
-        console.log('✅ Mock login (No API):', data.email);
-        setUser({
-            id: '1',
-            name: 'Demo User',
-            email: data.email,
-            mobile: '1234567890'
-        });
+    /** Login with email/phone + password. */
+    const login = async (data: LoginData): Promise<void> => {
+        const result = await authService.login(data);
+        const profile: User = result?.data?.user ?? result?.user ?? result?.data ?? result;
+        if (profile?.id) {
+            setUser(profile);
+        } else {
+            // Token was saved by authService.login, now fetch profile
+            await refreshUser();
+        }
     };
 
-    const register = async (data: RegisterData) => {
-        // Mock register - no actual API call
-        console.log('✅ Mock register (No API):', data.email);
+    /** Register a new account (token is NOT returned; user must verify OTP). */
+    const register = async (data: RegisterData): Promise<void> => {
+        await authService.register(data);
+        // No token yet – user needs OTP verification
     };
 
-    const logout = async () => {
-        console.log('👋 Mock logout (No API)');
+    /** Update the authenticated user's profile. */
+    const updateProfile = async (data: UpdateProfileData): Promise<void> => {
+        await authService.updateProfile(data);
+        await refreshUser();
+    };
+
+    /** Logout – clears token and user state. */
+    const logout = async (): Promise<void> => {
+        try {
+            await authService.logout();
+        } catch {
+            // Even if the API call fails, clear local state
+            await clearAuthData();
+        }
         setUser(null);
     };
+
+    /** Determine the next onboarding step or null if complete. */
+    const getOnboardingStep = (u: User | null): string | null => {
+        if (!u) return null;
+        if (!u.gender) return '/pages/onboarding/genderSelection';
+        if (!u.height) return '/pages/onboarding/heightSelection';
+        if (!u.weight) return '/pages/onboarding/weightSelection';
+        if (!u.skin_tones) return '/pages/onboarding/colorSelection';
+        if (!u.body_shape) return '/pages/onboarding/bodyShape';
+        if (!u.body_measurements || Object.keys(u.body_measurements).length === 0) return '/pages/onboarding/bodyMeasurement';
+        if (!u.fashion_styles || u.fashion_styles.length === 0) return '/pages/onboarding/styleIdentity';
+        return null; // Completed
+    };
+
 
     return (
         <AuthContext.Provider
@@ -82,7 +133,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 register,
                 logout,
                 refreshUser,
+                updateProfile,
+                getOnboardingStep,
             }}
+
         >
             {children}
         </AuthContext.Provider>
