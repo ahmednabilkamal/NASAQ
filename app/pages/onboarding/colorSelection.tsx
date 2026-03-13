@@ -107,8 +107,6 @@ const styles = StyleSheet.create({
         aspectRatio: 0.8,
         backgroundColor: '#FFF',
         borderRadius: 12,
-        borderWidth: 2,
-        borderColor: 'transparent',
         padding: 8,
         alignItems: 'center',
         justifyContent: 'center',
@@ -119,7 +117,11 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     cardSelected: {
-        borderColor: '#000',
+        backgroundColor: '#F8FAF9',
+        transform: [{ scale: 1.05 }],
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 4,
     },
     imageContainer: {
         flex: 1,

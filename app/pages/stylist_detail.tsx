@@ -10,6 +10,7 @@ import {
     I18nManager,
     ActivityIndicator,
     Alert,
+    Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -33,6 +34,8 @@ export default function StylistDetailScreen() {
     const [services, setServices] = useState<StylistService[]>([]);
     const [loading, setLoading] = useState(true);
     const [isFavorite, setIsFavorite] = useState(false);
+    const [booking, setBooking] = useState(false);
+    const [showServicePicker, setShowServicePicker] = useState(false);
 
     useEffect(() => {
         if (!id) { return; }
@@ -92,6 +95,55 @@ export default function StylistDetailScreen() {
         }
     };
 
+    const handleBookAndPay = async (service?: StylistService) => {
+        if (!id) return;
+        const availableServices = services.filter(s => s.available !== false);
+
+        // If no service given and multiple available → show picker
+        if (!service && availableServices.length > 1) {
+            setShowServicePicker(true);
+            return;
+        }
+
+        const selectedService = service ?? availableServices[0];
+        if (!selectedService) {
+            Alert.alert('لا توجد خدمات', 'لا توجد خدمات متاحة لهذه المنسقة حالياً.');
+            return;
+        }
+
+        setBooking(true);
+        try {
+            // Step 1 – create the order
+            const orderRes = await apiService.createOrder({
+                stylist_service_id: Number(selectedService.id),
+            });
+            const order = (orderRes?.data as any) ?? orderRes;
+            const orderId = order?.id;
+
+            if (!orderId) throw new Error('Order ID missing from response');
+
+            // Step 2 – initiate Moyasar payment and get the hosted payment URL
+            const payRes = await apiService.initiatePayment(Number(orderId));
+            const paymentUrl = (payRes?.data as any)?.payment_url;
+
+            if (!paymentUrl) throw new Error('payment_url missing from response');
+
+            // Step 3 – open the Moyasar-hosted payment page
+            const supported = await Linking.canOpenURL(paymentUrl);
+            if (supported) {
+                await Linking.openURL(paymentUrl);
+            } else {
+                Alert.alert('خطأ', 'تعذّر فتح صفحة الدفع.');
+            }
+        } catch (error: any) {
+            console.error('Book & Pay error:', error);
+            Alert.alert('خطأ', error?.message || 'تعذّر إتمام الحجز. يرجى المحاولة لاحقاً.');
+        } finally {
+            setBooking(false);
+            setShowServicePicker(false);
+        }
+    };
+
     const ServiceCard = ({ item }: { item: StylistService }) => (
         <View style={styles.serviceCard}>
             <View style={styles.serviceIconContainer}>
@@ -137,7 +189,7 @@ export default function StylistDetailScreen() {
                 {/* Header Image */}
                 <View style={styles.headerImageContainer}>
                     <Image
-                        source={stylist?.image ? { uri: stylist.image } : require('@/assets/stylewomen1.png')}
+                        source={stylist?.image ? { uri: stylist.image } : require('@/assets/mirroimagewomen.png')}
                         style={styles.headerImage}
                     />
                 </View>
@@ -206,9 +258,9 @@ export default function StylistDetailScreen() {
 
                     {activeTab === 'portfolio' && (
                         <View style={styles.portfolioGrid}>
-                            <Image source={require('@/assets/stylewomen1.png')} style={styles.portfolioImage} />
-                            <Image source={require('@/assets/stylewomen2.png')} style={styles.portfolioImage} />
-                            <Image source={require('@/assets/stylewomen3.png')} style={styles.portfolioImage} />
+                            <Image source={require('@/assets/mirroimagewomen.png')} style={styles.portfolioImage} />
+                            <Image source={require('@/assets/mirroimagewomen.png')} style={styles.portfolioImage} />
+                            <Image source={require('@/assets/mirroimagewomen.png')} style={styles.portfolioImage} />
                         </View>
                     )}
 
@@ -235,12 +287,53 @@ export default function StylistDetailScreen() {
                 <View style={{ height: 100 }} />
             </ScrollView>
 
-            {/* Contact Button */}
+            {/* Contact + Book Footer */}
             <View style={styles.footer}>
                 <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
+                    <Ionicons name="chatbubble-ellipses-outline" size={18} color="#064E3B" style={{ marginLeft: 8 }} />
                     <Text style={styles.contactButtonText}>تواصلي مع المنسقة</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.bookButton, booking && { opacity: 0.7 }]}
+                    onPress={() => handleBookAndPay()}
+                    disabled={booking}
+                >
+                    {booking ? (
+                        <ActivityIndicator color="#FFF" />
+                    ) : (
+                        <>
+                            <Ionicons name="calendar-outline" size={18} color="#FFF" style={{ marginLeft: 8 }} />
+                            <Text style={styles.bookButtonText}>احجزي والدفع</Text>
+                        </>
+                    )}
+                </TouchableOpacity>
             </View>
+
+            {/* Service Picker Modal */}
+            {showServicePicker && (
+                <View style={styles.pickerOverlay}>
+                    <View style={styles.pickerSheet}>
+                        <Text style={styles.pickerTitle}>اختاري الخدمة</Text>
+                        {services.filter(s => s.available !== false).map(svc => (
+                            <TouchableOpacity
+                                key={String(svc.id)}
+                                style={styles.pickerItem}
+                                onPress={() => handleBookAndPay(svc)}
+                            >
+                                <Text style={styles.pickerPrice}>{svc.price} ر.س</Text>
+                                <Text style={styles.pickerItemTitle}>{svc.title}</Text>
+                            </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity
+                            style={styles.pickerCancel}
+                            onPress={() => setShowServicePicker(false)}
+                        >
+                            <Text style={styles.pickerCancelText}>إلغاء</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
         </SafeAreaView>
     );
 }
@@ -438,22 +531,92 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        padding: 20,
-        paddingBottom: 30,
+        flexDirection: 'row',
+        gap: 10,
+        padding: 16,
+        paddingBottom: 28,
         backgroundColor: '#FFF',
         borderTopWidth: 1,
         borderTopColor: '#F0F0F0',
     },
     contactButton: {
-        backgroundColor: '#064E3B',
-        height: 55,
-        borderRadius: 27.5,
+        flex: 1,
+        height: 52,
+        borderRadius: 26,
+        borderWidth: 2,
+        borderColor: '#064E3B',
         justifyContent: 'center',
         alignItems: 'center',
+        flexDirection: 'row',
     },
     contactButtonText: {
-        color: '#FFF',
-        fontSize: 16,
+        color: '#064E3B',
+        fontSize: 14,
         fontFamily: 'Cairo_700Bold',
+    },
+    bookButton: {
+        flex: 1,
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: '#064E3B',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexDirection: 'row',
+    },
+    bookButtonText: {
+        color: '#FFF',
+        fontSize: 14,
+        fontFamily: 'Cairo_700Bold',
+    },
+    pickerOverlay: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'flex-end',
+    },
+    pickerSheet: {
+        backgroundColor: '#FFF',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        paddingBottom: 40,
+    },
+    pickerTitle: {
+        fontSize: 18,
+        fontFamily: 'Cairo_700Bold',
+        color: '#111',
+        textAlign: 'center',
+        marginBottom: 16,
+    },
+    pickerItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        backgroundColor: '#F8F9FB',
+        borderRadius: 14,
+        marginBottom: 10,
+    },
+    pickerItemTitle: {
+        fontSize: 14,
+        fontFamily: 'Cairo_700Bold',
+        color: '#111',
+        textAlign: 'right',
+    },
+    pickerPrice: {
+        fontSize: 14,
+        fontFamily: 'Cairo_600SemiBold',
+        color: '#064E3B',
+    },
+    pickerCancel: {
+        marginTop: 6,
+        paddingVertical: 14,
+        alignItems: 'center',
+    },
+    pickerCancelText: {
+        fontSize: 15,
+        fontFamily: 'Cairo_600SemiBold',
+        color: '#EF4444',
     },
 });

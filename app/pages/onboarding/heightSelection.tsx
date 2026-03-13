@@ -1,15 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import EvaluationLayout from '../../../components/EvaluationLayout';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { UnitToggle } from './components/UnitToggle';
-import { HeightSlider } from './components/HeightSlider';
-import { useHeightSelection } from './hooks/useHeightSelection';
+import { UnitToggle } from '@/components/onboarding/UnitToggle';
+import { HeightSlider } from '@/components/onboarding/HeightSlider';
+import { useHeightSelection } from '@/hooks/onboarding/useHeightSelection';
 import { useAuth } from '@/config/authContext';
-import { useState } from 'react';
+import { useGender } from '@/config/genderContext';
 
 export default function HeightPage() {
     const router = useRouter();
@@ -18,7 +18,12 @@ export default function HeightPage() {
 
     const { unit, setUnit, height, panHandlers } = useHeightSelection();
     const { updateProfile } = useAuth();
+    const { gender } = useGender();
     const [saving, setSaving] = useState(false);
+
+    const characterImage = gender === 'male'
+        ? require('../../../assets/maleheightcheck.png')
+        : require('../../../assets/Frame 94.png');
 
     const handleNext = async () => {
         setSaving(true);
@@ -67,7 +72,7 @@ export default function HeightPage() {
                         <View style={styles.contentRow}>
                             <View style={styles.characterContainer}>
                                 <Image
-                                    source={require('../../../assets/Frame 94.png')}
+                                    source={characterImage}
                                     style={[
                                         styles.characterImage,
                                         { transform: [{ scale: (height / 170) * 0.9 }] }

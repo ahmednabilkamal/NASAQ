@@ -1,16 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import EvaluationLayout from '../../../components/EvaluationLayout';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { UnitToggle } from './components/UnitToggle';
-import { BMISection } from './components/BMISection';
-import { WeightSlider } from './components/WeightSlider';
-import { useWeightSelection } from './hooks/useWeightSelection';
+import { UnitToggle } from '@/components/onboarding/UnitToggle';
+import { BMISection } from '@/components/onboarding/BMISection';
+import { WeightSlider } from '@/components/onboarding/WeightSlider';
+import { useWeightSelection } from '@/hooks/onboarding/useWeightSelection';
 import { useAuth } from '@/config/authContext';
-import { useState } from 'react';
 
 export default function WeightPage() {
     const router = useRouter();

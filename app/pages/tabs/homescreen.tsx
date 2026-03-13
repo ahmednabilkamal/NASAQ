@@ -15,22 +15,32 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const HomeScreen = () => {
-    const { user } = useAuth();
+    const { user, isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
 
     const [banners, setBanners] = useState<Banner[]>([]);
     const [stylists, setStylists] = useState<Stylist[]>([]);
     const [packages, setPackages] = useState<RecommendedService[]>([]);
     const [loading, setLoading] = useState(true);
+    // Set of stylist IDs the user has favorited
+    const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        if (!authLoading && !isAuthenticated) {
+            router.replace('/pages/login');
+        }
+    }, [isAuthenticated, authLoading]);
 
     useEffect(() => {
         const fetchHomeData = async () => {
+            if (!isAuthenticated) return;
             setLoading(true);
             try {
-                const [bannersRes, stylistsRes, packagesRes] = await Promise.allSettled([
+                const [bannersRes, stylistsRes, packagesRes, favoritesRes] = await Promise.allSettled([
                     apiService.getBanners(),
                     apiService.getTrustedStylists(),
                     apiService.getRecommendedServices({ per_page: 6 }),
+                    apiService.getFavorites(),
                 ]);
 
                 if (bannersRes.status === 'fulfilled') {
@@ -45,6 +55,12 @@ const HomeScreen = () => {
                     const data = packagesRes.value?.data;
                     setPackages(Array.isArray(data) ? data : []);
                 }
+                if (favoritesRes.status === 'fulfilled') {
+                    const data = favoritesRes.value?.data;
+                    if (Array.isArray(data)) {
+                        setFavoriteIds(new Set(data.map((s: any) => String(s.id))));
+                    }
+                }
             } catch (error) {
                 console.error('HomeScreen fetch error:', error);
             } finally {
@@ -53,10 +69,39 @@ const HomeScreen = () => {
         };
 
         fetchHomeData();
-    }, []);
+    }, [isAuthenticated]);
 
     const handleStylistPress = (stylistId: number | string) => {
         router.push(`/pages/stylist_detail?id=${stylistId}` as any);
+    };
+
+    const handleFavoriteToggle = async (stylistId: number | string) => {
+        const id = String(stylistId);
+        // Optimistic update
+        setFavoriteIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+        try {
+            await apiService.toggleFavorite(stylistId);
+        } catch (error) {
+            // Revert on failure
+            setFavoriteIds(prev => {
+                const next = new Set(prev);
+                if (next.has(id)) {
+                    next.delete(id);
+                } else {
+                    next.add(id);
+                }
+                return next;
+            });
+            console.error('Toggle favorite error:', error);
+        }
     };
 
     const handlePackagePress = (packageId: number | string) => {
@@ -65,6 +110,16 @@ const HomeScreen = () => {
 
     // Hero banner: use first banner from API or a static fallback
     const heroBanner = banners[0];
+
+    if (authLoading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#064E3B" />
+            </View>
+        );
+    }
+
+    if (!isAuthenticated) return null;
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -88,10 +143,10 @@ const HomeScreen = () => {
                 >
                     {/* Hero Banner */}
                     <HeroBanner
-                        title={heroBanner?.title ?? 'اختيار الفئة المناسبة لجسمك بفرق أكثر من القطعة نفسها.'}
+                        title="اختيار القصة المناسبة لجسمك يفرق أكثر من القطعة نفسها."
                         subtitle=""
                         buttonText="عرض الكل"
-                        imageUri={heroBanner?.image ? { uri: heroBanner.image } : require('@/assets/stylewomen1.png')}
+                        imageUri={require('@/assets/mirroimagewomen.png')}
                         onPress={() => console.log('Banner pressed')}
                     />
 
@@ -113,12 +168,14 @@ const HomeScreen = () => {
                                     <StylistCard
                                         name={item.name}
                                         subtitle={item.bio}
-                                        imageUri={item.image ? { uri: item.image } : require('@/assets/stylewomen1.png')}
+                                        imageUri={item.image ? { uri: item.image } : null}
                                         rating={typeof item.rating === 'number' ? item.rating : parseFloat(String(item.rating ?? '0'))}
                                         clientCount={item.clients_count ?? 0}
                                         price={item.price}
                                         tags={item.fashion_styles?.map((s: any) => s.name) ?? []}
                                         onPress={() => handleStylistPress(item.id)}
+                                        isFavorite={favoriteIds.has(String(item.id))}
+                                        onFavoriteToggle={() => handleFavoriteToggle(item.id)}
                                     />
                                 )}
                             />

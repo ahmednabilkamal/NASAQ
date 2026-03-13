@@ -12,10 +12,18 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '@/components/BottomNav';
 import StylistCard from '@/components/home/StylistCard';
+import { useAuth } from '@/config/authContext';
 import apiService, { Stylist } from '@/config/apiService';
 
 export default function FavoritesScreen() {
+    const { isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
+
+    useEffect(() => {
+        if (!authLoading && !isAuthenticated) {
+            router.replace('/pages/login');
+        }
+    }, [isAuthenticated, authLoading]);
     const [favorites, setFavorites] = useState<Stylist[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -56,9 +64,11 @@ export default function FavoritesScreen() {
             <View style={styles.cardWrapper}>
                 <StylistCard
                     name={item.name}
-                    imageUri={item.image ? { uri: item.image } : require('@/assets/stylewomen1.png')}
-                    rating={Number(item.rating ?? 0)}
+                    subtitle={item.bio}
+                    imageUri={item.image ? { uri: item.image } : null}
+                    rating={typeof item.rating === 'number' ? item.rating : parseFloat(String(item.rating ?? '0'))}
                     clientCount={Number(item.clients_count ?? 0)}
+                    price={item.price}
                     tags={tags}
                     onPress={() => handleStylistPress(item.id)}
                     isFavorite={true}

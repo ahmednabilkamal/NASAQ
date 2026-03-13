@@ -50,7 +50,7 @@ export default function Home() {
     <View style={styles.container}>
       <Animated.View style={[styles.imageContainer, imageStyle]}>
         <Image
-          source={require('../assets/venus-logo.png')}
+          source={require('@/assets/venus-logo.png')}
           style={styles.image}
         />
       </Animated.View>

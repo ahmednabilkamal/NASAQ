@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Image, LayoutChangeEvent } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Image, LayoutChangeEvent, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Line, Circle } from 'react-native-svg';
 import EvaluationLayout from '../../../components/EvaluationLayout';
@@ -7,7 +7,7 @@ import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGender } from '@/config/genderContext';
-import { useMeasurements } from './hooks/useMeasurements';
+import { useMeasurements } from '@/hooks/onboarding/useMeasurements';
 import { useAuth } from '@/config/authContext';
 
 // Coordinates as ratios (0 to 1) - works on any screen size
@@ -44,6 +44,8 @@ export default function MeasurementsPage() {
     const { measurements, updateMeasurement } = useMeasurements();
     const { updateProfile } = useAuth();
     const [saving, setSaving] = useState(false);
+    const { width: windowWidth } = useWindowDimensions();
+    const isSmallScreen = windowWidth < 380;
 
     const handleNext = async () => {
         setSaving(true);
@@ -106,7 +108,7 @@ export default function MeasurementsPage() {
                             ? require('../../../assets/femalefigurine.png')
                             : require('../../../assets/male_figurine.png')
                         }
-                        style={styles.bodyImage}
+                        style={[styles.bodyImage, { width: isSmallScreen ? '38%' : '45%' }]}
                         resizeMode="contain"
                     />
 
@@ -187,7 +189,7 @@ const styles = StyleSheet.create({
         right: 0,
         top: 0,
         bottom: 0,
-        width: '55%',
+        width: '45%',
         height: '100%',
     },
     inputWrapper: {
@@ -195,6 +197,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
+        paddingLeft: 10,
     },
     label: {
         fontSize: 11,

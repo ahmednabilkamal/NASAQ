@@ -8,12 +8,11 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
-} from 'react-native';
+ ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import authService from '@/config/authService';
-import { ActivityIndicator } from 'react-native';
 import Toast from 'react-native-toast-message';
 
 export default function ChangePasswordScreen() {
@@ -27,6 +26,11 @@ export default function ChangePasswordScreen() {
     const [loading, setLoading] = useState(false);
 
     const handleUpdate = async () => {
+        if (!currentPassword) {
+            Toast.show({ type: 'error', text1: 'خطأ', text2: 'يرجى إدخال كلمة المرور الحالية' });
+            return;
+        }
+
         if (!newPassword || !confirmPassword) {
             Toast.show({ type: 'error', text1: 'خطأ', text2: 'يرجى إدخال كلمة المرور الجديدة' });
             return;
@@ -39,13 +43,16 @@ export default function ChangePasswordScreen() {
 
         setLoading(true);
         try {
-            await authService.updateProfile({
+            await authService.changePassword({
+                current_password: currentPassword,
                 password: newPassword,
-            } as any);
+                password_confirmation: confirmPassword,
+            });
             Toast.show({ type: 'success', text1: 'نجاح', text2: 'تم تغيير كلمة المرور بنجاح' });
             router.back();
         } catch (error: any) {
-            // Error handled globally
+             const message = error?.response?.data?.message || 'فشل تغيير كلمة المرور';
+             Toast.show({ type: 'error', text1: 'خطأ', text2: message });
         } finally {
             setLoading(false);
         }

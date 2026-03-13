@@ -33,7 +33,10 @@ export default function ContactUsScreen() {
     );
 
     const SocialItem = ({ icon, label, handle, color }: any) => (
-        <TouchableOpacity style={styles.socialItem}>
+        <TouchableOpacity 
+            style={styles.socialItem}
+            onPress={() => router.push('/pages/profile/edit?mode=social' as any)}
+        >
             <View style={[styles.socialIcon, { backgroundColor: color }]}>
                 <Ionicons name={icon} size={20} color="#FFF" />
             </View>
@@ -51,7 +54,9 @@ export default function ContactUsScreen() {
                     <Ionicons name={isRTL ? "chevron-forward" : "chevron-back"} size={24} color="#000" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{content.contactUs}</Text>
-                <View style={{ width: 24 }} />
+                <TouchableOpacity onPress={() => router.push('/pages/profile/edit?mode=social' as any)}>
+                    <Text style={styles.editBtnText}>تعديل</Text>
+                </TouchableOpacity>
             </View>
 
             <View style={styles.content}>
@@ -72,43 +77,31 @@ export default function ContactUsScreen() {
                     </View>
                 </View>
 
-                {(user?.instagram || user?.twitter || user?.facebook) && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>وسائل التواصل الإجتماعي</Text>
-                        <View style={styles.card}>
-                            {user?.instagram && (
-                                <SocialItem
-                                    icon="logo-instagram"
-                                    label="إنستجرام"
-                                    handle={user.instagram}
-                                    color="#E1306C"
-                                />
-                            )}
-                            {user?.twitter && (
-                                <View>
-                                    <View style={styles.divider} />
-                                    <SocialItem
-                                        icon="logo-twitter"
-                                        label="تويتر"
-                                        handle={user.twitter}
-                                        color="#1DA1F2"
-                                    />
-                                </View>
-                            )}
-                            {user?.facebook && (
-                                <View>
-                                    <View style={styles.divider} />
-                                    <SocialItem
-                                        icon="logo-facebook"
-                                        label="فيس بوك"
-                                        handle={user.facebook}
-                                        color="#4267B2"
-                                    />
-                                </View>
-                            )}
-                        </View>
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>وسائل التواصل الإجتماعي</Text>
+                    <View style={styles.card}>
+                        <SocialItem
+                            icon="logo-instagram"
+                            label="إنستجرام"
+                            handle={user?.instagram}
+                            color="#E1306C"
+                        />
+                        <View style={styles.divider} />
+                        <SocialItem
+                            icon="logo-twitter"
+                            label="تويتر"
+                            handle={user?.twitter}
+                            color="#1DA1F2"
+                        />
+                        <View style={styles.divider} />
+                        <SocialItem
+                            icon="logo-facebook"
+                            label="فيس بوك"
+                            handle={user?.facebook}
+                            color="#4267B2"
+                        />
                     </View>
-                )}
+                </View>
             </View>
         </SafeAreaView>
     );
@@ -131,6 +124,11 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
+    },
+    editBtnText: {
+        fontSize: 14,
+        fontFamily: 'Cairo_700Bold',
+        color: '#064E3B',
     },
     content: {
         padding: 20,

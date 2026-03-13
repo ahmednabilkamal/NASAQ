@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -15,12 +15,10 @@ interface StylistCardProps {
     onFavoriteToggle?: () => void;
 }
 
-export default function StylistCard({ name, subtitle, imageUri, rating, clientCount, price, tags, onPress, isFavorite: initialFavorite = false, onFavoriteToggle }: StylistCardProps) {
-    const [isFavorite, setIsFavorite] = useState(initialFavorite);
+export default function StylistCard({ name, subtitle, imageUri, rating, clientCount, price, tags, onPress, isFavorite = false, onFavoriteToggle }: StylistCardProps) {
 
     const handleFavoritePress = (e: any) => {
         e.stopPropagation();
-        setIsFavorite(!isFavorite);
         onFavoriteToggle?.();
     };
 

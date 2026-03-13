@@ -178,7 +178,7 @@ export default function ChatScreen() {
             <View style={[styles.messageContainer, isUser ? styles.userContainer : styles.stylistContainer]}>
                 {!isUser && (
                     <Image
-                        source={stylist?.image ? { uri: stylist.image } : require('@/assets/stylewomen1.png')}
+                        source={stylist?.image ? { uri: stylist.image } : require('@/assets/mirroimagewomen.png')}
                         style={styles.stylistAvatar}
                     />
                 )}
@@ -284,7 +284,7 @@ export default function ChatScreen() {
                             </TouchableOpacity>
 
                             <Image
-                                source={stylist?.image ? { uri: stylist.image } : require('@/assets/stylewomen1.png')}
+                                source={stylist?.image ? { uri: stylist.image } : require('@/assets/mirroimagewomen.png')}
                                 style={styles.modalAvatar}
                             />
 

@@ -48,9 +48,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFF',
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
+        boxShadow: '0 0 5px rgba(0,0,0,0.1)',
         elevation: 5,
     },
      favoriteButton: {

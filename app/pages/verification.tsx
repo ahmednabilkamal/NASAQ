@@ -28,21 +28,39 @@ export default function VerificationScreen() {
     const [code, setCode] = useState(['', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [resending, setResending] = useState(false);
-    const inputs = useRef<Array<TextInput | null>>([]);
+    const inputs = useRef<(TextInput | null)[]>([]);
 
     const handleCodeChange = (text: string, index: number) => {
+        // If user pastes or types multiple characters, just take the last one or handle as needed
+        // But here maxLength={1} handles it.
+        const char = text.slice(-1);
+        
         const newCode = [...code];
-        newCode[index] = text;
+        newCode[index] = char;
         setCode(newCode);
 
-        if (text && index < 4) {
+        // Move to next input if a digit was entered
+        if (char && index < 4) {
             inputs.current[index + 1]?.focus();
         }
     };
 
     const handleKeyPress = (e: any, index: number) => {
-        if (e.nativeEvent.key === 'Backspace' && !code[index] && index > 0) {
-            inputs.current[index - 1]?.focus();
+        if (e.nativeEvent.key === 'Backspace') {
+            const newCode = [...code];
+            if (code[index] !== '') {
+                // If box has a value, clear it and move focus back
+                newCode[index] = '';
+                setCode(newCode);
+                if (index > 0) {
+                    inputs.current[index - 1]?.focus();
+                }
+            } else if (index > 0) {
+                // If box is already empty, move to previous box and clear its content
+                newCode[index - 1] = '';
+                setCode(newCode);
+                inputs.current[index - 1]?.focus();
+            }
         }
     };
 
@@ -98,7 +116,6 @@ export default function VerificationScreen() {
                             color="#000"
                         />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{content.title}</Text>
                     <View style={{ width: 40 }} />
                 </View>
 
@@ -122,6 +139,8 @@ export default function VerificationScreen() {
                                     onChangeText={(text) => handleCodeChange(text, index)}
                                     onKeyPress={(e) => handleKeyPress(e, index)}
                                     textAlign="center"
+                                    selectTextOnFocus
+                                    autoFocus={index === 0}
                                 />
                             </View>
                         ))}

@@ -1,13 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import EvaluationLayout from '../../../components/EvaluationLayout';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useGenderSelection } from './hooks/useGenderSelection';
+import { useGenderSelection } from '@/hooks/onboarding/useGenderSelection';
 import { useAuth } from '@/config/authContext';
-import { useState } from 'react';
 
 export default function GenderPage() {
     const router = useRouter();
@@ -51,7 +50,7 @@ export default function GenderPage() {
                             onPress={() => setSelected('male')}
                         >
                             <View style={styles.avatarPlaceholder}>
-                                <Image source={require('../../../assets/male.png')} style={styles.avatar} />
+                                <Image source={require('../../../assets/male.png')} style={styles.avatarMale} />
                             </View>
                         </TouchableOpacity>
 
@@ -60,7 +59,7 @@ export default function GenderPage() {
                             onPress={() => setSelected('female')}
                         >
                             <View style={styles.avatarPlaceholder}>
-                                <Image source={require('@/assets/female.png')} style={styles.avatar} />
+                                <Image source={require('@/assets/female.png')} style={styles.avatarFemale} />
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -90,10 +89,7 @@ const styles = StyleSheet.create({
         padding: 10,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         elevation: 3,
     },
     cardSelected: {
@@ -107,8 +103,14 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    avatar: {
-        width: '100%',
-        height: '100%',
-    }
+    avatarMale: {
+        width: '90%',
+        height: '90%',
+        resizeMode: 'contain',
+    },
+    avatarFemale: {
+        width: '65%',
+        height: '65%',
+        resizeMode: 'contain',
+    },
 });

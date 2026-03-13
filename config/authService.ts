@@ -33,6 +33,8 @@ export interface UpdateProfileData {
     email?: string;
     phone?: string;
     gender?: string;
+    password?: string;
+    password_confirmation?: string;
     height?: number;
     weight?: number;
     skin_tones?: string;
@@ -180,6 +182,12 @@ export const authService = {
     /** DELETE /api/user/cards/:id (requires token) */
     deleteCard: async (id: number) => {
         const response = await api.delete(`/user/cards/${id}`);
+        return response.data;
+    },
+    
+    /** POST /api/user/change-password (requires token) */
+    changePassword: async (data: { otp: string, password: string, password_confirmation: string }) => {
+        const response = await api.post("/user/change-password", data);
         return response.data;
     },
 };

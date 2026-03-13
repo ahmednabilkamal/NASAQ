@@ -96,7 +96,7 @@ export default function RootLayout() {
   };
 
   return (
-    <LanguageProvider languageCode={languageCode}>
+    <LanguageProvider>
       <GenderProvider>
         <AuthProvider>
           <Stack
@@ -111,13 +111,13 @@ export default function RootLayout() {
             <Stack.Screen name="pages/onboarding/page2" />
             <Stack.Screen name="pages/onboarding/page3" />
             <Stack.Screen name="pages/onboarding/page4" />
-            <Stack.Screen name="pages/onboarding/page5" />
-            <Stack.Screen name="pages/onboarding/page6" />
-            <Stack.Screen name="pages/onboarding/page7" />
-            <Stack.Screen name="pages/onboarding/page8" />
-            <Stack.Screen name="pages/onboarding/page9" />
-            <Stack.Screen name="pages/onboarding/page10" />
-            <Stack.Screen name="pages/onboarding/page11" />
+            <Stack.Screen name="pages/onboarding/genderSelection" />
+            <Stack.Screen name="pages/onboarding/heightSelection" />
+            <Stack.Screen name="pages/onboarding/weightSelection" />
+            <Stack.Screen name="pages/onboarding/colorSelection" />
+            <Stack.Screen name="pages/onboarding/bodyShape" />
+            <Stack.Screen name="pages/onboarding/bodyMeasurement" />
+            <Stack.Screen name="pages/onboarding/styleIdentity" />
             <Stack.Screen name="pages/modal" />
             <Stack.Screen name="pages/tabs/homescreen" />
             <Stack.Screen name="pages/tabs/stylists" />
@@ -128,6 +128,10 @@ export default function RootLayout() {
             <Stack.Screen name="pages/payment/add_card" />
             <Stack.Screen name="pages/contact_us" />
             <Stack.Screen name="pages/stylists/filter" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="pages/orders" />
+            <Stack.Screen name="pages/order_details" />
+            <Stack.Screen name="pages/filter_modal_1" />
+            <Stack.Screen name="pages/filter_modal_2" />
           </Stack>
           <Toast config={toastConfig} />
         </AuthProvider>

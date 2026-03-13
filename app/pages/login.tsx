@@ -18,7 +18,7 @@ import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/config/authContext';
-import { useAuthForm } from './hooks/useAuthForm';
+import { useAuthForm } from '@/hooks/useAuthForm';
 
 export default function AuthScreen() {
     const router = useRouter();

@@ -1,7 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
 import React from 'react';
-import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Dimensions, StyleSheet, TouchableOpacity, View, Image } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -10,11 +9,11 @@ export default function BottomNav() {
     const pathname = usePathname();
 
     const tabs = [
-        { id: 'profile', icon: 'person-outline', activeIcon: 'person', label: 'Profile', route: '/pages/tabs/profile' },
-        { id: 'orders', icon: 'bag-outline', activeIcon: 'bag', label: 'Orders', route: '/pages/orders' },
-        { id: 'home', icon: 'home', activeIcon: 'home', label: 'Home', route: '/pages/tabs/homescreen', isCenter: true },
-        { id: 'favorites', icon: 'heart-outline', activeIcon: 'heart', label: 'Favorites', route: '/pages/tabs/favorites' },
-        { id: 'chat', icon: 'chatbox-ellipses-outline', activeIcon: 'chatbox-ellipses', label: 'Chat', route: '/pages/tabs/chat' },
+        { id: 'profile', icon: require('../assets/icons/user.png'), label: 'Profile', route: '/pages/tabs/profile' },
+        { id: 'orders', icon: require('../assets/icons/bag.png'), label: 'Orders', route: '/pages/orders' },
+        { id: 'home', icon: require('../assets/icons/home-2.png'), label: 'Home', route: '/pages/tabs/homescreen', isCenter: true },
+        { id: 'favorites', icon: require('../assets/icons/house 2.png'), label: 'Favorites', route: '/pages/tabs/favorites' },
+        { id: 'chat', icon: require('../assets/icons/Group.png'), label: 'Chat', route: '/pages/tabs/chat' },
     ];
 
     return (
@@ -31,7 +30,7 @@ export default function BottomNav() {
                                 onPress={() => tab.route && router.push(tab.route as any)}
                             >
                                 <View style={styles.centerButton}>
-                                    <Ionicons name="home" size={28} color="#FFF" />
+                                    <Image source={tab.icon} style={{ width: 28, height: 28, tintColor: '#FFF' }} resizeMode="contain" />
                                 </View>
                             </TouchableOpacity>
                         );
@@ -43,10 +42,14 @@ export default function BottomNav() {
                             style={styles.tabItem}
                             onPress={() => tab.route && router.push(tab.route as any)}
                         >
-                            <Ionicons
-                                name={(isActive ? tab.activeIcon : tab.icon) as any}
-                                size={26}
-                                color={isActive ? '#064E3B' : '#666'}
+                            <Image
+                                source={tab.icon}
+                                style={{
+                                    width: 26,
+                                    height: 26,
+                                    tintColor: isActive ? '#064E3B' : '#666'
+                                }}
+                                resizeMode="contain"
                             />
                         </TouchableOpacity>
                     );
@@ -74,10 +77,7 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 30,
         alignItems: 'center',
         justifyContent: 'space-around',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -10 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
+        boxShadow: '0 -10px 10px rgba(0,0,0,0.05)',
         elevation: 15,
         paddingHorizontal: 10,
     },
@@ -100,10 +100,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#064E3B',
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#064E3B',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
+        boxShadow: '0 8px 10px rgba(6,78,59,0.3)',
         elevation: 8,
         borderWidth: 6,
         borderColor: '#FFF',

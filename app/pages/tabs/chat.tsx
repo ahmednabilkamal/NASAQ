@@ -1,5 +1,6 @@
 import BottomNav from '@/components/BottomNav';
 import apiService, { Conversation } from '@/config/apiService';
+import { useAuth } from '@/config/authContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -16,7 +17,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ChatListScreen() {
+    const { isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
+
+    useEffect(() => {
+        if (!authLoading && !isAuthenticated) {
+            router.replace('/pages/login');
+        }
+    }, [isAuthenticated, authLoading]);
     const [searchQuery, setSearchQuery] = useState('');
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [loading, setLoading] = useState(true);

@@ -15,7 +15,7 @@ import {
     Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/config/authContext';
 import * as ImagePicker from 'expo-image-picker';
@@ -23,6 +23,9 @@ import Toast from 'react-native-toast-message';
 
 export default function EditProfileScreen() {
     const router = useRouter();
+    const { mode } = useLocalSearchParams<{ mode?: string }>();
+    const isSocialMode = mode === 'social';
+
     const { user, refreshUser, updateProfile } = useAuth();
     const [name, setName] = useState(user?.name || '');
     const [email, setEmail] = useState(user?.email || '');
@@ -141,71 +144,77 @@ export default function EditProfileScreen() {
             >
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                     {/* Avatar */}
-                    <View style={styles.avatarContainer}>
-                        {image ? (
-                            <Image
-                                source={{ uri: image }}
-                                style={styles.avatar}
-                            />
-                        ) : (
-                            <View style={styles.avatarFallback}>
-                                <Ionicons name="person" size={50} color="#666" />
-                            </View>
-                        )}
-                        <TouchableOpacity style={styles.editAvatarButton} onPress={showImageOptions}>
-                            <Ionicons name="camera" size={16} color="#064E3B" />
-                        </TouchableOpacity>
-                    </View>
+                    {!isSocialMode && (
+                        <View style={styles.avatarContainer}>
+                            {image ? (
+                                <Image
+                                    source={{ uri: image }}
+                                    style={styles.avatar}
+                                />
+                            ) : (
+                                <View style={styles.avatarFallback}>
+                                    <Ionicons name="person" size={50} color="#666" />
+                                </View>
+                            )}
+                            <TouchableOpacity style={styles.editAvatarButton} onPress={showImageOptions}>
+                                <Ionicons name="camera" size={16} color="#064E3B" />
+                            </TouchableOpacity>
+                        </View>
+                    )}
 
 
                     {/* Form Fields */}
                     <View style={styles.formContainer}>
-                        {/* Name */}
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>الاسم</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={name}
-                                onChangeText={setName}
-                                textAlign="right"
-                                placeholder="أدخل اسمك"
-                                placeholderTextColor="#999"
-                            />
-                        </View>
-
-                        {/* Email */}
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>البريد الإلكتروني</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={email}
-                                onChangeText={setEmail}
-                                textAlign="right"
-                                placeholder="أدخل بريدك الإلكتروني"
-                                placeholderTextColor="#999"
-                                keyboardType="email-address"
-                            />
-                        </View>
-
-                        {/* Phone */}
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>رقم الجوال</Text>
-                            <View style={styles.phoneInputContainer}>
-                                <TextInput
-                                    style={styles.phoneInput}
-                                    value={phone}
-                                    onChangeText={setPhone}
-                                    textAlign="right"
-                                    placeholder="أدخل رقم الجوال"
-                                    placeholderTextColor="#999"
-                                    keyboardType="phone-pad"
-                                />
-                                <View style={styles.countryCodeContainer}>
-                                    <Text style={styles.countryCode}>{countryCode}</Text>
-                                    <Ionicons name="chevron-down" size={16} color="#666" />
+                        {!isSocialMode && (
+                            <>
+                                {/* Name */}
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>الاسم</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={name}
+                                        onChangeText={setName}
+                                        textAlign="right"
+                                        placeholder="أدخل اسمك"
+                                        placeholderTextColor="#999"
+                                    />
                                 </View>
-                            </View>
-                        </View>
+
+                                {/* Email */}
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>البريد الإلكتروني</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={email}
+                                        onChangeText={setEmail}
+                                        textAlign="right"
+                                        placeholder="أدخل بريدك الإلكتروني"
+                                        placeholderTextColor="#999"
+                                        keyboardType="email-address"
+                                    />
+                                </View>
+
+                                {/* Phone */}
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>رقم الجوال</Text>
+                                    <View style={styles.phoneInputContainer}>
+                                        <TextInput
+                                            style={styles.phoneInput}
+                                            value={phone}
+                                            onChangeText={setPhone}
+                                            textAlign="right"
+                                            placeholder="أدخل رقم الجوال"
+                                            placeholderTextColor="#999"
+                                            keyboardType="phone-pad"
+                                        />
+                                        <View style={styles.countryCodeContainer}>
+                                            <Text style={styles.countryCode}>{countryCode}</Text>
+                                            <Ionicons name="chevron-down" size={16} color="#666" />
+                                        </View>
+                                    </View>
+                                </View>
+                            </>
+                        )}
 
                         {/* Social Links Section */}
                         <Text style={[styles.label, { marginTop: 10 }]}>وسائل التواصل الإجتماعي</Text>

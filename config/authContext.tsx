@@ -100,13 +100,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     /** Logout – clears token and user state. */
     const logout = async (): Promise<void> => {
+        setUser(null);
         try {
             await authService.logout();
         } catch {
             // Even if the API call fails, clear local state
             await clearAuthData();
         }
-        setUser(null);
     };
 
     /** Determine the next onboarding step or null if complete. */

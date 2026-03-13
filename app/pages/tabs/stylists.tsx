@@ -1,4 +1,5 @@
 import BottomNav from '@/components/BottomNav';
+import { useAuth } from '@/config/authContext';
 import apiService, { Stylist } from '@/config/apiService';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
@@ -19,10 +20,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function StylistsScreen() {
+    const { isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.stylistsList || (pageData as any)['en'].stylistsList;
     const isRTL = I18nManager.isRTL;
+
+    useEffect(() => {
+        if (!authLoading && !isAuthenticated) {
+            router.replace('/pages/login');
+        }
+    }, [isAuthenticated, authLoading]);
 
     const [search, setSearch] = useState('');
     const [stylists, setStylists] = useState<Stylist[]>([]);
@@ -72,7 +80,7 @@ export default function StylistsScreen() {
                 onPress={() => router.push({ pathname: '/pages/stylist_detail', params: { id } } as any)}
             >
                 <Image
-                    source={item.image ? { uri: item.image } : require('@/assets/stylewomen1.png')}
+                    source={item.image ? { uri: item.image } : require('@/assets/mirroimagewomen.png')}
                     style={styles.stylistImage}
                 />
 

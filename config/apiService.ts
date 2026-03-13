@@ -274,6 +274,12 @@ export const apiService = {
         return response.data;
     },
 
+    /** GET /api/user/orders */
+    getUserOrders: async (params?: PaginationParams): Promise<ApiResponse<Order[]>> => {
+        const response = await api.get('/user/orders', { params });
+        return response.data;
+    },
+
     // ── User – Payments ────────────────────────────────────────────────────
 
     /** GET /api/user/payments/config */
