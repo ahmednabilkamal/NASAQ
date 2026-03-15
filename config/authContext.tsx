@@ -2,8 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import authService, { LoginData, RegisterData, UpdateProfileData } from './authService';
 import { initializeToken, clearAuthData } from './authToken';
 
-// ── Types ──────────────────────────────────────────────────────────────────
-
 export interface User {
     id: number | string;
     name: string;
@@ -35,16 +33,12 @@ interface AuthContextType {
     getOnboardingStep: (user: User | null) => string | null;
 }
 
-
-// ── Context ────────────────────────────────────────────────────────────────
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
-    /** Fetch the authenticated user's profile and store it in state. */
     const refreshUser = async (): Promise<void> => {
         try {
             const data = await authService.getProfile();
@@ -56,7 +50,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    /** On app start, try to restore the session from stored token. */
     useEffect(() => {
         const initialize = async () => {
             setLoading(true);
@@ -74,42 +67,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         initialize();
     }, []);
 
-    /** Login with email/phone + password. */
     const login = async (data: LoginData): Promise<void> => {
         const result = await authService.login(data);
         const profile: User = result?.data?.user ?? result?.user ?? result?.data ?? result;
         if (profile?.id) {
             setUser(profile);
         } else {
-            // Token was saved by authService.login, now fetch profile
             await refreshUser();
         }
     };
 
-    /** Register a new account (token is NOT returned; user must verify OTP). */
     const register = async (data: RegisterData): Promise<void> => {
         await authService.register(data);
-        // No token yet – user needs OTP verification
     };
 
-    /** Update the authenticated user's profile. */
     const updateProfile = async (data: UpdateProfileData): Promise<void> => {
         await authService.updateProfile(data);
         await refreshUser();
     };
 
-    /** Logout – clears token and user state. */
     const logout = async (): Promise<void> => {
         setUser(null);
         try {
             await authService.logout();
         } catch {
-            // Even if the API call fails, clear local state
             await clearAuthData();
         }
     };
 
-    /** Determine the next onboarding step or null if complete. */
     const getOnboardingStep = (u: User | null): string | null => {
         if (!u) return null;
         if (!u.gender) return '/pages/onboarding/genderSelection';
@@ -119,9 +104,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!u.body_shape) return '/pages/onboarding/bodyShape';
         if (!u.body_measurements || Object.keys(u.body_measurements).length === 0) return '/pages/onboarding/bodyMeasurement';
         if (!u.fashion_styles || u.fashion_styles.length === 0) return '/pages/onboarding/styleIdentity';
-        return null; // Completed
+        return null;
     };
-
 
     return (
         <AuthContext.Provider
@@ -136,7 +120,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 updateProfile,
                 getOnboardingStep,
             }}
-
         >
             {children}
         </AuthContext.Provider>

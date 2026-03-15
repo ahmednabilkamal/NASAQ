@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { FontSizes } from '@/utils/typography';
 
 interface HomeHeaderProps {
     userName: string;
@@ -70,13 +71,13 @@ const styles = StyleSheet.create({
         marginRight: 12,
     },
     greeting: {
-        fontSize: 11,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_400Regular',
         color: '#888',
         marginBottom: -2,
     },
     userName: {
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_700Bold',
         color: '#111',
     },

@@ -1,12 +1,15 @@
 import { usePathname, useRouter } from 'expo-router';
 import React from 'react';
-import { Dimensions, StyleSheet, TouchableOpacity, View, Image } from 'react-native';
-
-const { width } = Dimensions.get('window');
+import { StyleSheet, TouchableOpacity, View, Image, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { IconSizes, ComponentSizes } from '@/utils/spacing';
 
 export default function BottomNav() {
     const router = useRouter();
     const pathname = usePathname();
+    const { width } = useWindowDimensions();
+    const insets = useSafeAreaInsets();
 
     const tabs = [
         { id: 'profile', icon: require('../assets/icons/user.png'), label: 'Profile', route: '/pages/tabs/profile' },
@@ -17,8 +20,8 @@ export default function BottomNav() {
     ];
 
     return (
-        <View style={styles.container}>
-            <View style={styles.navBar}>
+        <SafeAreaView style={[styles.container, { width }]} edges={['bottom']}>
+            <View style={[styles.navBar, { paddingBottom: insets.bottom }]}>
                 {tabs.map((tab, index) => {
                     const isActive = pathname === tab.route;
 
@@ -30,7 +33,7 @@ export default function BottomNav() {
                                 onPress={() => tab.route && router.push(tab.route as any)}
                             >
                                 <View style={styles.centerButton}>
-                                    <Image source={tab.icon} style={{ width: 28, height: 28, tintColor: '#FFF' }} resizeMode="contain" />
+                                    <Image source={tab.icon} style={{ width: IconSizes.lg, height: IconSizes.lg, tintColor: '#FFF' }} resizeMode="contain" />
                                 </View>
                             </TouchableOpacity>
                         );
@@ -45,8 +48,8 @@ export default function BottomNav() {
                             <Image
                                 source={tab.icon}
                                 style={{
-                                    width: 26,
-                                    height: 26,
+                                    width: IconSizes.md,
+                                    height: IconSizes.md,
                                     tintColor: isActive ? '#064E3B' : '#666'
                                 }}
                                 resizeMode="contain"
@@ -55,7 +58,7 @@ export default function BottomNav() {
                     );
                 })}
             </View>
-        </View>
+        </SafeAreaView>
     );
 
 }
@@ -64,22 +67,21 @@ const styles = StyleSheet.create({
     container: {
         position: 'absolute',
         bottom: 0,
-        width: width,
-
-
         backgroundColor: 'transparent',
+        left: 0,
+        right: 0,
     },
     navBar: {
         flexDirection: 'row',
-        height: 75,
+        height: ComponentSizes.bottomNavHeight,
         backgroundColor: '#FFF',
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
+        borderTopLeftRadius: scale(30),
+        borderTopRightRadius: scale(30),
         alignItems: 'center',
         justifyContent: 'space-around',
         boxShadow: '0 -10px 10px rgba(0,0,0,0.05)',
         elevation: 15,
-        paddingHorizontal: 10,
+        paddingHorizontal: scale(10),
     },
     tabItem: {
         alignItems: 'center',
@@ -87,22 +89,22 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     centerButtonContainer: {
-        marginTop: -55,
+        marginTop: ComponentSizes.bottomNavCenterMarginTop,
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: 100,
+        borderRadius: scale(100),
         backgroundColor: "transparent",
     },
     centerButton: {
-        width: 65,
-        height: 65,
-        borderRadius: 32.5,
+        width: ComponentSizes.bottomNavCenterButton,
+        height: ComponentSizes.bottomNavCenterButton,
+        borderRadius: ComponentSizes.bottomNavCenterButton / 2,
         backgroundColor: '#064E3B',
         justifyContent: 'center',
         alignItems: 'center',
         boxShadow: '0 8px 10px rgba(6,78,59,0.3)',
         elevation: 8,
-        borderWidth: 6,
+        borderWidth: scale(6),
         borderColor: '#FFF',
     },
 });

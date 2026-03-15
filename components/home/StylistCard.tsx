@@ -1,6 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
+import { FontSizes } from '@/utils/typography';
 
 interface StylistCardProps {
     name: string;
@@ -29,11 +32,11 @@ export default function StylistCard({ name, subtitle, imageUri, rating, clientCo
                     <Image source={imageUri} style={styles.image} resizeMode="cover" />
                 ) : (
                     <View style={styles.imagePlaceholder}>
-                        <Ionicons name="person" size={40} color="#ccc" />
+                        <Ionicons name="person" size={IconSizes.xl} color="#ccc" />
                     </View>
                 )}
                 <View style={styles.ratingBadge}>
-                    <Ionicons name="star" size={10} color="#FFB800" />
+                    <Ionicons name="star" size={scale(10)} color="#FFB800" />
                     <Text style={styles.ratingText}>{rating}</Text>
                 </View>
                 <TouchableOpacity
@@ -43,7 +46,7 @@ export default function StylistCard({ name, subtitle, imageUri, rating, clientCo
                 >
                     <Ionicons
                         name={isFavorite ? "heart" : "heart-outline"}
-                        size={20}
+                        size={IconSizes.sm}
                         color={isFavorite ? "#FF4458" : "#999"}
                     />
                 </TouchableOpacity>
@@ -72,10 +75,10 @@ export default function StylistCard({ name, subtitle, imageUri, rating, clientCo
 
 const styles = StyleSheet.create({
     container: {
-        width: 170,
+        width: scale(170),
         backgroundColor: '#fff',
-        borderRadius: 20,
-        marginRight: 16,
+        borderRadius: BorderRadius.xl,
+        marginRight: Spacing.lg,
         overflow: 'hidden',
         elevation: 2,
         shadowColor: '#000',
@@ -85,7 +88,7 @@ const styles = StyleSheet.create({
     },
     imageContainer: {
         width: '100%',
-        height: 160,
+        height: scaleVertical(160),
         position: 'relative',
     },
     image: {
@@ -101,56 +104,56 @@ const styles = StyleSheet.create({
     },
     ratingBadge: {
         position: 'absolute',
-        bottom: 10,
-        left: 10,
+        bottom: scale(10),
+        left: scale(10),
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(0,0,0,0.5)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-        gap: 4,
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: scale(4),
+        borderRadius: BorderRadius.md,
+        gap: scale(4),
     },
     ratingText: {
-        fontSize: 11,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_600SemiBold',
         color: '#FFF',
     },
     favoriteButton: {
         position: 'absolute',
-        top: 10,
-        right: 10,
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        top: scale(10),
+        right: scale(10),
+        width: scale(32),
+        height: scale(32),
+        borderRadius: BorderRadius.lg,
         backgroundColor: 'rgba(255,255,255,0.8)',
         justifyContent: 'center',
         alignItems: 'center',
     },
     infoContainer: {
-        padding: 12,
+        padding: Spacing.md,
     },
     name: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_700Bold',
         color: '#111',
         textAlign: 'right',
     },
     tags: {
-        fontSize: 11,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
         textAlign: 'right',
-        marginTop: 2,
+        marginTop: scale(2),
     },
     statsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginTop: 10,
+        marginTop: scale(10),
         borderTopWidth: 1,
         borderTopColor: '#F0F0F0',
-        paddingTop: 8,
+        paddingTop: Spacing.sm,
     },
     clientCount: {
         flexDirection: 'row',
@@ -158,12 +161,12 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     clientCountText: {
-        fontSize: 11,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_600SemiBold',
         color: '#888',
     },
     totalLabel: {
-        fontSize: 11,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
     }

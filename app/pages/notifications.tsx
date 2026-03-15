@@ -11,6 +11,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
+import { FontSizes } from '@/utils/typography';
 
 type NotifType = 'message' | 'success' | 'offer' | 'order' | 'system';
 
@@ -173,25 +176,25 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 14,
+        paddingHorizontal: Spacing.cardPadding,
+        paddingVertical: Spacing.verticalMd,
         backgroundColor: '#FFF',
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
     },
-    headerBtn: { width: 38, height: 38, justifyContent: 'center', alignItems: 'center' },
-    headerTitle: { fontSize: 18, fontFamily: 'Cairo_700Bold', color: '#000' },
-    badge: { fontSize: 15, color: '#064E3B', fontFamily: 'Cairo_700Bold' },
-    list: { padding: 16, paddingBottom: 32 },
+    headerBtn: { width: scale(38), height: scale(38), justifyContent: 'center', alignItems: 'center' },
+    headerTitle: { fontSize: FontSizes.h4, fontFamily: 'Cairo_700Bold', color: '#000' },
+    badge: { fontSize: scale(15), color: '#064E3B', fontFamily: 'Cairo_700Bold' },
+    list: { padding: Spacing.cardPadding, paddingBottom: scaleVertical(32) },
 
     card: {
         flexDirection: 'row',
         alignItems: 'flex-start',
         backgroundColor: '#FFF',
-        borderRadius: 16,
-        padding: 14,
-        marginBottom: 10,
-        gap: 12,
+        borderRadius: BorderRadius.lg,
+        padding: Spacing.verticalMd,
+        marginBottom: Spacing.verticalMd,
+        gap: Spacing.md,
         position: 'relative',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
@@ -206,40 +209,40 @@ const styles = StyleSheet.create({
     },
     unreadDot: {
         position: 'absolute',
-        top: 12,
-        left: 12,
-        width: 8,
-        height: 8,
-        borderRadius: 4,
+        top: Spacing.verticalMd,
+        left: Spacing.verticalMd,
+        width: scale(8),
+        height: scale(8),
+        borderRadius: scale(4),
         backgroundColor: '#064E3B',
     },
     iconBox: {
-        width: 46,
-        height: 46,
-        borderRadius: 14,
+        width: scale(46),
+        height: scale(46),
+        borderRadius: BorderRadius.lg,
         justifyContent: 'center',
         alignItems: 'center',
         flexShrink: 0,
     },
     textBlock: { flex: 1, alignItems: 'flex-end' },
     title: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_600SemiBold',
         color: '#374151',
         textAlign: 'right',
-        marginBottom: 3,
-        lineHeight: 22,
+        marginBottom: Spacing.verticalXs,
+        lineHeight: scale(22),
     },
     titleBold: { fontFamily: 'Cairo_700Bold', color: '#111' },
     body: {
-        fontSize: 12,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_400Regular',
         color: '#6B7280',
         textAlign: 'right',
-        marginBottom: 5,
+        marginBottom: Spacing.verticalXs,
     },
-    time: { fontSize: 11, fontFamily: 'Cairo_400Regular', color: '#9CA3AF' },
+    time: { fontSize: FontSizes.bodySmall, fontFamily: 'Cairo_400Regular', color: '#9CA3AF' },
 
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
-    emptyText: { fontSize: 15, fontFamily: 'Cairo_400Regular', color: '#9CA3AF' },
+    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.md },
+    emptyText: { fontSize: scale(15), fontFamily: 'Cairo_400Regular', color: '#9CA3AF' },
 });

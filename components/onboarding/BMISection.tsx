@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { FontSizes } from '@/utils/typography';
 
 interface BMISectionProps {
     title: string;
@@ -59,7 +60,7 @@ const styles = StyleSheet.create({
         marginBottom: 60,
     },
     bmiTitle: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_700Bold',
         textAlign: 'center',
         marginBottom: 15,
@@ -76,7 +77,7 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-start',
     },
     bmiLabel: {
-        fontSize: 10,
+        fontSize: FontSizes.caption,
         position: 'absolute',
         top: -15,
     },
@@ -97,7 +98,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     bmiSubLabel: {
-        fontSize: 10,
+        fontSize: FontSizes.caption,
         color: '#999',
         width: '25%',
         textAlign: 'center',

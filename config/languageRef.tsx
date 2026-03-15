@@ -24,7 +24,6 @@ interface LanguageProviderProps {
 }
 
 const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
-    // Initialize with current RTL state to avoid flip-flop on boot
     const [languageCode, setLanguageCode] = React.useState<string>(I18nManager.isRTL ? 'ar' : 'en');
     const [isLoaded, setIsLoaded] = React.useState(false);
 
@@ -49,11 +48,11 @@ const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
     }, []);
 
     useEffect(() => {
-        if (!isLoaded) return; // Wait until we know the choice
+        if (!isLoaded) return;
 
         const updateLanguage = async () => {
             const isRTL = languageCode === 'ar';
-            
+
             if (I18nManager.isRTL !== isRTL) {
                 I18nManager.allowRTL(isRTL);
                 I18nManager.forceRTL(isRTL);
@@ -97,4 +96,3 @@ const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
 };
 
 export default LanguageProvider;
-

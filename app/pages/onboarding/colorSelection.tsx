@@ -7,6 +7,9 @@ import pageData from '@/data/content';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGender } from '@/config/genderContext';
 import { useAuth } from '@/config/authContext';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
 
 const TONES = {
     female: [
@@ -54,7 +57,7 @@ export default function SkinTonePage() {
     const currentTones = gender === 'male' ? TONES.male : TONES.female;
 
     return (
-        <SafeAreaView style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }} edges={['top']}>
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
@@ -95,32 +98,32 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     listContent: {
-        paddingBottom: 20,
+        paddingBottom: scaleVertical(20),
     },
     columnWrapper: {
         justifyContent: 'flex-start',
-        gap: 15,
-        marginBottom: 15,
+        gap: scale(15),
+        marginBottom: scaleVertical(15),
     },
     card: {
         width: '30%',
         aspectRatio: 0.8,
         backgroundColor: '#FFF',
-        borderRadius: 12,
-        padding: 8,
+        borderRadius: BorderRadius.cardSmall,
+        padding: scale(8),
         alignItems: 'center',
         justifyContent: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: scale(2) },
         shadowOpacity: 0.05,
-        shadowRadius: 4,
+        shadowRadius: scale(4),
         elevation: 2,
     },
     cardSelected: {
         backgroundColor: '#F8FAF9',
         transform: [{ scale: 1.05 }],
         shadowOpacity: 0.15,
-        shadowRadius: 8,
+        shadowRadius: scale(8),
         elevation: 4,
     },
     imageContainer: {
@@ -128,14 +131,14 @@ const styles = StyleSheet.create({
         width: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 4,
+        marginBottom: scale(4),
     },
     toneImage: {
         width: '100%',
         height: '100%',
     },
     toneName: {
-        fontSize: 10,
+        fontSize: FontSizes.caption,
         color: '#666',
         textAlign: 'center',
         fontFamily: 'Cairo_400Regular',

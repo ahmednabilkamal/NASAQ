@@ -1,5 +1,6 @@
 import { StyleSheet, Text, type TextProps } from 'react-native';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { FontSizes, LineHeights } from '@/utils/typography';
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
@@ -34,32 +35,32 @@ export function ThemedText({
 
 const styles = StyleSheet.create({
   default: {
-    fontSize: 14,
-    lineHeight: 14,
+    fontSize: FontSizes.body,
+    lineHeight: LineHeights.body,
     fontFamily: 'Cairo_700Bold',
     letterSpacing: 0,
   },
   defaultSemiBold: {
-    fontSize: 14,
-    lineHeight: 14,
+    fontSize: FontSizes.body,
+    lineHeight: LineHeights.body,
     fontFamily: 'Cairo_700Bold',
     letterSpacing: 0,
   },
   title: {
-    fontSize: 23,
-    lineHeight: 23,
+    fontSize: FontSizes.h2,
+    lineHeight: LineHeights.h2,
     fontFamily: 'Cairo_700Bold',
     letterSpacing: 0,
   },
   subtitle: {
-    fontSize: 14,
-    lineHeight: 14,
+    fontSize: FontSizes.body,
+    lineHeight: LineHeights.body,
     fontFamily: 'Cairo_700Bold',
     letterSpacing: 0,
   },
   link: {
-    fontSize: 14,
-    lineHeight: 14,
+    fontSize: FontSizes.body,
+    lineHeight: LineHeights.body,
     color: '#0a7ea4',
     fontFamily: 'Cairo_700Bold',
     letterSpacing: 0,

@@ -10,6 +10,9 @@ import { HeightSlider } from '@/components/onboarding/HeightSlider';
 import { useHeightSelection } from '@/hooks/onboarding/useHeightSelection';
 import { useAuth } from '@/config/authContext';
 import { useGender } from '@/config/genderContext';
+import { scale, scaleVertical, getImageSize } from '@/utils/responsive';
+import { Spacing, BorderRadius } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
 
 export default function HeightPage() {
     const router = useRouter();
@@ -45,7 +48,7 @@ export default function HeightPage() {
     ];
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
@@ -94,7 +97,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         alignItems: 'center',
-        paddingTop: 20,
+        paddingTop: scaleVertical(20),
     },
     visualContainer: {
         flex: 1,
@@ -103,20 +106,20 @@ const styles = StyleSheet.create({
     },
     heightDisplay: {
         position: 'absolute',
-        top: 50,
-        left: 10,
+        top: scaleVertical(50),
+        left: scale(10),
         flexDirection: 'row',
         alignItems: 'baseline',
         zIndex: 10,
     },
     heightText: {
-        fontSize: 32,
+        fontSize: FontSizes.displayMedium,
         fontFamily: 'Cairo_700Bold',
     },
     heightUnit: {
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_400Regular',
-        marginLeft: 5,
+        marginLeft: scale(5),
     },
     contentRow: {
         flexDirection: 'row',
@@ -129,7 +132,6 @@ const styles = StyleSheet.create({
         overflow: 'visible',
     },
     characterImage: {
-        width: 180,
-        height: 400,
+        ...getImageSize(180, 400),
     },
 });

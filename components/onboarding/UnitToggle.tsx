@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { FontSizes } from '@/utils/typography';
 
 interface UnitToggleProps {
     unit: string;
@@ -50,7 +51,7 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     toggleText: {
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_700Bold',
         color: '#999',
     },

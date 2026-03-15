@@ -8,6 +8,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import apiService, { FashionStyle } from '@/config/apiService';
 import { useAuth } from '@/config/authContext';
 import { useGender } from '@/config/genderContext';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
 
 export default function StyleIdentityPage() {
     const router = useRouter();
@@ -75,7 +78,7 @@ export default function StyleIdentityPage() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
@@ -155,20 +158,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     listContent: {
-        paddingTop: 10,
-        paddingBottom: 40,
+        paddingTop: scaleVertical(10),
+        paddingBottom: scaleVertical(40),
     },
     columnWrapper: {
-        gap: 10,
-        marginBottom: 10,
+        gap: scale(10),
+        marginBottom: scaleVertical(10),
     },
     card: {
         width: '31%',
         aspectRatio: 0.8,
-        borderRadius: 8,
+        borderRadius: BorderRadius.sm,
         backgroundColor: '#E5E7EB',
         overflow: 'hidden',
-        borderWidth: 2,
+        borderWidth: scale(2),
         borderColor: 'transparent',
     },
     cardSelected: {
@@ -188,12 +191,12 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        paddingVertical: 10,
+        paddingVertical: scaleVertical(10),
         backgroundColor: 'rgba(0,0,0,0.4)',
         alignItems: 'center',
     },
     styleName: {
-        fontSize: 10,
+        fontSize: FontSizes.caption,
         color: '#FFF',
         fontFamily: 'Cairo_700Bold',
         textAlign: 'center',

@@ -7,11 +7,6 @@ import apiService, {
     ApiResponse
 } from '@/config/apiService';
 
-/**
- * Custom hook to fetch recommended services
- * @param params - Pagination parameters
- * @returns Object containing data, loading state, error, and refetch function
- */
 export const useRecommendedServices = (params?: PaginationParams) => {
     const [data, setData] = useState<RecommendedService[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -43,10 +38,6 @@ export const useRecommendedServices = (params?: PaginationParams) => {
     };
 };
 
-/**
- * Custom hook to fetch banners
- * @returns Object containing data, loading state, error, and refetch function
- */
 export const useBanners = () => {
     const [data, setData] = useState<Banner[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -78,11 +69,6 @@ export const useBanners = () => {
     };
 };
 
-/**
- * Custom hook to fetch fashion styles
- * @param params - Pagination parameters
- * @returns Object containing data, loading state, error, and refetch function
- */
 export const useFashionStyles = (params?: PaginationParams) => {
     const [data, setData] = useState<FashionStyle[]>([]);
     const [loading, setLoading] = useState<boolean>(true);

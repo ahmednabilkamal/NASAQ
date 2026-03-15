@@ -19,14 +19,21 @@ import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import ProfileBar from '@/components/ProfileBar';
 import apiService, { Stylist, StylistService } from '@/config/apiService';
+import { scale, scaleVertical, wp } from '@/utils/responsive';
+import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
 
 const { width } = Dimensions.get('window');
+
+const showAlert = (title: string, message: string) => {
+    Alert.alert(title, message);
+};
 
 export default function StylistDetailScreen() {
     const router = useRouter();
     const { id } = useLocalSearchParams<{ id?: string }>();
     const { languageCode } = useLanguage();
-    const content = (pageData as any)[languageCode]?.stylistDetail || (pageData as any)['en'].stylistDetail;
+    const content = (pageData as any)[languageCode] || (pageData as any)['en'];
     const isRTL = I18nManager.isRTL;
 
     const [activeTab, setActiveTab] = useState('about');
@@ -76,10 +83,10 @@ export default function StylistDetailScreen() {
     };
 
     const Tabs = [
-        { id: 'about', label: content.about || 'عن المنسقة' },
-        { id: 'reviews', label: content.reviews || 'التقييمات' },
-        { id: 'portfolio', label: content.portfolio || 'معرض الأعمال' },
-        { id: 'services', label: content.services || 'الخدمات' },
+        { id: 'about', label: content.stylistDetail?.about || 'عن المنسقة' },
+        { id: 'reviews', label: content.stylistDetail?.reviews || 'التقييمات' },
+        { id: 'portfolio', label: content.stylistDetail?.portfolio || 'معرض الأعمال' },
+        { id: 'services', label: content.stylistDetail?.services || 'الخدمات' },
     ];
 
     const handleContact = async () => {
@@ -99,7 +106,6 @@ export default function StylistDetailScreen() {
         if (!id) return;
         const availableServices = services.filter(s => s.available !== false);
 
-        // If no service given and multiple available → show picker
         if (!service && availableServices.length > 1) {
             setShowServicePicker(true);
             return;
@@ -107,13 +113,12 @@ export default function StylistDetailScreen() {
 
         const selectedService = service ?? availableServices[0];
         if (!selectedService) {
-            Alert.alert('لا توجد خدمات', 'لا توجد خدمات متاحة لهذه المنسقة حالياً.');
+            showAlert(content.common?.noData || 'لا توجد خدمات', content.common?.noData || 'لا توجد خدمات متاحة لهذه المنسقة حالياً.');
             return;
         }
 
         setBooking(true);
         try {
-            // Step 1 – create the order
             const orderRes = await apiService.createOrder({
                 stylist_service_id: Number(selectedService.id),
             });
@@ -122,22 +127,20 @@ export default function StylistDetailScreen() {
 
             if (!orderId) throw new Error('Order ID missing from response');
 
-            // Step 2 – initiate Moyasar payment and get the hosted payment URL
             const payRes = await apiService.initiatePayment(Number(orderId));
             const paymentUrl = (payRes?.data as any)?.payment_url;
 
             if (!paymentUrl) throw new Error('payment_url missing from response');
 
-            // Step 3 – open the Moyasar-hosted payment page
             const supported = await Linking.canOpenURL(paymentUrl);
             if (supported) {
                 await Linking.openURL(paymentUrl);
             } else {
-                Alert.alert('خطأ', 'تعذّر فتح صفحة الدفع.');
+                showAlert(content.errors?.title || 'خطأ', 'تعذّر فتح صفحة الدفع.');
             }
         } catch (error: any) {
             console.error('Book & Pay error:', error);
-            Alert.alert('خطأ', error?.message || 'تعذّر إتمام الحجز. يرجى المحاولة لاحقاً.');
+            showAlert(content.errors?.title || 'خطأ', error?.message || 'تعذّر إتمام الحجز. يرجى المحاولة لاحقاً.');
         } finally {
             setBooking(false);
             setShowServicePicker(false);
@@ -176,7 +179,7 @@ export default function StylistDetailScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerIconButton}>
                     <Ionicons name="chevron-forward" size={24} color="#333" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{content.title || 'تفاصيل المنسقة'}</Text>
+                <Text style={styles.headerTitle}>{content.stylistDetail?.title || 'تفاصيل المنسقة'}</Text>
                 <TouchableOpacity onPress={handleToggleFavorite} style={styles.headerIconButton}>
                     <Ionicons
                         name={isFavorite ? "heart" : "heart-outline"}
@@ -186,7 +189,6 @@ export default function StylistDetailScreen() {
                 </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Header Image */}
                 <View style={styles.headerImageContainer}>
                     <Image
                         source={stylist?.image ? { uri: stylist.image } : require('@/assets/mirroimagewomen.png')}
@@ -199,7 +201,7 @@ export default function StylistDetailScreen() {
                     <View style={styles.nameRow}>
                         <Text style={styles.nameText}>{stylist?.name ?? ''}</Text>
                         {stylist?.price != null && (
-                            <Text style={styles.priceText}>{stylist.price} ر.س / ساعة</Text>
+                            <Text style={styles.priceText}>{stylist.price} {content.common?.currency || 'ر.س'} {content.common?.perHour || '/ ساعة'}</Text>
                         )}
                     </View>
                     {stylist?.bio ? (
@@ -248,11 +250,10 @@ export default function StylistDetailScreen() {
                     </ScrollView>
                 </View>
 
-                {/* Tab Content */}
                 <View style={styles.tabContent}>
                     {activeTab === 'about' && (
                         <Text style={styles.aboutText}>
-                            {stylist?.about ?? 'لا توجد معلومات متاحة'}
+                            {stylist?.about ?? (content.common?.noData || 'لا توجد معلومات متاحة')}
                         </Text>
                     )}
 
@@ -266,7 +267,7 @@ export default function StylistDetailScreen() {
 
                     {activeTab === 'reviews' && (
                         <View style={styles.reviewsContainer}>
-                            <Text style={styles.noDataText}>لا توجد تقييمات بعد</Text>
+                            <Text style={styles.noDataText}>{content.common?.noData || 'لا توجد تقييمات بعد'}</Text>
                         </View>
                     )}
 
@@ -277,17 +278,15 @@ export default function StylistDetailScreen() {
                                     <ServiceCard key={String(service.id)} item={service} />
                                 ))
                             ) : (
-                                <Text style={styles.noDataText}>لا توجد خدمات متاحة</Text>
+                                <Text style={styles.noDataText}>{content.common?.noData || 'لا توجد خدمات متاحة'}</Text>
                             )}
                         </View>
                     )}
                 </View>
 
-                {/* Bottom spacing */}
                 <View style={{ height: 100 }} />
             </ScrollView>
 
-            {/* Contact + Book Footer */}
             <View style={styles.footer}>
                 <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
                     <Ionicons name="chatbubble-ellipses-outline" size={18} color="#064E3B" style={{ marginLeft: 8 }} />
@@ -310,7 +309,6 @@ export default function StylistDetailScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* Service Picker Modal */}
             {showServicePicker && (
                 <View style={styles.pickerOverlay}>
                     <View style={styles.pickerSheet}>
@@ -321,7 +319,7 @@ export default function StylistDetailScreen() {
                                 style={styles.pickerItem}
                                 onPress={() => handleBookAndPay(svc)}
                             >
-                                <Text style={styles.pickerPrice}>{svc.price} ر.س</Text>
+                                <Text style={styles.pickerPrice}>{svc.price} {content.common?.currency || 'ر.س'}</Text>
                                 <Text style={styles.pickerItemTitle}>{svc.title}</Text>
                             </TouchableOpacity>
                         ))}
@@ -351,27 +349,27 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 12,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
+        paddingVertical: Spacing.verticalSm,
         backgroundColor: '#FFF',
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
     },
     headerTitle: {
-        fontSize: 18,
+        fontSize: FontSizes.h4,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },
     headerIconButton: {
-        width: 40,
-        height: 40,
+        width: scale(40),
+        height: scale(40),
         backgroundColor: '#F8F9FA',
-        borderRadius: 20,
+        borderRadius: scale(20),
         justifyContent: 'center',
         alignItems: 'center',
     },
     headerImageContainer: {
-        height: 280,
+        height: scaleVertical(280),
         width: '100%',
     },
     headerImage: {
@@ -380,41 +378,41 @@ const styles = StyleSheet.create({
         resizeMode: 'cover',
     },
     infoContainer: {
-        padding: 20,
+        padding: Spacing.screenPadding,
     },
     nameRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 5,
+        marginBottom: Spacing.verticalSm,
     },
     nameText: {
-        fontSize: 22,
+        fontSize: FontSizes.h2,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },
     priceText: {
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_700Bold',
         color: '#064E3B',
     },
     specialtyText: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
-        marginBottom: 15,
+        marginBottom: Spacing.verticalLg,
         textAlign: 'right',
     },
     statsRow: {
-        gap: 8,
+        gap: Spacing.gapMd,
     },
     statItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: Spacing.gapMd,
     },
     statText: {
-        fontSize: 12,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
     },
@@ -423,11 +421,11 @@ const styles = StyleSheet.create({
         borderBottomColor: '#F0F0F0',
     },
     tabsScroll: {
-        paddingHorizontal: 20,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
     },
     tab: {
-        paddingVertical: 15,
-        marginRight: 25,
+        paddingVertical: Spacing.verticalLg,
+        marginRight: scale(25),
         borderBottomWidth: 2,
         borderBottomColor: 'transparent',
     },
@@ -435,7 +433,7 @@ const styles = StyleSheet.create({
         borderBottomColor: '#064E3B',
     },
     tabText: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_700Bold',
         color: '#999',
     },
@@ -443,63 +441,63 @@ const styles = StyleSheet.create({
         color: '#064E3B',
     },
     tabContent: {
-        padding: 20,
+        padding: Spacing.screenPadding,
     },
     aboutText: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#444',
-        lineHeight: 24,
+        lineHeight: LineHeights.body,
         textAlign: 'right',
     },
     portfolioGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 10,
+        gap: Spacing.gapLg,
     },
     portfolioImage: {
-        width: (width - 50) / 2,
-        height: 180,
-        borderRadius: 12,
+        width: (wp(100) - Spacing.screenPadding * 2 - Spacing.gapLg) / 2,
+        height: scaleVertical(180),
+        borderRadius: BorderRadius.md,
     },
     reviewsContainer: {
-        gap: 15,
+        gap: Spacing.verticalLg,
     },
     servicesGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
+        gap: Spacing.gapXl,
     },
     serviceCard: {
-        width: (width - 52) / 2,
+        width: (wp(100) - Spacing.screenPadding * 2 - Spacing.gapXl) / 2,
         backgroundColor: '#FFF',
-        borderRadius: 16,
-        padding: 15,
+        borderRadius: BorderRadius.lg,
+        padding: Spacing.cardPadding,
         borderWidth: 1,
         borderColor: '#E5E5E5',
     },
     serviceIconContainer: {
-        width: 32,
-        height: 32,
-        borderRadius: 8,
+        width: IconSizes.md,
+        height: IconSizes.md,
+        borderRadius: BorderRadius.sm,
         backgroundColor: '#E8F5E9',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: Spacing.verticalMd,
         alignSelf: 'flex-end',
     },
     serviceContent: {
         alignItems: 'flex-end',
-        marginBottom: 12,
+        marginBottom: Spacing.verticalMd,
     },
     serviceTitle: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_700Bold',
         color: '#333',
         textAlign: 'right',
     },
     serviceSubtitle: {
-        fontSize: 11,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_400Regular',
         color: '#888',
         textAlign: 'right',
@@ -508,23 +506,23 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#E8F5E9',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 15,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.verticalXs,
+        borderRadius: BorderRadius.round,
         alignSelf: 'flex-start',
-        gap: 4,
+        gap: Spacing.gapXs,
     },
     servicePriceText: {
-        fontSize: 13,
+        fontSize: FontSizes.label,
         fontFamily: 'Cairo_700Bold',
         color: '#064E3B',
     },
     noDataText: {
         fontFamily: 'Cairo_400Regular',
-        fontSize: 14,
+        fontSize: FontSizes.body,
         color: '#999',
         textAlign: 'center',
-        paddingVertical: 20,
+        paddingVertical: Spacing.verticalLg,
     },
     footer: {
         position: 'absolute',
@@ -532,17 +530,17 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         flexDirection: 'row',
-        gap: 10,
-        padding: 16,
-        paddingBottom: 28,
+        gap: Spacing.gapLg,
+        padding: Spacing.cardPadding,
+        paddingBottom: scaleVertical(28),
         backgroundColor: '#FFF',
         borderTopWidth: 1,
         borderTopColor: '#F0F0F0',
     },
     contactButton: {
         flex: 1,
-        height: 52,
-        borderRadius: 26,
+        height: scaleVertical(52),
+        borderRadius: scale(26),
         borderWidth: 2,
         borderColor: '#064E3B',
         justifyContent: 'center',
@@ -551,13 +549,13 @@ const styles = StyleSheet.create({
     },
     contactButtonText: {
         color: '#064E3B',
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_700Bold',
     },
     bookButton: {
         flex: 1,
-        height: 52,
-        borderRadius: 26,
+        height: scaleVertical(52),
+        borderRadius: scale(26),
         backgroundColor: '#064E3B',
         justifyContent: 'center',
         alignItems: 'center',
@@ -565,7 +563,7 @@ const styles = StyleSheet.create({
     },
     bookButtonText: {
         color: '#FFF',
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_700Bold',
     },
     pickerOverlay: {
@@ -576,46 +574,46 @@ const styles = StyleSheet.create({
     },
     pickerSheet: {
         backgroundColor: '#FFF',
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        padding: 24,
-        paddingBottom: 40,
+        borderTopLeftRadius: BorderRadius.xxl,
+        borderTopRightRadius: BorderRadius.xxl,
+        padding: Spacing.xxxl,
+        paddingBottom: scaleVertical(40),
     },
     pickerTitle: {
-        fontSize: 18,
+        fontSize: FontSizes.h4,
         fontFamily: 'Cairo_700Bold',
         color: '#111',
         textAlign: 'center',
-        marginBottom: 16,
+        marginBottom: Spacing.verticalMd,
     },
     pickerItem: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 14,
-        paddingHorizontal: 16,
+        paddingVertical: Spacing.verticalMd,
+        paddingHorizontal: Spacing.lg,
         backgroundColor: '#F8F9FB',
-        borderRadius: 14,
-        marginBottom: 10,
+        borderRadius: BorderRadius.lg,
+        marginBottom: Spacing.verticalMd,
     },
     pickerItemTitle: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_700Bold',
         color: '#111',
         textAlign: 'right',
     },
     pickerPrice: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_600SemiBold',
         color: '#064E3B',
     },
     pickerCancel: {
-        marginTop: 6,
-        paddingVertical: 14,
+        marginTop: Spacing.verticalXs,
+        paddingVertical: Spacing.verticalMd,
         alignItems: 'center',
     },
     pickerCancelText: {
-        fontSize: 15,
+        fontSize: FontSizes.label,
         fontFamily: 'Cairo_600SemiBold',
         color: '#EF4444',
     },

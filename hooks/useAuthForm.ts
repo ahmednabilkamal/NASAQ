@@ -17,7 +17,6 @@ export const useAuthForm = () => {
     const router = useRouter();
     const { login, register, getOnboardingStep } = useAuth();
 
-
     const toggleAuthMode = () => setIsLogin(prev => !prev);
     const setAuthMode = (mode: boolean) => setIsLogin(mode);
 
@@ -25,7 +24,6 @@ export const useAuthForm = () => {
         setLoading(true);
         try {
             if (isLogin) {
-                // ── Login flow ──────────────────────────────────────────────
                 if (!identifier.trim() || !password.trim()) {
                     Toast.show({ type: 'error', text1: 'خطأ', text2: 'يرجى إدخال البريد الإلكتروني وكلمة المرور' });
                     setLoading(false);
@@ -36,7 +34,6 @@ export const useAuthForm = () => {
                 router.replace(nextStep || '/pages/tabs/homescreen' as any);
 
             } else {
-                // ── Register flow → send OTP → navigate to verification ────
                 if (!name.trim() || !identifier.trim() || !mobile.trim() || !password.trim()) {
                     Toast.show({ type: 'error', text1: 'خطأ', text2: 'يرجى ملء جميع الحقول المطلوبة' });
                     setLoading(false);
@@ -56,17 +53,14 @@ export const useAuthForm = () => {
                     password_confirmation: confirmPassword,
                 });
 
-                // Send OTP to the registered email/phone
                 await authService.sendOtp({ login: identifier.trim() });
 
-                // Navigate to OTP verification, passing the identifier
                 router.push({
                     pathname: '/pages/verification',
                     params: { login: identifier.trim() },
                 } as any);
             }
         } catch (error: any) {
-            // Error is handled globally by axios interceptor
         } finally {
             setLoading(false);
         }

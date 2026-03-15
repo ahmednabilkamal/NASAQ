@@ -10,6 +10,9 @@ import { BMISection } from '@/components/onboarding/BMISection';
 import { WeightSlider } from '@/components/onboarding/WeightSlider';
 import { useWeightSelection } from '@/hooks/onboarding/useWeightSelection';
 import { useAuth } from '@/config/authContext';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
 
 export default function WeightPage() {
     const router = useRouter();
@@ -35,7 +38,7 @@ export default function WeightPage() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
 
             <EvaluationLayout
                 title={content.title}
@@ -78,21 +81,21 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         alignItems: 'center',
-        paddingTop: 20,
+        paddingTop: scaleVertical(20),
     },
     weightDisplay: {
         flexDirection: 'row',
         alignItems: 'baseline',
-        marginBottom: 40,
+        marginBottom: scaleVertical(40),
         justifyContent: 'center',
     },
     weightText: {
-        fontSize: 48,
+        fontSize: FontSizes.display,
         fontFamily: 'Cairo_700Bold',
     },
     weightUnit: {
-        fontSize: 18,
+        fontSize: FontSizes.h4,
         fontFamily: 'Cairo_700Bold',
-        marginLeft: 10,
+        marginLeft: scale(10),
     },
 });

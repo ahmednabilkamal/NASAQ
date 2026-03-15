@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { FontSizes } from '@/utils/typography';
 
 interface WeightSliderProps {
     weight: number;
@@ -7,16 +9,17 @@ interface WeightSliderProps {
 }
 
 export const WeightSlider: React.FC<WeightSliderProps> = ({ weight, panHandlers }) => {
+    const { width: screenWidth } = useWindowDimensions();
     const minWeight = 40;
     const maxWeight = 120;
-    const sliderWidth = 300;
+    const sliderWidth = screenWidth * 0.8; // 80% of screen width
 
     const position = ((weight - minWeight) / (maxWeight - minWeight)) * sliderWidth;
 
     const marks = [40, 60, 80, 100, 120];
 
     return (
-        <View style={styles.rulerContainer} {...panHandlers}>
+        <View style={[styles.rulerContainer, { width: sliderWidth }]} {...panHandlers}>
             <View style={styles.rulerLine} pointerEvents="none" />
             <View style={styles.rulerNumbers} pointerEvents="none">
                 {marks.map((n) => (
@@ -30,15 +33,14 @@ export const WeightSlider: React.FC<WeightSliderProps> = ({ weight, panHandlers 
 
 const styles = StyleSheet.create({
     rulerContainer: {
-        width: 300,
-        height: 100,
+        height: scaleVertical(100),
         justifyContent: 'center',
         position: 'relative',
         alignSelf: 'center',
     },
     rulerLine: {
         position: 'absolute',
-        bottom: 40,
+        bottom: scaleVertical(40),
         left: 0,
         right: 0,
         height: 1,
@@ -49,17 +51,17 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         width: '100%',
         position: 'absolute',
-        bottom: 10,
+        bottom: scaleVertical(10),
     },
     rulerNumber: {
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         color: '#999',
     },
     activePointer: {
         position: 'absolute',
-        bottom: 25,
-        width: 4,
-        height: 40,
+        bottom: scaleVertical(25),
+        width: scale(4),
+        height: scaleVertical(40),
         backgroundColor: '#DDA0DD',
         borderRadius: 2,
     }

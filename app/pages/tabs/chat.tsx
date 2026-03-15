@@ -1,6 +1,9 @@
 import BottomNav from '@/components/BottomNav';
 import apiService, { Conversation } from '@/config/apiService';
 import { useAuth } from '@/config/authContext';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -139,21 +142,21 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFF',
     },
     searchContainer: {
-        paddingHorizontal: 20,
-        paddingVertical: 15,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
+        paddingVertical: scaleVertical(15),
     },
     searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F5F5F5',
-        borderRadius: 12,
-        paddingHorizontal: 15,
-        height: 45,
-        gap: 10,
+        borderRadius: BorderRadius.md,
+        paddingHorizontal: Spacing.lg,
+        height: scaleVertical(45),
+        gap: Spacing.md,
     },
     searchInput: {
         flex: 1,
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
     },
@@ -163,13 +166,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     listContent: {
-        paddingBottom: 100,
+        paddingBottom: scaleVertical(100),
     },
     conversationItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 15,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
+        paddingVertical: scaleVertical(15),
         borderBottomWidth: 1,
         borderBottomColor: '#F5F5F5',
     },
@@ -177,57 +180,57 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     avatar: {
-        width: 55,
-        height: 55,
-        borderRadius: 27.5,
+        width: scale(55),
+        height: scale(55),
+        borderRadius: scale(27.5),
     },
     conversationInfo: {
         flex: 1,
-        marginRight: 12,
+        marginRight: Spacing.md,
         alignItems: 'flex-end',
     },
     conversationName: {
-        fontSize: 15,
+        fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_700Bold',
         color: '#333',
-        marginBottom: 3,
+        marginBottom: Spacing.verticalXs,
     },
     lastMessage: {
-        fontSize: 13,
+        fontSize: FontSizes.label,
         fontFamily: 'Cairo_400Regular',
         color: '#064E3B',
     },
     timeContainer: {
         alignItems: 'flex-start',
-        gap: 8,
+        gap: Spacing.verticalSm,
     },
     timeText: {
-        fontSize: 12,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
     },
     unreadBadge: {
         backgroundColor: '#064E3B',
-        borderRadius: 10,
-        minWidth: 20,
-        height: 20,
+        borderRadius: BorderRadius.round,
+        minWidth: scale(20),
+        height: scale(20),
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 6,
+        paddingHorizontal: Spacing.sm,
     },
     unreadText: {
-        fontSize: 11,
+        fontSize: FontSizes.caption,
         fontFamily: 'Cairo_700Bold',
         color: '#FFF',
     },
     emptyContainer: {
         flex: 1,
         alignItems: 'center',
-        paddingTop: 60,
+        paddingTop: scaleVertical(60),
     },
     emptyText: {
         fontFamily: 'Cairo_400Regular',
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         color: '#999',
     },
 });

@@ -1,7 +1,12 @@
 import BottomNav from '@/components/BottomNav';
 import { HeroBanner, HomeHeader, ServicePackageCard, StylistCard } from '@/components/home';
 import { useAuth } from '@/config/authContext';
+import { useLanguage } from '@/config/languageRef';
+import pageData from '@/data/content';
 import apiService, { Banner, Stylist, RecommendedService } from '@/config/apiService';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -17,6 +22,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const HomeScreen = () => {
     const { user, isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
+    const { languageCode } = useLanguage();
+    const content = (pageData as any)[languageCode] || (pageData as any)['en'];
 
     const [banners, setBanners] = useState<Banner[]>([]);
     const [stylists, setStylists] = useState<Stylist[]>([]);
@@ -123,10 +130,9 @@ const HomeScreen = () => {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header */}
             <HomeHeader
-                userName={user?.name || 'نور حسن'}
-                greeting="صباح الخير"
+                userName={user?.name || content.common?.defaultName || 'نور حسن'}
+                greeting={content.common?.greeting || 'صباح الخير'}
                 onSearchPress={() => console.log('Search pressed')}
                 onNotificationPress={() => router.push('/pages/notifications' as any)}
             />
@@ -141,20 +147,18 @@ const HomeScreen = () => {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* Hero Banner */}
                     <HeroBanner
                         title="اختيار القصة المناسبة لجسمك يفرق أكثر من القطعة نفسها."
                         subtitle=""
-                        buttonText="عرض الكل"
+                        buttonText={content.common?.viewAll || 'عرض الكل'}
                         imageUri={require('@/assets/mirroimagewomen.png')}
                         onPress={() => console.log('Banner pressed')}
                     />
 
-                    {/* Expert Stylists Section */}
                     {stylists.length > 0 && (
                         <View style={styles.section}>
                             <View style={styles.sectionHeader}>
-                                <Text style={styles.sectionLink}>View all.</Text>
+                                <Text style={styles.sectionLink}>{content.common?.viewAll || 'View all.'}</Text>
                                 <Text style={styles.sectionTitle}>Stylists trusted by many</Text>
                             </View>
 
@@ -182,11 +186,10 @@ const HomeScreen = () => {
                         </View>
                     )}
 
-                    {/* Service Packages Section */}
                     {packages.length > 0 && (
                         <View style={styles.section}>
                             <View style={styles.sectionHeader}>
-                                <Text style={styles.sectionTitle}>Packages designed for your needs</Text>
+                                <Text style={styles.sectionTitle}>{content.home?.packages?.title || 'Packages designed for your needs'}</Text>
                             </View>
 
                             <View style={styles.packagesGrid}>
@@ -194,7 +197,7 @@ const HomeScreen = () => {
                                     <ServicePackageCard
                                         key={String(pkg.id)}
                                         title={pkg.title}
-                                        subtitle="Available 24 hours"
+                                        subtitle={content.home?.packages?.box1?.subtitle || 'Available 24 hours'}
                                         price={typeof pkg.price === 'number' ? pkg.price : parseFloat(String(pkg.price ?? '0'))}
                                         variant={index % 3 === 1 ? 'dark' : 'light'}
                                         onPress={() => handlePackagePress(pkg.id)}
@@ -204,8 +207,6 @@ const HomeScreen = () => {
                         </View>
                     )}
 
-
-                    {/* Bottom spacing for BottomNav */}
                     <View style={styles.bottomSpacer} />
                 </ScrollView>
             )}
@@ -231,39 +232,39 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        paddingBottom: 20,
+        paddingBottom: Spacing.verticalXl,
     },
     section: {
-        marginTop: 24,
+        marginTop: scaleVertical(24),
     },
     sectionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        marginBottom: 16,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
+        marginBottom: Spacing.verticalMd,
     },
     sectionTitle: {
-        fontSize: 18,
+        fontSize: FontSizes.h4,
         fontFamily: 'Cairo_700Bold',
         color: '#333',
     },
     sectionLink: {
-        fontSize: 13,
+        fontSize: FontSizes.label,
         fontFamily: 'Cairo_400Regular',
         color: '#064E3B',
     },
     stylistsList: {
-        paddingHorizontal: 20,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
     },
     packagesGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
     },
 
     bottomSpacer: {
-        height: 80,
+        height: scaleVertical(80),
     },
 });

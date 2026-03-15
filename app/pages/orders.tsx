@@ -12,27 +12,20 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/config/authContext';
+import { useLanguage } from '@/config/languageRef';
+import pageData from '@/data/content';
 import BottomNav from '@/components/BottomNav';
 import { Ionicons } from '@expo/vector-icons';
 import apiService, { Order } from '@/config/apiService';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius } from '@/utils/spacing';
+import { FontSizes } from '@/utils/typography';
 
 const STATUS_MAP: Record<string, string[]> = {
-    all:     [],                                          // no filter
+    all:     [],
     new:     ['pending', 'new'],
     recent:  ['in_progress', 'processing', 'recent'],
     saved:   ['completed', 'saved', 'done'],
-};
-
-const STATUS_LABEL: Record<string, string> = {
-    pending:     'معلق',
-    new:         'جديد',
-    in_progress: 'جارٍ',
-    processing:  'جارٍ',
-    completed:   'مكتمل',
-    done:        'مكتمل',
-    active:      'نشطة',
-    inactive:    'ملغاة',
-    cancelled:   'ملغاة',
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -50,6 +43,8 @@ const STATUS_COLOR: Record<string, string> = {
 export default function OrdersScreen() {
     const router = useRouter();
     const { isAuthenticated, loading: authLoading } = useAuth();
+    const { languageCode } = useLanguage();
+    const content = (pageData as any)[languageCode] || (pageData as any)['en'];
     const [activeTab, setActiveTab] = useState('all');
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
@@ -83,10 +78,10 @@ export default function OrdersScreen() {
     };
 
     const tabs = [
-        { id: 'saved',  label: 'محفوظ'  },
-        { id: 'recent', label: 'حديث'   },
-        { id: 'new',    label: 'جديد'   },
-        { id: 'all',    label: 'الكل'   },
+        { id: 'saved',  label: content.orders?.tabs?.saved || 'محفوظ'  },
+        { id: 'recent', label: content.orders?.tabs?.recent || 'حديث'   },
+        { id: 'new',    label: content.orders?.tabs?.new || 'جديد'   },
+        { id: 'all',    label: content.orders?.tabs?.all || 'الكل'   },
     ];
 
     const filteredOrders = activeTab === 'all'
@@ -98,7 +93,8 @@ export default function OrdersScreen() {
 
     const renderOrderItem = ({ item }: { item: Order }) => {
         const rawStatus = String(item.status ?? 'active').toLowerCase();
-        const label     = STATUS_LABEL[rawStatus]  ?? item.status ?? '—';
+        const statusKey = rawStatus as keyof typeof content.orders.status;
+        const label     = content.orders?.status?.[statusKey] ?? item.status ?? '—';
         const color     = STATUS_COLOR[rawStatus]  ?? '#9CA3AF';
 
         // Resolve service image from nested data if available
@@ -129,14 +125,12 @@ export default function OrdersScreen() {
                     <Text style={styles.statusText}>{label}</Text>
                 </View>
 
-                {/* Content */}
                 <View style={styles.orderContent}>
                     <Text style={styles.orderTitle} numberOfLines={1}>{title}</Text>
                     <Text style={styles.orderDescription} numberOfLines={1}>{desc}</Text>
-                    <Text style={styles.orderPrice}>{price} ريال</Text>
+                    <Text style={styles.orderPrice}>{price} {content.common?.currency || 'ريال'}</Text>
                 </View>
 
-                {/* Image */}
                 <Image source={imageUri} style={styles.orderImage} />
             </TouchableOpacity>
         );
@@ -147,16 +141,14 @@ export default function OrdersScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.push('/pages/notifications' as any)}>
                     <Ionicons name="notifications-outline" size={24} color="#333" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>الطلبات</Text>
+                <Text style={styles.headerTitle}>{content.orders?.title || 'الطلبات'}</Text>
                 <View style={{ width: 24 }} />
             </View>
 
-            {/* Filter Tabs */}
             <View style={styles.tabsContainer}>
                 {tabs.map((tab) => (
                     <TouchableOpacity
@@ -171,7 +163,6 @@ export default function OrdersScreen() {
                 ))}
             </View>
 
-            {/* Content */}
             {loading ? (
                 <View style={styles.centered}>
                     <ActivityIndicator size="large" color="#064E3B" />
@@ -179,7 +170,7 @@ export default function OrdersScreen() {
             ) : filteredOrders.length === 0 ? (
                 <View style={styles.centered}>
                     <Ionicons name="receipt-outline" size={64} color="#DDD" />
-                    <Text style={styles.emptyText}>لا توجد طلبات</Text>
+                    <Text style={styles.emptyText}>{content.common?.noResults || 'لا توجد طلبات'}</Text>
                 </View>
             ) : (
                 <FlatList
@@ -213,25 +204,25 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 15,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
+        paddingVertical: Spacing.verticalMd,
         backgroundColor: '#FFF',
     },
     headerTitle: {
-        fontSize: 22,
+        fontSize: FontSizes.h2,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },
     tabsContainer: {
         flexDirection: 'row-reverse',
         backgroundColor: '#FFF',
-        paddingHorizontal: 10,
+        paddingHorizontal: Spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: '#F3F4F6',
     },
     tab: {
         flex: 1,
-        paddingVertical: 14,
+        paddingVertical: Spacing.verticalMd,
         alignItems: 'center',
         borderBottomWidth: 2,
         borderBottomColor: 'transparent',
@@ -240,7 +231,7 @@ const styles = StyleSheet.create({
         borderBottomColor: '#064E3B',
     },
     tabText: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_600SemiBold',
         color: '#9CA3AF',
     },
@@ -251,33 +242,33 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     ordersListContent: {
-        paddingHorizontal: 20,
-        paddingVertical: 15,
-        paddingBottom: 100,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
+        paddingVertical: Spacing.verticalMd,
+        paddingBottom: scaleVertical(100),
     },
     orderItem: {
         flexDirection: 'row',
         backgroundColor: '#FFF',
-        borderRadius: 16,
-        padding: 15,
-        marginVertical: 6,
+        borderRadius: BorderRadius.lg,
+        padding: Spacing.cardPadding,
+        marginVertical: Spacing.verticalSm,
         alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 3,
-        gap: 10,
+        gap: Spacing.gapLg,
     },
     statusBadge: {
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 8,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.verticalXs,
+        borderRadius: BorderRadius.sm,
         alignSelf: 'center',
     },
     statusText: {
         color: '#FFF',
-        fontSize: 11,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_700Bold',
     },
     orderContent: {
@@ -285,28 +276,28 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
     },
     orderTitle: {
-        fontSize: 15,
+        fontSize: scale(15),
         fontFamily: 'Cairo_700Bold',
         color: '#111827',
-        marginBottom: 3,
+        marginBottom: Spacing.verticalXs,
         textAlign: 'right',
     },
     orderDescription: {
-        fontSize: 12,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_400Regular',
         color: '#6B7280',
-        marginBottom: 5,
+        marginBottom: Spacing.verticalXs,
         textAlign: 'right',
     },
     orderPrice: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_700Bold',
         color: '#064E3B',
     },
     orderImage: {
-        width: 58,
-        height: 58,
-        borderRadius: 12,
+        width: scale(58),
+        height: scale(58),
+        borderRadius: BorderRadius.md,
     },
     centered: {
         flex: 1,
@@ -314,9 +305,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     emptyText: {
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_400Regular',
         color: '#9CA3AF',
-        marginTop: 12,
+        marginTop: Spacing.verticalMd,
     },
 });

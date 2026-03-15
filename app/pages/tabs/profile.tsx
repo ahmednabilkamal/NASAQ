@@ -2,6 +2,9 @@ import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/config/authContext';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -22,8 +25,8 @@ import {
     Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
 import authService from '@/config/authService';
+import { showErrorToast, showSuccessToast } from '@/utils/errorHandler';
 
 export default function ProfileScreen() {
     const router = useRouter();
@@ -73,11 +76,11 @@ export default function ProfileScreen() {
 
     const handlePasswordSubmit = async () => {
         if (!newPassword || !confirmPassword) {
-            Toast.show({ type: 'error', text1: 'خطأ', text2: 'يرجى إدخال كلمة المرور' });
+            showErrorToast('passwordRequired', languageCode);
             return;
         }
         if (newPassword !== confirmPassword) {
-            Toast.show({ type: 'error', text1: 'خطأ', text2: 'كلمة المرور غير متطابقة' });
+            showErrorToast('passwordMismatch', languageCode);
             return;
         }
 
@@ -88,9 +91,9 @@ export default function ProfileScreen() {
             setOtpModalVisible(true);
             setTimer(30);
             setCanResend(false);
-            Toast.show({ type: 'success', text1: 'تم الإرسال', text2: 'تم إرسال رمز التحقق لهاتفك' });
+            showSuccessToast('verificationSent', languageCode);
         } catch (error: any) {
-            Toast.show({ type: 'error', text1: 'خطأ', text2: 'فشل إرسال الرمز' });
+            showErrorToast('sendFailed', languageCode);
         } finally {
             setLoading(false);
         }
@@ -111,10 +114,10 @@ export default function ProfileScreen() {
             setNewPassword('');
             setConfirmPassword('');
             setOtp(['', '', '', '', '']);
-            Toast.show({ type: 'success', text1: 'نجاح', text2: 'تم تغيير كلمة المرور بنجاح' });
+            showSuccessToast('passwordChanged', languageCode);
         } catch (error: any) {
-            const msg = error?.response?.data?.message || 'رمز التحقق غير صحيح';
-            Toast.show({ type: 'error', text1: 'خطأ', text2: msg });
+            const msg = error?.response?.data?.message;
+            showErrorToast('', languageCode, msg);
         } finally {
             setLoading(false);
         }
@@ -141,9 +144,9 @@ export default function ProfileScreen() {
             await authService.sendOtp({ login: user?.phone || user?.email || '' });
             setTimer(30);
             setCanResend(false);
-            Toast.show({ type: 'success', text1: 'تم الإرسال', text2: 'تم إعادة إرسال الرمز' });
+            showSuccessToast('verificationSent', languageCode);
         } catch (error) {
-            Toast.show({ type: 'error', text1: 'خطأ', text2: 'فشل إرسال الرمز' });
+            showErrorToast('sendFailed', languageCode);
         } finally {
             setLoading(false);
         }
@@ -177,11 +180,10 @@ export default function ProfileScreen() {
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>الملف الشخصي</Text>
+                <Text style={styles.headerTitle}>{content.title}</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                {/* Profile Card */}
                 <View style={styles.profileCard}>
                     <View style={styles.profileInfo}>
                         <Text style={styles.name}>{user?.name || "نور حسن"}</Text>
@@ -222,40 +224,38 @@ export default function ProfileScreen() {
                 </View>
 
 
-                {/* Personal Info Section */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>المعلومات الشخصية</Text>
+                        <Text style={styles.sectionTitle}>{content.personalInfo}</Text>
                         <Ionicons name="person-outline" size={18} color="#666" />
                     </View>
                     <View style={styles.sectionContent}>
                         <MenuItem
-                            label="تعديل الملف الشخصي"
+                            label={content.editProfile}
                             icon="create-outline"
                             onPress={() => router.push('/pages/profile/edit' as any)}
                         />
                         <MenuItem
-                            label="تغيير كلمة المرور"
+                            label={content.changePassword}
                             icon="lock-closed-outline"
                             onPress={() => setPasswordModalVisible(true)}
                         />
                         <MenuItem
-                            label="المدفوعات"
+                            label={content.payments}
                             icon="card-outline"
                             onPress={() => router.push('/pages/payment/cards' as any)}
                         />
                     </View>
                 </View>
 
-                {/* Settings Section */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>الإعدادات</Text>
+                        <Text style={styles.sectionTitle}>{content.settings}</Text>
                         <Ionicons name="settings-outline" size={18} color="#666" />
                     </View>
                     <View style={styles.sectionContent}>
                         <MenuItem
-                            label="الوضع الداكن"
+                            label={content.darkMode}
                             icon="moon-outline"
                             rightElement={
                                 <Switch
@@ -267,46 +267,41 @@ export default function ProfileScreen() {
                             }
                         />
                         <MenuItem
-                            label="الإشعارات"
+                            label={content.notifications}
                             icon="notifications-outline"
                             onPress={() => router.push('/pages/notifications' as any)}
                         />
                         <MenuItem
-                            label="اللغة"
+                            label={content.language}
                             icon="globe-outline"
                             onPress={() => setLanguageModalVisible(true)}
                         />
                     </View>
                 </View>
 
-                {/* Support Section */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>الدعم</Text>
+                        <Text style={styles.sectionTitle}>{content.support}</Text>
                         <Ionicons name="headset-outline" size={18} color="#666" />
                     </View>
                     <View style={styles.sectionContent}>
                         <MenuItem
-                            label="المساعدة / الأسئلة الشائعة"
+                            label={content.help}
                             icon="help-circle-outline"
                             onPress={() => { }}
                         />
                         <MenuItem
-                            label="تواصل معنا"
+                            label={content.contactUs}
                             icon="chatbubbles-outline"
                             onPress={() => router.push('/pages/contact_us' as any)}
                         />
                         <MenuItem
-                            label="الخصوصية والأمان"
+                            label={content.privacy}
                             icon="shield-checkmark-outline"
                             onPress={() => { }}
                         />
                     </View>
                 </View>
-
-
-
-                {/* Logout Button */}
                 <TouchableOpacity
                     style={styles.logoutButton}
                     onPress={async () => {
@@ -315,30 +310,29 @@ export default function ProfileScreen() {
                     }}
                 >
                     <Ionicons name="log-out-outline" size={22} color="#E11D48" />
-                    <Text style={styles.logoutText}>تسجيل الخروج</Text>
+                    <Text style={styles.logoutText}>{content.logout}</Text>
                 </TouchableOpacity>
             </ScrollView>
             <BottomNav />
 
-            {/* Language Modal */}
             <Modal
                 visible={languageModalVisible}
                 transparent={true}
                 animationType="slide"
                 onRequestClose={() => setLanguageModalVisible(false)}
             >
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
                     onPress={() => setLanguageModalVisible(false)}
                 >
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>إعدادات اللغة</Text>
+                            <Text style={styles.modalTitle}>{content.language}</Text>
                         </View>
                         
                         <View style={styles.modalBody}>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={styles.modalOption}
                                 onPress={() => {
                                     setLanguage('ar');
@@ -353,7 +347,7 @@ export default function ProfileScreen() {
 
                             <View style={styles.modalDivider} />
 
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={styles.modalOption}
                                 onPress={() => {
                                     setLanguage('en');
@@ -370,14 +364,13 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
             </Modal>
 
-            {/* Change Password Modal */}
             <Modal
                 visible={passwordModalVisible}
                 transparent={true}
                 animationType="slide"
                 onRequestClose={() => setPasswordModalVisible(false)}
             >
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
                     onPress={() => setPasswordModalVisible(false)}
@@ -388,9 +381,9 @@ export default function ProfileScreen() {
                     >
                         <View style={styles.modalContent}>
                             <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>تعديل كلمة المرور</Text>
+                                <Text style={styles.modalTitle}>{content.changePassword}</Text>
                             </View>
-                            
+
                             <View style={styles.modalBody}>
                                 <View style={styles.inputGroup}>
                                     <Text style={styles.label}>كلمة المرور الجديدة</Text>
@@ -428,12 +421,12 @@ export default function ProfileScreen() {
                                     </View>
                                 </View>
 
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     style={[styles.modalButton, loading && { opacity: 0.7 }]}
                                     onPress={handlePasswordSubmit}
                                     disabled={loading}
                                 >
-                                    {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.modalButtonText}>تحديث</Text>}
+                                    {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.modalButtonText}>{content.updateButton}</Text>}
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -441,14 +434,13 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
             </Modal>
 
-            {/* OTP Modal */}
             <Modal
                 visible={otpModalVisible}
                 transparent={true}
                 animationType="slide"
                 onRequestClose={() => setOtpModalVisible(false)}
             >
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
                     onPress={() => setOtpModalVisible(false)}
@@ -459,9 +451,9 @@ export default function ProfileScreen() {
                     >
                         <View style={styles.modalContent}>
                             <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>تأكيد كلمة المرور</Text>
+                                <Text style={styles.modalTitle}>{content.changePassword}</Text>
                             </View>
-                            
+
                             <View style={styles.modalBody}>
                                 <Text style={styles.otpSubtitle}>أدخل رمز التحقق المرسل إلى رقم هاتفك</Text>
                                 
@@ -494,12 +486,12 @@ export default function ProfileScreen() {
                                     </TouchableOpacity>
                                 </View>
                                 
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     style={[styles.modalButton, loading && { opacity: 0.7 }]}
                                     onPress={() => handleOtpVerify()}
                                     disabled={loading}
                                 >
-                                    {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.modalButtonText}>تأكيد</Text>}
+                                    {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.modalButtonText}>{content.verify || 'تأكيد'}</Text>}
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -516,86 +508,86 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8F9FA',
     },
     header: {
-        paddingHorizontal: 20,
-        paddingVertical: 15,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
+        paddingVertical: scaleVertical(15),
         alignItems: 'center',
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: FontSizes.h1,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },
     scrollContent: {
-        paddingHorizontal: 20,
-        paddingBottom: 100,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
+        paddingBottom: scaleVertical(100),
     },
     profileCard: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-end',
-        paddingVertical: 20,
-        marginBottom: 20,
+        paddingVertical: Spacing.verticalXl,
+        marginBottom: Spacing.verticalXl,
     },
     avatarContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
+        width: scale(80),
+        height: scale(80),
+        borderRadius: scale(40),
         backgroundColor: '#F0F0F0',
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 4,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: scale(2) },
         shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowRadius: scale(4),
     },
     avatar: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
+        width: scale(80),
+        height: scale(80),
+        borderRadius: scale(40),
     },
     avatarFallback: {
         width: '100%',
         height: '100%',
-        borderRadius: 40,
+        borderRadius: scale(40),
         backgroundColor: '#E5E7EB',
         justifyContent: 'center',
         alignItems: 'center',
     },
 
     profileInfo: {
-        marginRight: 15,
+        marginRight: Spacing.lg,
         alignItems: 'flex-end',
     },
     name: {
-        fontSize: 18,
+        fontSize: FontSizes.h4,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },
     email: {
-        fontSize: 13,
+        fontSize: FontSizes.label,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
     },
     section: {
-        marginBottom: 20,
+        marginBottom: Spacing.verticalXl,
     },
     sectionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-end',
-        gap: 8,
-        marginBottom: 10,
-        paddingHorizontal: 5,
+        gap: Spacing.md,
+        marginBottom: Spacing.verticalSm,
+        paddingHorizontal: Spacing.xs,
     },
     sectionTitle: {
-        fontSize: 14,
+        fontSize: FontSizes.label,
         fontFamily: 'Cairo_600SemiBold',
         color: '#666',
     },
     sectionContent: {
         backgroundColor: '#FFF',
-        borderRadius: 15,
+        borderRadius: BorderRadius.xl,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: '#F0F0F0',
@@ -604,25 +596,25 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 14,
-        paddingHorizontal: 15,
+        paddingVertical: scaleVertical(14),
+        paddingHorizontal: Spacing.lg,
         borderBottomWidth: 1,
         borderBottomColor: '#F8F9FA',
     },
     menuItemLeft: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: Spacing.md,
     },
     menuItemLabel: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
     },
     languageContainer: {
         backgroundColor: '#FFF',
-        borderRadius: 15,
-        padding: 15,
+        borderRadius: BorderRadius.xl,
+        padding: Spacing.lg,
         borderWidth: 1,
         borderColor: '#F0F0F0',
     },
@@ -630,13 +622,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-end',
-        paddingVertical: 10,
-        gap: 12,
+        paddingVertical: Spacing.verticalSm,
+        gap: Spacing.md,
     },
     checkbox: {
-        width: 22,
-        height: 22,
-        borderRadius: 4,
+        width: scale(22),
+        height: scale(22),
+        borderRadius: BorderRadius.xs,
         borderWidth: 2,
         borderColor: '#DDD',
         justifyContent: 'center',
@@ -647,7 +639,7 @@ const styles = StyleSheet.create({
         borderColor: '#064E3B',
     },
     languageLabel: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
     },
@@ -655,30 +647,30 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 10,
+        gap: Spacing.md,
         backgroundColor: '#FFF',
-        borderRadius: 15,
-        paddingVertical: 15,
-        marginTop: 10,
-        marginBottom: 30,
+        borderRadius: BorderRadius.xl,
+        paddingVertical: scaleVertical(15),
+        marginTop: Spacing.verticalSm,
+        marginBottom: scaleVertical(30),
         borderWidth: 1,
         borderColor: '#FFE4E6',
     },
     logoutText: {
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_700Bold',
         color: '#E11D48',
     },
     socialRow: {
         flexDirection: 'row',
-        gap: 8,
-        marginTop: 5,
+        gap: Spacing.sm,
+        marginTop: Spacing.verticalXs,
         justifyContent: 'flex-end',
     },
     socialIconMini: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
+        width: scale(24),
+        height: scale(24),
+        borderRadius: BorderRadius.round,
         backgroundColor: '#F3F4F6',
         justifyContent: 'center',
         alignItems: 'center',
@@ -693,40 +685,40 @@ const styles = StyleSheet.create({
     },
     modalContent: {
         backgroundColor: '#FFF',
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
-        paddingBottom: 40,
-        minHeight: 250,
+        borderTopLeftRadius: scale(30),
+        borderTopRightRadius: scale(30),
+        paddingBottom: scaleVertical(40),
+        minHeight: scaleVertical(250),
     },
     modalHeader: {
-        paddingVertical: 20,
+        paddingVertical: Spacing.verticalXl,
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
         alignItems: 'center',
     },
     modalTitle: {
-        fontSize: 18,
+        fontSize: FontSizes.h4,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },
     modalBody: {
-        paddingHorizontal: 20,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
     },
     modalOption: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 20,
+        paddingVertical: Spacing.verticalXl,
     },
     modalOptionLabel: {
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_600SemiBold',
         color: '#333',
     },
     modalCheckbox: {
-        width: 24,
-        height: 24,
-        borderRadius: 6,
+        width: scale(24),
+        height: scale(24),
+        borderRadius: BorderRadius.xs,
         borderWidth: 2,
         borderColor: '#064E3B',
         justifyContent: 'center',
@@ -741,11 +733,11 @@ const styles = StyleSheet.create({
     },
     // Password Modal specific
     inputGroup: {
-        marginTop: 15,
-        gap: 8,
+        marginTop: Spacing.verticalLg,
+        gap: Spacing.verticalSm,
     },
     label: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_600SemiBold',
         color: '#333',
         textAlign: 'right',
@@ -754,72 +746,72 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F8F9FA',
-        borderRadius: 12,
+        borderRadius: BorderRadius.md,
         borderWidth: 1,
         borderColor: '#E5E5E5',
     },
     passwordInput: {
         flex: 1,
-        paddingHorizontal: 15,
-        paddingVertical: 14,
-        fontSize: 14,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: scaleVertical(14),
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
     },
     eyeButton: {
-        padding: 15,
+        padding: Spacing.lg,
     },
     modalButton: {
         backgroundColor: '#064E3B',
-        height: 55,
-        borderRadius: 27.5,
+        height: scaleVertical(55),
+        borderRadius: scale(27.5),
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 25,
+        marginTop: Spacing.verticalXxl,
     },
     modalButtonText: {
         color: '#FFF',
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_700Bold',
     },
     // OTP specific
     otpSubtitle: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
         textAlign: 'center',
-        marginTop: 20,
-        marginBottom: 20,
+        marginTop: Spacing.verticalXl,
+        marginBottom: Spacing.verticalXl,
     },
     otpContainer: {
         flexDirection: 'row-reverse',
         justifyContent: 'center',
-        gap: 10,
+        gap: Spacing.md,
     },
     otpInput: {
-        width: 50,
-        height: 60,
-        borderRadius: 12,
+        width: scale(50),
+        height: scaleVertical(60),
+        borderRadius: BorderRadius.md,
         borderWidth: 1,
         borderColor: '#E5E5E5',
         backgroundColor: '#FFF',
-        fontSize: 20,
+        fontSize: FontSizes.h2,
         fontFamily: 'Cairo_700Bold',
         color: '#333',
     },
     resendContainer: {
         flexDirection: 'row-reverse',
         justifyContent: 'center',
-        marginTop: 20,
-        marginBottom: 10,
+        marginTop: Spacing.verticalXl,
+        marginBottom: Spacing.verticalSm,
     },
     resendText: {
-        fontSize: 12,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
     },
     resendLink: {
-        fontSize: 12,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_700Bold',
         color: '#064E3B',
     },

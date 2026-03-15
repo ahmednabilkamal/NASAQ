@@ -7,6 +7,9 @@ import pageData from '@/data/content';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGenderSelection } from '@/hooks/onboarding/useGenderSelection';
 import { useAuth } from '@/config/authContext';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius, Shadows } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
 
 export default function GenderPage() {
     const router = useRouter();
@@ -32,7 +35,7 @@ export default function GenderPage() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
@@ -77,20 +80,19 @@ const styles = StyleSheet.create({
     cardsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        gap: 20,
+        gap: Spacing.xl,
     },
     card: {
         flex: 1,
         aspectRatio: 0.8,
         backgroundColor: '#FFF',
-        borderRadius: 15,
+        borderRadius: BorderRadius.lg,
         borderWidth: 2,
         borderColor: 'transparent',
-        padding: 10,
+        padding: Spacing.md,
         justifyContent: 'center',
         alignItems: 'center',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        elevation: 3,
+        ...Shadows.small,
     },
     cardSelected: {
         borderColor: '#000',
@@ -99,7 +101,7 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
         backgroundColor: '#F9F9F9',
-        borderRadius: 10,
+        borderRadius: BorderRadius.md,
         justifyContent: 'center',
         alignItems: 'center',
     },

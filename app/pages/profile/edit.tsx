@@ -12,19 +12,26 @@ import {
     I18nManager,
     ActivityIndicator,
     ActionSheetIOS,
-    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/config/authContext';
+import { useLanguage } from '@/config/languageRef';
+import pageData from '@/data/content';
 import * as ImagePicker from 'expo-image-picker';
-import Toast from 'react-native-toast-message';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
+import { InputSizes, ButtonSizes } from '@/utils/spacing';
+import { showErrorToast, showSuccessToast, showAlert } from '@/utils/errorHandler';
 
 export default function EditProfileScreen() {
     const router = useRouter();
     const { mode } = useLocalSearchParams<{ mode?: string }>();
     const isSocialMode = mode === 'social';
+    const { languageCode } = useLanguage();
+    const content = (pageData as any)[languageCode]?.profile || (pageData as any)['en'].profile;
 
     const { user, refreshUser, updateProfile } = useAuth();
     const [name, setName] = useState(user?.name || '');
@@ -44,7 +51,7 @@ export default function EditProfileScreen() {
                 : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
             if (permissionResult.granted === false) {
-                Toast.show({ type: 'error', text1: 'خطأ', text2: 'يرجى منح الصلاحية للوصول إلى الصور' });
+                showErrorToast('permissionDenied', languageCode);
                 return;
             }
 
@@ -65,16 +72,16 @@ export default function EditProfileScreen() {
                 setImage(result.assets[0].uri);
             }
         } catch (error) {
-            console.error('Image picking error:', error);
-            Toast.show({ type: 'error', text1: 'خطأ', text2: 'فشل اختيار الصورة' });
+            showErrorToast('imageSelectFailed', languageCode);
         }
     };
 
     const showImageOptions = () => {
+        const imageActionContent = (pageData as any)[languageCode]?.imageAction || (pageData as any)['en'].imageAction;
         if (Platform.OS === 'ios') {
             ActionSheetIOS.showActionSheetWithOptions(
                 {
-                    options: ['إلغاء', 'التقاط صورة', 'اختيار من الاستوديو'],
+                    options: [imageActionContent.cancel || 'إلغاء', imageActionContent.takePhoto || 'التقاط صورة', imageActionContent.chooseFromGallery || 'اختيار من الاستوديو'],
                     cancelButtonIndex: 0,
                 },
                 (buttonIndex) => {
@@ -83,22 +90,17 @@ export default function EditProfileScreen() {
                 }
             );
         } else {
-            Alert.alert(
-                'تغيير الصورة',
-                'اختر طريقة التحميل',
-                [
-                    { text: 'إلغاء', style: 'cancel' },
-                    { text: 'التقاط صورة', onPress: () => pickImage(true) },
-                    { text: 'اختيار من الاستوديو', onPress: () => pickImage(false) },
-                ],
-                { cancelable: true }
+            showAlert(
+                imageActionContent.title || 'تغيير الصورة',
+                imageActionContent.message || 'اختر طريقة التحميل',
+                languageCode
             );
         }
     };
 
     const handleUpdate = async () => {
         if (!name || !email || !phone) {
-            Toast.show({ type: 'error', text1: 'خطأ', text2: 'يرجى ملء جميع الحقول' });
+            showErrorToast('allFieldsRequired', languageCode);
             return;
         }
 
@@ -118,10 +120,9 @@ export default function EditProfileScreen() {
             }
 
             await updateProfile(updateData);
-            Toast.show({ type: 'success', text1: 'نجاح', text2: 'تم تحديث الملف الشخصي بنجاح' });
+            showSuccessToast('profileUpdated', languageCode);
             router.back();
         } catch (error: any) {
-            // Handle by Toast in interceptor
         } finally {
             setLoading(false);
         }
@@ -129,12 +130,11 @@ export default function EditProfileScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name={I18nManager.isRTL ? "chevron-back" : "chevron-forward"} size={24} color="#000" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>تعديل الملف الشخصي</Text>
+                <Text style={styles.headerTitle}>{content.editProfile}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -143,7 +143,6 @@ export default function EditProfileScreen() {
                 style={styles.keyboardView}
             >
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                    {/* Avatar */}
                     {!isSocialMode && (
                         <View style={styles.avatarContainer}>
                             {image ? (
@@ -162,12 +161,9 @@ export default function EditProfileScreen() {
                         </View>
                     )}
 
-
-                    {/* Form Fields */}
                     <View style={styles.formContainer}>
                         {!isSocialMode && (
                             <>
-                                {/* Name */}
                                 <View style={styles.inputGroup}>
                                     <Text style={styles.label}>الاسم</Text>
                                     <TextInput
@@ -180,7 +176,6 @@ export default function EditProfileScreen() {
                                     />
                                 </View>
 
-                                {/* Email */}
                                 <View style={styles.inputGroup}>
                                     <Text style={styles.label}>البريد الإلكتروني</Text>
                                     <TextInput
@@ -194,7 +189,6 @@ export default function EditProfileScreen() {
                                     />
                                 </View>
 
-                                {/* Phone */}
                                 <View style={styles.inputGroup}>
                                     <Text style={styles.label}>رقم الجوال</Text>
                                     <View style={styles.phoneInputContainer}>
@@ -216,10 +210,8 @@ export default function EditProfileScreen() {
                             </>
                         )}
 
-                        {/* Social Links Section */}
                         <Text style={[styles.label, { marginTop: 10 }]}>وسائل التواصل الإجتماعي</Text>
 
-                        {/* Instagram */}
                         <View style={styles.inputGroup}>
                             <View style={styles.socialInputContainer}>
                                 <TextInput
@@ -236,7 +228,6 @@ export default function EditProfileScreen() {
                             </View>
                         </View>
 
-                        {/* Twitter */}
                         <View style={styles.inputGroup}>
                             <View style={styles.socialInputContainer}>
                                 <TextInput
@@ -253,7 +244,6 @@ export default function EditProfileScreen() {
                             </View>
                         </View>
 
-                        {/* Facebook */}
                         <View style={styles.inputGroup}>
                             <View style={styles.socialInputContainer}>
                                 <TextInput
@@ -272,14 +262,13 @@ export default function EditProfileScreen() {
                     </View>
                 </ScrollView>
 
-                {/* Update Button */}
                 <View style={styles.footer}>
                     <TouchableOpacity
                         style={[styles.updateButton, loading && { opacity: 0.7 }]}
                         onPress={handleUpdate}
                         disabled={loading}
                     >
-                        {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.updateButtonText}>تعديل</Text>}
+                        {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.updateButtonText}>{content.editProfile}</Text>}
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
@@ -296,19 +285,19 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 15,
-        paddingVertical: 12,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.verticalSm,
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
     },
     backButton: {
-        width: 40,
-        height: 40,
+        width: scale(40),
+        height: scale(40),
         justifyContent: 'center',
         alignItems: 'center',
     },
     headerTitle: {
-        fontSize: 18,
+        fontSize: FontSizes.h4,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },
@@ -316,24 +305,24 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        padding: 20,
+        padding: Spacing.xl,
     },
     avatarContainer: {
         alignItems: 'center',
-        marginBottom: 30,
+        marginBottom: Spacing.verticalXxxl,
     },
     avatar: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
+        width: scale(100),
+        height: scale(100),
+        borderRadius: BorderRadius.round,
     },
     editAvatarButton: {
         position: 'absolute',
         bottom: 0,
         right: '35%',
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        width: scale(32),
+        height: scale(32),
+        borderRadius: BorderRadius.round,
         backgroundColor: '#E8F5E9',
         justifyContent: 'center',
         alignItems: 'center',
@@ -342,32 +331,32 @@ const styles = StyleSheet.create({
     },
 
     avatarFallback: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
+        width: scale(100),
+        height: scale(100),
+        borderRadius: BorderRadius.round,
         backgroundColor: '#E5E7EB',
         justifyContent: 'center',
         alignItems: 'center',
     },
 
     formContainer: {
-        gap: 20,
+        gap: Spacing.xl,
     },
     inputGroup: {
-        gap: 8,
+        gap: Spacing.sm,
     },
     label: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_600SemiBold',
         color: '#333',
         textAlign: 'right',
     },
     input: {
         backgroundColor: '#F8F9FA',
-        borderRadius: 12,
-        paddingHorizontal: 15,
-        paddingVertical: 14,
-        fontSize: 14,
+        borderRadius: BorderRadius.md,
+        paddingHorizontal: InputSizes.paddingHorizontal,
+        paddingVertical: InputSizes.paddingVertical,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
         borderWidth: 1,
@@ -376,67 +365,67 @@ const styles = StyleSheet.create({
     phoneInputContainer: {
         flexDirection: 'row',
         backgroundColor: '#F8F9FA',
-        borderRadius: 12,
+        borderRadius: BorderRadius.md,
         borderWidth: 1,
         borderColor: '#E5E5E5',
         overflow: 'hidden',
     },
     phoneInput: {
         flex: 1,
-        paddingHorizontal: 15,
-        paddingVertical: 14,
-        fontSize: 14,
+        paddingHorizontal: InputSizes.paddingHorizontal,
+        paddingVertical: InputSizes.paddingVertical,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
     },
     countryCodeContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 15,
+        paddingHorizontal: InputSizes.paddingHorizontal,
         borderLeftWidth: 1,
         borderLeftColor: '#E5E5E5',
-        gap: 5,
+        gap: Spacing.xs,
     },
     countryCode: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
     },
     footer: {
-        padding: 20,
+        padding: Spacing.xl,
         borderTopWidth: 1,
         borderTopColor: '#F0F0F0',
     },
     updateButton: {
         backgroundColor: '#064E3B',
-        height: 55,
-        borderRadius: 27.5,
+        height: ButtonSizes.heightMedium,
+        borderRadius: BorderRadius.button,
         justifyContent: 'center',
         alignItems: 'center',
     },
     updateButtonText: {
         color: '#FFF',
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_700Bold',
     },
     socialInputContainer: {
         flexDirection: 'row',
         backgroundColor: '#F8F9FA',
-        borderRadius: 12,
+        borderRadius: BorderRadius.md,
         borderWidth: 1,
         borderColor: '#E5E5E5',
         overflow: 'hidden',
     },
     socialInput: {
         flex: 1,
-        paddingHorizontal: 15,
-        paddingVertical: 14,
-        fontSize: 14,
+        paddingHorizontal: InputSizes.paddingHorizontal,
+        paddingVertical: InputSizes.paddingVertical,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
     },
     socialIconContainer: {
-        width: 48,
+        width: scale(48),
         justifyContent: 'center',
         alignItems: 'center',
         borderLeftWidth: 1,

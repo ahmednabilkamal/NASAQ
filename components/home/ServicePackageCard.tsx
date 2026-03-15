@@ -1,16 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-interface ServicePackageCardProps {
-    title: string;
-    subtitle: string;
-    price: number;
-    currency?: string;
-    icon?: keyof typeof Ionicons.glyphMap;
-    featured?: boolean;
-    onPress?: () => void;
-}
+import { scale } from '@/utils/responsive';
+import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
+import { FontSizes } from '@/utils/typography';
 
 interface ServicePackageCardProps {
     title: string;
@@ -41,10 +34,10 @@ export default function ServicePackageCard({
         >
             <View style={styles.topRow}>
                 <View style={[styles.iconContainer, isDark ? styles.darkIcon : styles.lightIcon]}>
-                    <Ionicons name={icon} size={20} color={isDark ? '#FFF' : '#064E3B'} style={{ transform: [{ rotate: '45deg' }] }} />
+                    <Ionicons name={icon} size={IconSizes.sm} color={isDark ? '#FFF' : '#064E3B'} style={{ transform: [{ rotate: '45deg' }] }} />
                 </View>
                 <View style={styles.priceRow}>
-                    <Ionicons name="infinite" size={16} color={isDark ? '#FFF' : '#064E3B'} style={{ marginRight: 4 }} />
+                    <Ionicons name="infinite" size={IconSizes.xs} color={isDark ? '#FFF' : '#064E3B'} style={{ marginRight: Spacing.xs }} />
                     <Text style={[styles.priceText, isDark && styles.darkText]}>{price}</Text>
                 </View>
             </View>
@@ -62,16 +55,16 @@ const styles = StyleSheet.create({
     container: {
         width: '48%',
         aspectRatio: 1,
-        borderRadius: 24,
-        padding: 16,
+        borderRadius: BorderRadius.xxl,
+        padding: Spacing.lg,
         justifyContent: 'space-between',
-        marginBottom: 16,
+        marginBottom: Spacing.lg,
     },
     lightContainer: {
-        backgroundColor: '#E8F5E9', // Light mint
+        backgroundColor: '#E8F5E9',
     },
     darkContainer: {
-        backgroundColor: '#064E3B', // Dark green
+        backgroundColor: '#064E3B',
     },
     topRow: {
         flexDirection: 'row',
@@ -79,9 +72,9 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     iconContainer: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: scale(36),
+        height: scale(36),
+        borderRadius: BorderRadius.round,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -96,7 +89,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     priceText: {
-        fontSize: 18,
+        fontSize: FontSizes.h4,
         fontFamily: 'Cairo_700Bold',
         color: '#064E3B',
     },
@@ -107,17 +100,17 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
     },
     title: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_700Bold',
         color: '#064E3B',
         textAlign: 'right',
     },
     subtitle: {
-        fontSize: 10,
+        fontSize: FontSizes.caption,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
         textAlign: 'right',
-        marginTop: 4,
+        marginTop: Spacing.xs,
     },
     darkSubtitle: {
         color: 'rgba(255, 255, 255, 0.7)',

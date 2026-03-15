@@ -14,6 +14,10 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import authService from '@/config/authService';
 import Toast from 'react-native-toast-message';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
+import { InputSizes, ButtonSizes } from '@/utils/spacing';
 
 export default function ChangePasswordScreen() {
     const router = useRouter();
@@ -147,19 +151,19 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 15,
-        paddingVertical: 12,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.verticalSm,
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
     },
     backButton: {
-        width: 40,
-        height: 40,
+        width: scale(40),
+        height: scale(40),
         justifyContent: 'center',
         alignItems: 'center',
     },
     headerTitle: {
-        fontSize: 18,
+        fontSize: FontSizes.h4,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },
@@ -167,16 +171,16 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        padding: 20,
+        padding: Spacing.xl,
     },
     formContainer: {
-        gap: 20,
+        gap: Spacing.xl,
     },
     inputGroup: {
-        gap: 8,
+        gap: Spacing.sm,
     },
     label: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_600SemiBold',
         color: '#333',
         textAlign: 'right',
@@ -185,36 +189,36 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F8F9FA',
-        borderRadius: 12,
+        borderRadius: BorderRadius.md,
         borderWidth: 1,
         borderColor: '#E5E5E5',
     },
     passwordInput: {
         flex: 1,
-        paddingHorizontal: 15,
-        paddingVertical: 14,
-        fontSize: 14,
+        paddingHorizontal: InputSizes.paddingHorizontal,
+        paddingVertical: InputSizes.paddingVertical,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
     },
     eyeButton: {
-        padding: 15,
+        padding: Spacing.lg,
     },
     footer: {
-        padding: 20,
+        padding: Spacing.xl,
         borderTopWidth: 1,
         borderTopColor: '#F0F0F0',
     },
     updateButton: {
         backgroundColor: '#064E3B',
-        height: 55,
-        borderRadius: 27.5,
+        height: ButtonSizes.heightMedium,
+        borderRadius: BorderRadius.button,
         justifyContent: 'center',
         alignItems: 'center',
     },
     updateButtonText: {
         color: '#FFF',
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_700Bold',
     },
 });

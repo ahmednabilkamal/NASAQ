@@ -53,6 +53,7 @@ const pageData = {
     verification: {
       title: "Verification Code",
       subtitle: "Enter the 5-digit verification code",
+      verifyButton: "Verify",
       footerText: "Didn't receive the code? ",
       footerLink: "Send the code"
     },
@@ -146,7 +147,9 @@ const pageData = {
       help: "Help / FAQ",
       contactUs: "Contact Us",
       privacy: "Privacy & Safety",
-      updateButton: "Update"
+      updateButton: "Update",
+      verify: "Verify",
+      logout: "Logout"
     },
     payment: {
       title: "Payment",
@@ -162,14 +165,95 @@ const pageData = {
     },
     home:{
       packages:{
-        title:"Packages designed for your needs", 
+        title:"Packages designed for your needs",
         box1:{
-          icon:"x", 
+          icon:"x",
           price:350,
-          title:"Single set", 
-          subtitle:"available under 24 hours", 
+          title:"Single set",
+          subtitle:"available under 24 hours",
         }
       }
+    },
+    errors: {
+      title: "Error",
+      success: "Success",
+      passwordRequired: "Please enter password",
+      passwordMismatch: "Passwords do not match",
+      allFieldsRequired: "Please fill all required fields",
+      invalidEmail: "Please enter valid email",
+      verificationIncomplete: "Please enter complete verification code",
+      verificationDataMissing: "Verification data not found",
+      saveFailed: "Save failed, please try again",
+      sendFailed: "Send failed",
+      permissionDenied: "Permission denied",
+      imageSelectFailed: "Image selection failed"
+    },
+    toast: {
+      sent: "Sent",
+      verificationSent: "Verification code sent to your phone",
+      passwordChanged: "Password changed successfully",
+      profileUpdated: "Profile updated successfully",
+      cardSaved: "Card saved successfully"
+    },
+    orders: {
+      title: "Orders",
+      tabs: {
+        all: "All",
+        new: "New",
+        recent: "Recent",
+        saved: "Saved"
+      },
+      status: {
+        pending: "Pending",
+        new: "New",
+        in_progress: "In Progress",
+        processing: "Processing",
+        completed: "Completed",
+        done: "Done",
+        active: "Active",
+        inactive: "Cancelled",
+        cancelled: "Cancelled"
+      }
+    },
+    common: {
+      or: "or",
+      edit: "Edit",
+      verify: "Verify",
+      next: "Next",
+      cancel: "Cancel",
+      apply: "Apply",
+      clear: "Clear",
+      save: "Save",
+      update: "Update",
+      delete: "Delete",
+      viewAll: "View All",
+      noResults: "No results",
+      noData: "No data available",
+      currency: "SAR",
+      perHour: "/ hour",
+      defaultName: "Guest User",
+      greeting: "Good morning"
+    },
+    imageAction: {
+      title: "Change Photo",
+      message: "Choose upload method",
+      takePhoto: "Take Photo",
+      chooseFromGallery: "Choose from Gallery"
+    },
+    contactUs: {
+      title: "Contact Us",
+      customerSupport: "Customer Support",
+      phoneLabel: "Contact Number",
+      emailLabel: "Email Address",
+      socialMedia: "Social Media",
+      instagram: "Instagram",
+      twitter: "Twitter",
+      facebook: "Facebook"
+    },
+    favorites: {
+      title: "Favorites",
+      empty: "No favorites yet",
+      emptySubtitle: "Start adding stylists to your favorites"
     }
   },
 
@@ -227,6 +311,7 @@ const pageData = {
     verification: {
       title: "رمز التحقق",
       subtitle: "أدخل رمز التحقق المكون من 5 أرقام",
+      verifyButton: "تحقق",
       footerText: "لم تصلك الرسالة؟ ",
       footerLink: "إعادة إرسال الرمز"
     },
@@ -320,7 +405,9 @@ const pageData = {
       help: "المساعدة / الأسئلة الشائعة",
       contactUs: "تواصل معنا",
       privacy: "الخصوصية والأمان",
-      updateButton: "تحديث"
+      updateButton: "تحديث",
+      verify: "تأكيد",
+      logout: "تسجيل الخروج"
     },
     payment: {
       title: "الدفع",
@@ -336,14 +423,95 @@ const pageData = {
     },
       home:{
       packages:{
-        title:"باقات مصممة لتلبية احتياجاتك", 
+        title:"باقات مصممة لتلبية احتياجاتك",
         box1:{
-          icon:"x", 
+          icon:"x",
           price:350,
-          title:"مجموعة واحدة", 
-          subtitle:"متوفرة خلال 24 ساعة", 
+          title:"مجموعة واحدة",
+          subtitle:"متوفرة خلال 24 ساعة",
         }
       }
+    },
+    errors: {
+      title: "خطأ",
+      success: "نجاح",
+      passwordRequired: "يرجى إدخال كلمة المرور",
+      passwordMismatch: "كلمات المرور غير متطابقة",
+      allFieldsRequired: "يرجى ملء جميع الحقول المطلوبة",
+      invalidEmail: "يرجى إدخال بريد إلكتروني صحيح",
+      verificationIncomplete: "يرجى إدخال رمز التحقق كاملاً",
+      verificationDataMissing: "بيانات التحقق غير موجودة",
+      saveFailed: "فشل الحفظ، يرجى المحاولة مجدداً",
+      sendFailed: "فشل الإرسال",
+      permissionDenied: "تم رفض الإذن",
+      imageSelectFailed: "فشل اختيار الصورة"
+    },
+    toast: {
+      sent: "تم الإرسال",
+      verificationSent: "تم إرسال رمز التحقق إلى هاتفك",
+      passwordChanged: "تم تغيير كلمة المرور بنجاح",
+      profileUpdated: "تم تحديث الملف الشخصي بنجاح",
+      cardSaved: "تم حفظ البطاقة بنجاح"
+    },
+    orders: {
+      title: "الطلبات",
+      tabs: {
+        all: "الكل",
+        new: "جديد",
+        recent: "الأخيرة",
+        saved: "محفوظ"
+      },
+      status: {
+        pending: "قيد الانتظار",
+        new: "جديد",
+        in_progress: "قيد المعالجة",
+        processing: "معالجة",
+        completed: "مكتمل",
+        done: "تم",
+        active: "نشط",
+        inactive: "ملغى",
+        cancelled: "ملغى"
+      }
+    },
+    common: {
+      or: "أو",
+      edit: "تعديل",
+      verify: "تحقق",
+      next: "التالي",
+      cancel: "إلغاء",
+      apply: "تطبيق",
+      clear: "مسح",
+      save: "حفظ",
+      update: "تحديث",
+      delete: "حذف",
+      viewAll: "عرض الكل",
+      noResults: "لا توجد نتائج",
+      noData: "لا توجد بيانات متاحة",
+      currency: "ريال سعودي",
+      perHour: "/ الساعة",
+      defaultName: "مستخدم ضيف",
+      greeting: "صباح الخير"
+    },
+    imageAction: {
+      title: "تغيير الصورة",
+      message: "اختر طريقة التحميل",
+      takePhoto: "التقط صورة",
+      chooseFromGallery: "اختر من المعرض"
+    },
+    contactUs: {
+      title: "تواصل معنا",
+      customerSupport: "خدمة العملاء",
+      phoneLabel: "رقم التواصل",
+      emailLabel: "عنوان البريد الإلكتروني",
+      socialMedia: "وسائل التواصل الاجتماعي",
+      instagram: "إنستغرام",
+      twitter: "تويتر",
+      facebook: "فيسبوك"
+    },
+    favorites: {
+      title: "المفضلة",
+      empty: "لا توجد عناصر مفضلة بعد",
+      emptySubtitle: "ابدأ بإضافة منسقات إلى قائمة المفضلة لديك"
     }
 
   }

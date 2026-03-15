@@ -1,10 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, I18nManager } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, I18nManager } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
+import { FontSizes } from '@/utils/typography';
 
 
 const ProfileBar = () => {
@@ -15,7 +18,6 @@ const ProfileBar = () => {
 
     return (
         <View style={styles.container}>
-
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                                         <Ionicons name={isRTL ? "chevron-forward" : "chevron-back"} size={24} color="#000" />
@@ -31,55 +33,57 @@ const ProfileBar = () => {
 
 export default ProfileBar;
 
-
 const styles = StyleSheet.create({
     container: {
         backgroundColor: '#FFF',
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
+        borderTopLeftRadius: BorderRadius.xxxl,
+        borderTopRightRadius: BorderRadius.xxxl,
     },
      backButton: {
         position: 'absolute',
-        top: 20,
-        left: 20,
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        top: Spacing.xl,
+        left: Spacing.xl,
+        width: IconSizes.xxl,
+        height: IconSizes.xxl,
+        borderRadius: BorderRadius.xxxl,
         backgroundColor: '#FFF',
         justifyContent: 'center',
         alignItems: 'center',
-        boxShadow: '0 0 5px rgba(0,0,0,0.1)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: scale(1) },
+        shadowOpacity: 0.1,
+        shadowRadius: scale(5),
         elevation: 5,
     },
      favoriteButton: {
         position: 'absolute',
-        top: 20,
-        right: 20,
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        top: Spacing.xl,
+        right: Spacing.xl,
+        width: IconSizes.xxl,
+        height: IconSizes.xxl,
+        borderRadius: BorderRadius.xxxl,
         backgroundColor: '#FFF',
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: '#000',
         shadowOpacity: 0.1,
-        shadowRadius: 5,
+        shadowRadius: scale(5),
         elevation: 5,
     },
     handle: {
-        width: 40,
-        height: 5,
+        width: scale(40),
+        height: scale(5),
         backgroundColor: '#EEE',
-        borderRadius: 2.5,
+        borderRadius: scale(2.5),
         alignSelf: 'center',
-        marginTop: 10,
+        marginTop: scaleVertical(10),
     },
     header: {
-        padding: 20,
+        padding: Spacing.xl,
         alignItems: 'center',
     },
     headerTitle: {
-        fontSize: 18,
+        fontSize: FontSizes.h4,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },

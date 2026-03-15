@@ -8,6 +8,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGender } from '@/config/genderContext';
 import { bodyTypeData } from '@/constants/theme';
 import { useAuth } from '@/config/authContext';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
 
 export default function BodyShapePage() {
     const router = useRouter();
@@ -36,7 +39,7 @@ export default function BodyShapePage() {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
@@ -83,27 +86,27 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     listContent: {
-        paddingBottom: 20,
+        paddingBottom: scaleVertical(20),
     },
     columnWrapper: {
         justifyContent: 'flex-start',
-        gap: 15,
-        marginBottom: 15,
+        gap: scale(15),
+        marginBottom: scaleVertical(15),
     },
     card: {
         width: '30%',
         aspectRatio: 0.8,
         backgroundColor: '#FFF',
-        borderRadius: 12,
-        borderWidth: 2,
+        borderRadius: BorderRadius.cardSmall,
+        borderWidth: scale(2),
         borderColor: 'transparent',
-        padding: 8,
+        padding: scale(8),
         alignItems: 'center',
         justifyContent: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: scale(2) },
         shadowOpacity: 0.05,
-        shadowRadius: 4,
+        shadowRadius: scale(4),
         elevation: 2,
     },
     cardSelected: {
@@ -114,14 +117,14 @@ const styles = StyleSheet.create({
         width: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 4,
+        marginBottom: scale(4),
     },
     shapeImage: {
         width: '100%',
         height: '100%',
     },
     shapeName: {
-        fontSize: 10,
+        fontSize: FontSizes.caption,
         color: '#666',
         textAlign: 'center',
         fontFamily: 'Cairo_400Regular',

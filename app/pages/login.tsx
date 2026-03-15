@@ -5,7 +5,6 @@ import {
     StyleSheet,
     TextInput,
     TouchableOpacity,
-    SafeAreaView,
     KeyboardAvoidingView,
     Platform,
     I18nManager,
@@ -13,12 +12,18 @@ import {
     ScrollView,
     ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/config/authContext';
 import { useAuthForm } from '@/hooks/useAuthForm';
+import { showErrorToast } from '@/utils/errorHandler';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
+import { InputSizes, ButtonSizes } from '@/utils/spacing';
 
 export default function AuthScreen() {
     const router = useRouter();
@@ -68,7 +73,7 @@ export default function AuthScreen() {
     const isRTL = I18nManager.isRTL;
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
@@ -210,7 +215,7 @@ export default function AuthScreen() {
 
                         <View style={styles.dividerRow}>
                             <View style={styles.divider} />
-                            <Text style={styles.dividerText}>أو</Text>
+                            <Text style={styles.dividerText}>{content.common.or}</Text>
                             <View style={styles.divider} />
                         </View>
 
@@ -249,50 +254,50 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        paddingHorizontal: 20,
-        paddingVertical: 15,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
+        paddingVertical: Spacing.verticalSm,
         alignItems: I18nManager.isRTL ? 'flex-start' : 'flex-end',
     },
     backButton: {
-        padding: 8,
+        padding: Spacing.sm,
     },
     scrollContent: {
-        paddingHorizontal: 25,
-        paddingBottom: 40,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
+        paddingBottom: Spacing.verticalXxxxl,
     },
     title: {
-        fontSize: 28,
+        fontSize: FontSizes.h1,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
         textAlign: I18nManager.isRTL ? 'right' : 'left',
-        marginBottom: 8,
+        marginBottom: Spacing.verticalXs,
     },
     subtitle: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
         textAlign: I18nManager.isRTL ? 'right' : 'left',
-        marginBottom: 30,
-        lineHeight: 20,
+        marginBottom: Spacing.verticalXxxl,
+        lineHeight: LineHeights.body,
     },
     tabContainer: {
         flexDirection: 'row',
         backgroundColor: '#F8F9FA',
-        borderRadius: 25,
-        padding: 5,
-        marginBottom: 30,
+        borderRadius: BorderRadius.xxl,
+        padding: Spacing.xs,
+        marginBottom: Spacing.verticalXxxl,
     },
     tab: {
         flex: 1,
-        paddingVertical: 12,
+        paddingVertical: Spacing.verticalMd,
         alignItems: 'center',
-        borderRadius: 22,
+        borderRadius: BorderRadius.xxl,
     },
     activeTab: {
         backgroundColor: '#064E3B',
     },
     tabText: {
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },
@@ -300,13 +305,13 @@ const styles = StyleSheet.create({
         color: '#FFF',
     },
     form: {
-        gap: 20,
+        gap: Spacing.xl,
     },
     inputWrapper: {
-        gap: 8,
+        gap: Spacing.sm,
     },
     label: {
-        fontSize: 14,
+        fontSize: FontSizes.label,
         fontFamily: 'Cairo_700Bold',
         color: '#666',
         textAlign: I18nManager.isRTL ? 'right' : 'left',
@@ -316,13 +321,13 @@ const styles = StyleSheet.create({
     },
     inputContainer: {
         backgroundColor: '#F8F9FA',
-        borderRadius: 15,
-        height: 55,
+        borderRadius: BorderRadius.lg,
+        height: InputSizes.height,
         justifyContent: 'center',
-        paddingHorizontal: 20,
+        paddingHorizontal: InputSizes.paddingHorizontal,
     },
     input: {
-        fontSize: 16,
+        fontSize: FontSizes.input,
         fontFamily: 'Cairo_400Regular',
         color: '#000',
     },
@@ -334,39 +339,39 @@ const styles = StyleSheet.create({
     checkboxContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: Spacing.sm,
     },
     checkbox: {
-        width: 20,
-        height: 20,
-        borderRadius: 6,
+        width: scale(20),
+        height: scale(20),
+        borderRadius: BorderRadius.sm,
         borderWidth: 1,
         borderColor: '#DDD',
         backgroundColor: '#FFF',
     },
     rememberMeText: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
     },
     nextButton: {
         backgroundColor: '#064E3B',
-        height: 55,
-        borderRadius: 25,
+        height: ButtonSizes.heightMedium,
+        borderRadius: BorderRadius.button,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 10,
+        marginTop: Spacing.verticalMd,
     },
     nextButtonText: {
         color: '#FFF',
-        fontSize: 16,
+        fontSize: FontSizes.button,
         fontFamily: 'Cairo_700Bold',
     },
     dividerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 15,
-        marginVertical: 10,
+        gap: Spacing.xl,
+        marginVertical: Spacing.verticalMd,
     },
     divider: {
         flex: 1,
@@ -374,34 +379,34 @@ const styles = StyleSheet.create({
         backgroundColor: '#EEE',
     },
     dividerText: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         color: '#999',
         fontFamily: 'Cairo_400Regular',
     },
     googleButton: {
         flexDirection: 'row',
         backgroundColor: '#F8F9FA',
-        height: 55,
-        borderRadius: 25,
+        height: ButtonSizes.heightMedium,
+        borderRadius: BorderRadius.button,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 12,
+        gap: Spacing.md,
     },
     googleIcon: {
-        width: 20,
-        height: 20,
+        width: IconSizes.sm,
+        height: IconSizes.sm,
     },
     googleButtonText: {
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_400Regular',
         color: '#000',
     },
     footer: {
         alignItems: 'center',
-        marginTop: 10,
+        marginTop: Spacing.verticalMd,
     },
     footerText: {
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
     },

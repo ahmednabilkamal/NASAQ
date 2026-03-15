@@ -4,14 +4,14 @@ import {
     Text,
     StyleSheet,
     ImageBackground,
-    Dimensions,
     FlatList,
     ViewToken,
+    useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const { width } = Dimensions.get('window');
-const BANNER_WIDTH = width - 40; // horizontal padding 20 each side
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
 
 interface Slide {
     id: string;
@@ -24,7 +24,6 @@ interface HeroBannerProps {
     buttonText?: string;
     imageUri?: any;
     onPress?: () => void;
-    /** Extra slides beyond the first. Pass an array of titles to repeat the banner. */
     slides?: string[];
 }
 
@@ -33,10 +32,10 @@ export default function HeroBanner({
     imageUri,
     slides = [],
 }: HeroBannerProps) {
-    // Build slide data: first slide uses `title`, rest from `slides` prop.
-    // Default to 4 slides (all with same title + same image) to match the dot count.
+    const { width } = useWindowDimensions();
+    const BANNER_WIDTH = width - scale(40);
+
     const allTitles = [title, ...slides];
-    // Pad to at least 4 slides using the same title/image
     const slideData: Slide[] = Array.from({ length: Math.max(allTitles.length, 4) }, (_, i) => ({
         id: String(i),
         title: allTitles[i] ?? title,
@@ -61,7 +60,7 @@ export default function HeroBanner({
             colors={['#064E3B', '#047857']}
             start={{ x: 0, y: 1 }}
             end={{ x: 1, y: 0 }}
-            style={styles.slide}
+            style={[styles.slide, { width: BANNER_WIDTH }]}
         >
             {imageUri && (
                 <View style={styles.imageContainer}>
@@ -98,7 +97,6 @@ export default function HeroBanner({
                     })}
                 />
 
-                {/* Centred dots */}
                 <View style={styles.dotsContainer}>
                     {slideData.map((_, i) => (
                         <View
@@ -112,14 +110,14 @@ export default function HeroBanner({
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = () => StyleSheet.create({
     container: {
-        paddingHorizontal: 20,
-        marginTop: 4,          // reduced top margin
+        paddingHorizontal: Spacing.xl,
+        marginTop: scale(4),
         marginBottom: 0,
     },
     bannerContent: {
-        borderRadius: 20,
+        borderRadius: BorderRadius.xl,
         overflow: 'hidden',
         elevation: 4,
         shadowColor: '#000',
@@ -128,17 +126,16 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
     },
     slide: {
-        width: BANNER_WIDTH,
         flexDirection: 'row',
-        minHeight: 160,         // slightly shorter to reduce y padding feel
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 36,      // leave room for dots inside
+        minHeight: scaleVertical(160),
+        paddingHorizontal: Spacing.xl,
+        paddingTop: scale(16),
+        paddingBottom: scale(36),
         alignItems: 'center',
     },
     imageContainer: {
-        width: 130,
-        height: 160,
+        width: scale(130),
+        height: scaleVertical(160),
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -146,40 +143,42 @@ const styles = StyleSheet.create({
         width: '120%',
         height: '110%',
         position: 'absolute',
-        bottom: -10,
-        left: -20,
+        bottom: scale(-10),
+        left: scale(-20),
     },
     textContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'flex-start',
-        paddingLeft: 8,
+        paddingLeft: scale(8),
     },
     title: {
-        fontSize: 19,
+        fontSize: FontSizes.h3,
         fontFamily: 'Cairo_700Bold',
         color: '#fff',
         textAlign: 'left',
-        lineHeight: 27,
+        lineHeight: LineHeights.h3,
     },
     dotsContainer: {
         flexDirection: 'row',
-        gap: 6,
+        gap: scale(6),
         position: 'absolute',
-        bottom: 10,
+        bottom: scale(10),
         left: 0,
-        right: 0,               // full width so alignSelf centres properly
+        right: 0,
         justifyContent: 'center',
         alignItems: 'center',
     },
     dot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
+        width: scale(6),
+        height: scale(6),
+        borderRadius: scale(3),
         backgroundColor: 'rgba(255,255,255,0.35)',
     },
     dotActive: {
-        width: 16,
+        width: scale(16),
         backgroundColor: '#FFF',
     },
 });
+
+const styles = createStyles();

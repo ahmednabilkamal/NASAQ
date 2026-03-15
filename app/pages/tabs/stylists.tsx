@@ -3,6 +3,9 @@ import { useAuth } from '@/config/authContext';
 import apiService, { Stylist } from '@/config/apiService';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -23,7 +26,7 @@ export default function StylistsScreen() {
     const { isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
     const { languageCode } = useLanguage();
-    const content = (pageData as any)[languageCode]?.stylistsList || (pageData as any)['en'].stylistsList;
+    const content = (pageData as any)[languageCode] || (pageData as any)['en'];
     const isRTL = I18nManager.isRTL;
 
     useEffect(() => {
@@ -107,7 +110,7 @@ export default function StylistsScreen() {
                         {item.price != null && (
                             <View style={styles.priceContainer}>
                                 <Text style={styles.priceText}>{item.price}</Text>
-                                <Text style={styles.currencyText}>ر.س</Text>
+                                <Text style={styles.currencyText}>{content.common?.currency || 'ر.س'}</Text>
                             </View>
                         )}
                         {item.rating != null && (
@@ -124,18 +127,16 @@ export default function StylistsScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>{content.title || 'المنسقات'}</Text>
+                <Text style={styles.headerTitle}>{content.stylistsList?.title || 'المنسقات'}</Text>
             </View>
 
-            {/* Search Section */}
             <View style={styles.searchSection}>
                 <View style={styles.searchBar}>
                     <Ionicons name="search-outline" size={20} color="#999" />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder={content.searchPlaceholder || 'بحث'}
+                        placeholder={content.stylistsList?.searchPlaceholder || 'بحث'}
                         placeholderTextColor="#999"
                         value={search}
                         onChangeText={setSearch}
@@ -150,7 +151,6 @@ export default function StylistsScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* Stylists List */}
             {loading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#064E3B" />
@@ -164,7 +164,7 @@ export default function StylistsScreen() {
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <Text style={styles.emptyText}>لا توجد نتائج</Text>
+                            <Text style={styles.emptyText}>{content.common?.noResults || 'لا توجد نتائج'}</Text>
                         </View>
                     }
                 />
@@ -181,42 +181,42 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8F9FA',
     },
     header: {
-        paddingHorizontal: 20,
-        paddingVertical: 15,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
+        paddingVertical: scaleVertical(15),
         alignItems: 'center',
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: FontSizes.h1,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },
     searchSection: {
         flexDirection: 'row',
-        paddingHorizontal: 20,
-        gap: 12,
-        marginBottom: 15,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
+        gap: Spacing.md,
+        marginBottom: scaleVertical(15),
     },
     searchBar: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#FFF',
-        borderRadius: 12,
-        paddingHorizontal: 15,
-        height: 48,
-        gap: 10,
+        borderRadius: BorderRadius.md,
+        paddingHorizontal: Spacing.lg,
+        height: scaleVertical(48),
+        gap: Spacing.md,
     },
     searchInput: {
         flex: 1,
         fontFamily: 'Cairo_400Regular',
-        fontSize: 14,
+        fontSize: FontSizes.body,
         color: '#333',
     },
     filterButton: {
-        width: 48,
-        height: 48,
+        width: scaleVertical(48),
+        height: scaleVertical(48),
         backgroundColor: '#FFF',
-        borderRadius: 12,
+        borderRadius: BorderRadius.md,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -226,24 +226,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     listContent: {
-        paddingHorizontal: 20,
-        paddingBottom: 100,
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
+        paddingBottom: scaleVertical(100),
     },
     card: {
         flexDirection: 'row',
         backgroundColor: '#FFF',
-        borderRadius: 16,
-        marginBottom: 12,
+        borderRadius: BorderRadius.card,
+        marginBottom: Spacing.md,
         overflow: 'hidden',
     },
     stylistImage: {
-        width: 100,
-        height: 100,
+        width: scale(100),
+        height: scale(100),
         resizeMode: 'cover',
     },
     cardContent: {
         flex: 1,
-        padding: 12,
+        padding: Spacing.md,
         justifyContent: 'space-between',
     },
     cardHeader: {
@@ -252,15 +252,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     stylistName: {
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_700Bold',
         color: '#333',
     },
     favoriteButton: {
-        padding: 4,
+        padding: Spacing.xs,
     },
     stylistSpecialty: {
-        fontSize: 12,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
         textAlign: 'right',
@@ -273,36 +273,36 @@ const styles = StyleSheet.create({
     ratingContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        gap: Spacing.xs,
     },
     ratingText: {
-        fontSize: 13,
+        fontSize: FontSizes.label,
         fontFamily: 'Cairo_600SemiBold',
         color: '#333',
     },
     priceContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        gap: Spacing.xs,
     },
     priceText: {
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_700Bold',
         color: '#064E3B',
     },
     currencyText: {
-        fontSize: 12,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_400Regular',
         color: '#064E3B',
     },
     emptyContainer: {
         flex: 1,
         alignItems: 'center',
-        paddingTop: 60,
+        paddingTop: scaleVertical(60),
     },
     emptyText: {
         fontFamily: 'Cairo_400Regular',
-        fontSize: 16,
+        fontSize: FontSizes.bodyLarge,
         color: '#999',
     },
 });

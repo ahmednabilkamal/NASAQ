@@ -2,6 +2,9 @@ import React from 'react';
 import OnboardingScreen from '../../../components/OnboardingScreen';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { Spacing, BorderRadius } from '@/utils/spacing';
+import { FontSizes, LineHeights } from '@/utils/typography';
 
 export default function Page1() {
   const { languageCode } = useLanguage();

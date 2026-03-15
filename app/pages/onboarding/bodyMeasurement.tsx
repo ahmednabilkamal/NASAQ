@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGender } from '@/config/genderContext';
 import { useMeasurements } from '@/hooks/onboarding/useMeasurements';
 import { useAuth } from '@/config/authContext';
+import { FontSizes } from '@/utils/typography';
 
 // Coordinates as ratios (0 to 1) - works on any screen size
 // bodyXRatio/bodyYRatio = dot position on body as percentage of container
@@ -90,7 +91,7 @@ export default function MeasurementsPage() {
     });
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
@@ -200,7 +201,7 @@ const styles = StyleSheet.create({
         paddingLeft: 10,
     },
     label: {
-        fontSize: 11,
+        fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
         width: 65,
@@ -212,7 +213,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFF',
         borderRadius: 8,
         textAlign: 'center',
-        fontSize: 14,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_700Bold',
         paddingHorizontal: 4,
         paddingVertical: 0,
