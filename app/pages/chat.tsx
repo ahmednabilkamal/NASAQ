@@ -37,7 +37,6 @@ export default function ChatScreen() {
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
 
-    // Recording state
     const [recording, setRecording] = useState<Audio.Recording | null>(null);
     const [isRecording, setIsRecording] = useState(false);
 
@@ -56,13 +55,9 @@ export default function ChatScreen() {
             const res = await apiService.getMessages(conversationId);
             const data = res?.data;
             if (Array.isArray(data)) {
-                // Reverse because usually APIs return newest first, but FlatList displays bottom-up
-                // Or check the order. If API returns oldest first, we might need inverted list.
-                // Assuming standard list for now.
                 setMessages(data);
             }
 
-            // Try to find stylist info from conversation if we don't have it
             if (!stylist) {
                 const convRes = await apiService.listConversations();
                 const currentConv = convRes.data.find(c => String(c.id) === conversationId);
@@ -79,7 +74,6 @@ export default function ChatScreen() {
 
     useEffect(() => {
         fetchMessages(true);
-        // Basic polling for new messages (every 5 seconds)
         const interval = setInterval(() => fetchMessages(), 5000);
         return () => clearInterval(interval);
     }, [conversationId]);
@@ -160,7 +154,6 @@ export default function ChatScreen() {
                 type: type === 'image' ? 'image/jpeg' : type === 'audio' ? 'audio/m4a' : 'application/octet-stream',
             } as any);
 
-            // Backend might expect specific field for body even with file
             formData.append('body', `Shared a ${type}`);
 
             await apiService.sendMessage(conversationId, formData);
@@ -173,8 +166,6 @@ export default function ChatScreen() {
     };
 
     const MessageItem = ({ item }: { item: Message }) => {
-        // sender_type usually comes from the backend to identify if it's the user or stylist
-        // For Venus app, assuming user is 'user' and stylist is 'stylist' or similar
         const isUser = item.sender_type === 'user' || item.user_id === user?.id;
 
         return (
@@ -214,11 +205,11 @@ export default function ChatScreen() {
 
         try {
             await apiService.sendMessage(conversationId, textToSend);
-            await fetchMessages(); // Immediate refresh
+            await fetchMessages(); 
             setTimeout(() => flatListRef.current?.scrollToEnd(), 200);
         } catch (error) {
             console.error('Send message error:', error);
-            setMessage(textToSend); // Restore message on failure
+            setMessage(textToSend); 
         } finally {
             setSending(false);
         }
@@ -227,7 +218,6 @@ export default function ChatScreen() {
     const handleRatingSubmit = async () => {
         if (rating > 0 && stylist?.id) {
             try {
-                // Assuming createReview works for stylists or we need a specific endpoint
                 await apiService.createReview({
                     stylist_id: Number(stylist.id),
                     rating: rating,

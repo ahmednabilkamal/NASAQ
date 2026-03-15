@@ -60,7 +60,6 @@ export default function StylistDetailScreen() {
                     setServices(data.services);
                 }
 
-                // Check if this stylist is in favorites
                 const favorites = favsRes.data || [];
                 setIsFavorite(favorites.some(f => String(f.id) === String(id)));
             } catch (error: any) {

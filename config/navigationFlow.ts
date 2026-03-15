@@ -3,14 +3,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const ONBOARDING_COMPLETED_KEY = '@venus_onboarding_completed';
 const ONBOARDING_STEP_KEY = '@venus_onboarding_step';
 
-/**
- * Navigation Flow Manager
- * Handles the app navigation flow: Splash → Onboarding → Login → Main App
- */
-
-/**
- * Check if user has completed onboarding
- */
 export const hasCompletedOnboarding = async (): Promise<boolean> => {
     try {
         const completed = await AsyncStorage.getItem(ONBOARDING_COMPLETED_KEY);
@@ -21,9 +13,6 @@ export const hasCompletedOnboarding = async (): Promise<boolean> => {
     }
 };
 
-/**
- * Mark onboarding as completed
- */
 export const setOnboardingCompleted = async (): Promise<void> => {
     try {
         await AsyncStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true');
@@ -33,9 +22,6 @@ export const setOnboardingCompleted = async (): Promise<void> => {
     }
 };
 
-/**
- * Save current onboarding step (1, 2, or 3)
- */
 export const saveOnboardingStep = async (step: number): Promise<void> => {
     try {
         await AsyncStorage.setItem(ONBOARDING_STEP_KEY, step.toString());
@@ -44,9 +30,6 @@ export const saveOnboardingStep = async (step: number): Promise<void> => {
     }
 };
 
-/**
- * Get current onboarding step
- */
 export const getOnboardingStep = async (): Promise<number> => {
     try {
         const step = await AsyncStorage.getItem(ONBOARDING_STEP_KEY);
@@ -57,9 +40,6 @@ export const getOnboardingStep = async (): Promise<number> => {
     }
 };
 
-/**
- * Reset onboarding (for testing or re-onboarding)
- */
 export const resetOnboarding = async (): Promise<void> => {
     try {
         await AsyncStorage.removeItem(ONBOARDING_COMPLETED_KEY);
@@ -70,22 +50,15 @@ export const resetOnboarding = async (): Promise<void> => {
     }
 };
 
-/**
- * Check if user profile is complete (measurements, styles, etc.)
- */
 export const isProfileComplete = (user: any): boolean => {
     if (!user) return false;
 
-    // Check for mandatory onboarding data
     const hasMeasurements = user.body_measurements && Object.keys(user.body_measurements).length > 0;
     const hasStyles = user.fashion_styles && user.fashion_styles.length > 0;
 
     return !!(user.gender && user.height && user.weight && user.skin_tones && user.body_shape && hasMeasurements && hasStyles);
 };
 
-/**
- * Determine the next onboarding step or null if complete
- */
 export const getNextOnboardingStep = (user: any): string => {
     if (!user) return '/pages/onboarding/genderSelection';
     if (!user.gender) return '/pages/onboarding/genderSelection';
@@ -100,13 +73,6 @@ export const getNextOnboardingStep = (user: any): string => {
     return '/pages/tabs/homescreen';
 };
 
-
-/**
- * Determine the initial route based on app state
- * @param isAuthenticated - Whether user is authenticated
- * @param user - User profile object
- * @returns The route to navigate to
- */
 export const getInitialRoute = async (isAuthenticated: boolean, user?: any): Promise<string> => {
     if (isAuthenticated) {
         if (!isProfileComplete(user)) {
@@ -116,8 +82,6 @@ export const getInitialRoute = async (isAuthenticated: boolean, user?: any): Pro
         return '/pages/tabs/homescreen';
     }
 
-
-    // Check if onboarding is already completed
     const completed = await hasCompletedOnboarding();
     if (completed) {
         return '/pages/login';
@@ -126,9 +90,6 @@ export const getInitialRoute = async (isAuthenticated: boolean, user?: any): Pro
     return '/pages/onboarding/page1';
 };
 
-/**
- * Clear all app data (for logout or reset)
- */
 export const clearAllAppData = async (): Promise<void> => {
     try {
         await AsyncStorage.clear();

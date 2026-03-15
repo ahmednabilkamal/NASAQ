@@ -97,7 +97,6 @@ export default function OrdersScreen() {
         const label     = content.orders?.status?.[statusKey] ?? item.status ?? '—';
         const color     = STATUS_COLOR[rawStatus]  ?? '#9CA3AF';
 
-        // Resolve service image from nested data if available
         const imageUri = (item as any).service?.image
             ? { uri: (item as any).service.image }
             : require('@/assets/mirroimagewomen.png');

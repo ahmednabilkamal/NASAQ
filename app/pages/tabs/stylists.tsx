@@ -58,7 +58,6 @@ export default function StylistsScreen() {
         fetchStylists();
     }, [fetchStylists]);
 
-    // Debounced search
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchStylists(search.trim() || undefined);

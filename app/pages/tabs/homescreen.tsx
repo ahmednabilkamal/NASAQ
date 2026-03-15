@@ -29,7 +29,6 @@ const HomeScreen = () => {
     const [stylists, setStylists] = useState<Stylist[]>([]);
     const [packages, setPackages] = useState<RecommendedService[]>([]);
     const [loading, setLoading] = useState(true);
-    // Set of stylist IDs the user has favorited
     const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
@@ -84,7 +83,6 @@ const HomeScreen = () => {
 
     const handleFavoriteToggle = async (stylistId: number | string) => {
         const id = String(stylistId);
-        // Optimistic update
         setFavoriteIds(prev => {
             const next = new Set(prev);
             if (next.has(id)) {
@@ -97,7 +95,6 @@ const HomeScreen = () => {
         try {
             await apiService.toggleFavorite(stylistId);
         } catch (error) {
-            // Revert on failure
             setFavoriteIds(prev => {
                 const next = new Set(prev);
                 if (next.has(id)) {
@@ -115,7 +112,6 @@ const HomeScreen = () => {
         console.log('Package pressed:', packageId);
     };
 
-    // Hero banner: use first banner from API or a static fallback
     const heroBanner = banners[0];
 
     if (authLoading) {

@@ -26,7 +26,6 @@ export default function PaymentCardsScreen() {
     const router = useRouter();
     const { order_id, price } = useLocalSearchParams<{ order_id?: string; price?: string }>();
 
-    // isCheckout = true when navigated from Book & Pay flow
     const isCheckout = Boolean(order_id);
 
     const [cards, setCards] = useState<any[]>([]);
@@ -41,16 +40,10 @@ export default function PaymentCardsScreen() {
             const res = await authService.getCards();
             console.log('💳 Raw Cards Response:', JSON.stringify(res));
 
-            /**
-             * Handle Laravel ApiResponse structure:
-             * Expected res format: { status: 'success', data: [ { id, last_four... } ] }
-             * Falling back to res if it's already an array.
-             */
             let fetched: any[] = [];
             if (Array.isArray(res)) {
                 fetched = res;
             } else if (res && typeof res === 'object') {
-                // Try .data first, then .cards, then look for any array value
                 fetched = res.data ?? res.cards ?? Object.values(res).find(v => Array.isArray(v)) ?? [];
             }
 
@@ -124,7 +117,6 @@ export default function PaymentCardsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
                     <Ionicons name="chevron-forward" size={22} color="#000" />
@@ -143,7 +135,6 @@ export default function PaymentCardsScreen() {
                 }
             >
 
-                {/* Apple Pay */}
                 <TouchableOpacity
                     style={[styles.methodRow, selectedMethod === 'apple' && styles.methodRowSelected]}
                     onPress={() => setSelectedMethod('apple')}
@@ -159,7 +150,6 @@ export default function PaymentCardsScreen() {
                     </View>
                 </TouchableOpacity>
 
-                {/* Debit / Credit Card toggle */}
                 <TouchableOpacity
                     style={[styles.methodRow, selectedMethod === 'card' && styles.methodRowSelected]}
                     onPress={() => setSelectedMethod('card')}
@@ -172,13 +162,11 @@ export default function PaymentCardsScreen() {
                     <Ionicons name="card" size={22} color="#064E3B" />
                 </TouchableOpacity>
 
-                {/* ── Saved cards (visible when card method selected) ── */}
                 {selectedMethod === 'card' && (
                     <View style={styles.savedCardBlock}>
                         {fetchingCards ? (
                             <ActivityIndicator color="#064E3B" style={{ margin: 20 }} />
                         ) : cards.length === 0 ? (
-                            /* No cards yet */
                             <View style={styles.emptyCards}>
                                 <Ionicons name="card-outline" size={36} color="#DDD" />
                                 <Text style={styles.emptyCardsText}>لا توجد بطاقات محفوظة</Text>
@@ -194,25 +182,21 @@ export default function PaymentCardsScreen() {
                                     onPress={() => setSelectedCardId(card.id)}
                                     activeOpacity={0.85}
                                 >
-                                    {/* Left: radio */}
                                     <View style={[styles.radioSm, selectedCardId === card.id && styles.radioSmActive]}>
                                         {selectedCardId === card.id && <View style={styles.radioDotSm} />}
                                     </View>
 
-                                    {/* Card info */}
                                     <View style={styles.cardInfo}>
                                         <Text style={styles.cardDigits}>•••• {card.last_four}</Text>
                                         <Text style={styles.cardHolder}>{card.card_name}</Text>
                                     </View>
 
-                                    {/* Card type icon */}
                                     <Ionicons
                                         name={card.card_type === 'visa' ? 'card' : 'card-outline'}
                                         size={22}
                                         color="#1A1F71"
                                     />
 
-                                    {/* Delete */}
                                     <TouchableOpacity
                                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                         onPress={() => handleDeleteCard(card.id)}
@@ -223,7 +207,6 @@ export default function PaymentCardsScreen() {
                             ))
                         )}
 
-                        {/* Add new card row */}
                         <TouchableOpacity
                             style={styles.addCardRow}
                             onPress={() => router.push('/pages/payment/add_card' as any)}
@@ -234,7 +217,6 @@ export default function PaymentCardsScreen() {
                     </View>
                 )}
 
-                {/* ── Payment Summary (only in checkout mode) ── */}
                 {isCheckout && displayPrice && (
                     <View style={styles.summaryBox}>
                         <Text style={styles.summaryTitle}>ملخص الدفع</Text>
@@ -249,7 +231,6 @@ export default function PaymentCardsScreen() {
                 <View style={{ height: 100 }} />
             </ScrollView>
 
-            {/* ── Footer: Pay (checkout) or Manage (card-only) ── */}
             <View style={styles.footer}>
                 {isCheckout ? (
                     <TouchableOpacity

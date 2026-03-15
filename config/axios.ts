@@ -13,7 +13,6 @@ const api = axios.create({
 
 import Toast from 'react-native-toast-message';
 
-// Request interceptor ... existing code ...
 api.interceptors.request.use(async (config) => {
   try {
     const token = await getAccessToken();
@@ -21,7 +20,6 @@ api.interceptors.request.use(async (config) => {
       config.headers.Authorization = `Bearer ${token}`;
     }
   } catch (error) {
-    // SILENT fail - syncToken fallback will attempt or request will fail 401
     const syncToken = getAccessTokenSync();
     if (syncToken) {
       config.headers.Authorization = `Bearer ${syncToken}`;
@@ -32,13 +30,11 @@ api.interceptors.request.use(async (config) => {
   return Promise.reject(error);
 });
 
-// Response interceptor to handle errors globally
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     let message = error.response?.data?.message || error.message || 'Something went wrong';
 
-    // Check for validation errors and format them nicely
     if (error.response?.data?.errors) {
       const errors = error.response.data.errors;
       const errorStrings = Object.keys(errors).map(key => {
@@ -52,11 +48,11 @@ api.interceptors.response.use(
 
     Toast.show({
       type: 'error',
-      text1: 'خطأ', // Header in Arabic
+      text1: 'خطأ',
       text2: message,
       position: 'bottom',
       visibilityTime: 4000,
-      bottomOffset: 60, // A bit higher than the absolute bottom
+      bottomOffset: 60,
     });
 
     return Promise.reject(error);
@@ -64,6 +60,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-
-
-

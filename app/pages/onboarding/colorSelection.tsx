@@ -53,7 +53,6 @@ export default function SkinTonePage() {
         }
     };
 
-    // Get the appropriate tones based on gender
     const currentTones = gender === 'male' ? TONES.male : TONES.female;
 
     return (

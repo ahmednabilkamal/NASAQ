@@ -1,32 +1,15 @@
-/**
- * API Integration Test & Verification
- * 
- * This file contains test functions to verify that all three APIs are working correctly.
- * Run these tests to ensure the integration is successful.
- */
-
 import apiService from '@/config/apiService';
 
-// ============================================
-// TEST FUNCTIONS
-// ============================================
-
-/**
- * Test 1: Recommended Services API
- */
 export const testRecommendedServices = async () => {
     console.log('🧪 Testing Recommended Services API...');
 
     try {
-        // Test without parameters
         const response1 = await apiService.getRecommendedServices();
         console.log('✅ Recommended Services (no params):', response1);
 
-        // Test with pagination
         const response2 = await apiService.getRecommendedServices({ per_page: 10 });
         console.log('✅ Recommended Services (per_page=10):', response2);
 
-        // Test with page parameter
         const response3 = await apiService.getRecommendedServices({ per_page: 5, page: 2 });
         console.log('✅ Recommended Services (per_page=5, page=2):', response3);
 
@@ -37,9 +20,6 @@ export const testRecommendedServices = async () => {
     }
 };
 
-/**
- * Test 2: Banners API
- */
 export const testBanners = async () => {
     console.log('🧪 Testing Banners API...');
 
@@ -57,7 +37,6 @@ export const testBanners = async () => {
     } catch (error) {
         console.error('❌ Banners API Error:', error);
 
-        // Check if it's an auth error
         if ((error as any).response?.status === 401) {
             console.error('⚠️ Authentication required - make sure user is logged in');
         }
@@ -66,18 +45,13 @@ export const testBanners = async () => {
     }
 };
 
-/**
- * Test 3: Fashion Styles API
- */
 export const testFashionStyles = async () => {
     console.log('🧪 Testing Fashion Styles API...');
 
     try {
-        // Test without parameters
         const response1 = await apiService.getFashionStyles();
         console.log('✅ Fashion Styles (no params):', response1);
 
-        // Test with pagination
         const response2 = await apiService.getFashionStyles({ per_page: 10 });
         console.log('✅ Fashion Styles (per_page=10):', response2);
 
@@ -91,7 +65,6 @@ export const testFashionStyles = async () => {
     } catch (error) {
         console.error('❌ Fashion Styles API Error:', error);
 
-        // Check if it's an auth error
         if ((error as any).response?.status === 401) {
             console.error('⚠️ Authentication required - make sure user is logged in');
         }
@@ -100,9 +73,6 @@ export const testFashionStyles = async () => {
     }
 };
 
-/**
- * Run all API tests
- */
 export const runAllApiTests = async () => {
     console.log('\n🚀 Starting API Integration Tests...\n');
 
@@ -132,45 +102,12 @@ export const runAllApiTests = async () => {
     return results;
 };
 
-// ============================================
-// HOW TO USE THESE TESTS
-// ============================================
-
-/**
- * To test the APIs in your app:
- * 
- * 1. Import this file in any component:
- *    import { runAllApiTests } from '@/config/apiTests';
- * 
- * 2. Call the test function (e.g., in useEffect or a button press):
- *    useEffect(() => {
- *        runAllApiTests();
- *    }, []);
- * 
- * 3. Check the console for results
- * 
- * Or test individual APIs:
- *    import { testRecommendedServices, testBanners, testFashionStyles } from '@/config/apiTests';
- *    
- *    const handleTest = async () => {
- *        await testRecommendedServices();
- *    };
- */
-
-// ============================================
-// DEBUGGING HELPERS
-// ============================================
-
-/**
- * Check if API base URL is configured correctly
- */
 export const checkApiConfiguration = () => {
     console.log('🔍 Checking API Configuration...');
     console.log('Environment:', process.env.EXPO_NODE_ENV);
     console.log('Local Base URL:', process.env.EXPO_PUBLIC_LOCAL_BASE_URL);
     console.log('Server URL:', process.env.EXPO_PUBLIC_SERVER_URL);
 
-    // Check .env file
     const baseUrl = process.env.EXPO_NODE_ENV === "production"
         ? process.env.EXPO_PUBLIC_LOCAL_BASE_URL
         : process.env.EXPO_PUBLIC_SERVER_URL;
@@ -186,14 +123,9 @@ export const checkApiConfiguration = () => {
     return true;
 };
 
-/**
- * Test authentication token
- */
 export const checkAuthToken = () => {
     console.log('🔍 Checking Authentication Token...');
 
-    // This would need to import getAccessToken from authToken.ts
-    // For now, just log instructions
     console.log('To check auth token:');
     console.log('1. Import: import { getAccessToken } from "@/config/authToken";');
     console.log('2. Call: const token = getAccessToken();');

@@ -11,10 +11,6 @@ import { useMeasurements } from '@/hooks/onboarding/useMeasurements';
 import { useAuth } from '@/config/authContext';
 import { FontSizes } from '@/utils/typography';
 
-// Coordinates as ratios (0 to 1) - works on any screen size
-// bodyXRatio/bodyYRatio = dot position on body as percentage of container
-// inputYRatio = input row vertical position as percentage of container
-
 const FEMALE_POINTS = {
     shoulder: { bodyXRatio: 0.62, bodyYRatio: 0.185, inputYRatio: 0.14 },
     chest: { bodyXRatio: 0.74, bodyYRatio: 0.255, inputYRatio: 0.22 },
@@ -84,7 +80,6 @@ export default function MeasurementsPage() {
         setDimensions({ width, height });
     };
 
-    // Calculate actual positions from ratios
     const getPosition = (xRatio: number, yRatio: number) => ({
         x: xRatio * dimensions.width,
         y: yRatio * dimensions.height,

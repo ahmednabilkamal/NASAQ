@@ -34,7 +34,6 @@ export default function StyleIdentityPage() {
                 const data = res?.data;
                 let styles = Array.isArray(data) ? data : [];
 
-                // Ensure we have at least 6 items for the 3x2 grid mockup look
                 if (styles.length > 0 && styles.length < 6) {
                     const original = [...styles];
                     while (styles.length < 6) {
@@ -64,7 +63,6 @@ export default function StyleIdentityPage() {
         setSaving(true);
         try {
             const selectedStyleIds = selectedIndices.map(idx => styles_data[idx].id);
-            // Deduplicate IDs in case the same style was selected twice in different positions
             const uniqueIds = Array.from(new Set(selectedStyleIds.map(Number)));
 
             await updateProfile({ fashion_styles: uniqueIds });
@@ -103,7 +101,6 @@ export default function StyleIdentityPage() {
                         renderItem={({ item, index }) => {
                             const isSelected = selectedIndices.includes(index);
 
-                            // Determine fallback images based on gender and column (3-column grid)
                             const colIndex = index % 3;
                             let defaultImage;
 

@@ -46,7 +46,6 @@ export default function ProfileScreen() {
     const [darkMode, setDarkMode] = useState(false);
     const [languageModalVisible, setLanguageModalVisible] = useState(false);
 
-    // Password Change State
     const [passwordModalVisible, setPasswordModalVisible] = useState(false);
     const [otpModalVisible, setOtpModalVisible] = useState(false);
     const [newPassword, setNewPassword] = useState('');
@@ -677,7 +676,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#E5E7EB',
     },
-    // Modal Styles
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
@@ -731,7 +729,6 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: '#F0F0F0',
     },
-    // Password Modal specific
     inputGroup: {
         marginTop: Spacing.verticalLg,
         gap: Spacing.verticalSm,
@@ -774,7 +771,6 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_700Bold',
     },
-    // OTP specific
     otpSubtitle: {
         fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',

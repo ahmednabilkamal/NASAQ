@@ -26,7 +26,6 @@ interface Notification {
     read: boolean;
 }
 
-// Placeholder data – replace with API when backend has /user/notifications
 const MOCK_NOTIFICATIONS: Notification[] = [
     {
         id: '1',

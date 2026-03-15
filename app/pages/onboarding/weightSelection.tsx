@@ -26,7 +26,6 @@ export default function WeightPage() {
     const handleNext = async () => {
         setSaving(true);
         try {
-            // Convert weight if needed or just send it
             await updateProfile({ weight: Number(weight) });
             router.push('/pages/onboarding/colorSelection' as any);
 

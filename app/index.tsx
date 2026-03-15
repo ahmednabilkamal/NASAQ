@@ -22,8 +22,6 @@ export default function Home() {
     imageScale.value = withTiming(1, { duration: 2000 });
 
     const navigateToNextScreen = async () => {
-      // Wait for auth to finish loading
-      if (loading) return;
 
       console.log('🚀 Determining initial route...');
       console.log('Is Authenticated:', isAuthenticated);
@@ -36,7 +34,7 @@ export default function Home() {
 
     const timer = setTimeout(() => {
       navigateToNextScreen();
-    }, 2500); // Slightly longer to show the splash animation
+    }, 2500); 
 
     return () => clearTimeout(timer);
   }, [loading, isAuthenticated]);
