@@ -24,7 +24,7 @@ export default function EvaluationLayout({
     currentStep,
     totalSteps,
     onNext,
-    nextButtonText = 'التالي',
+    nextButtonText = 'Next',
     isNextDisabled = false,
 }: EvaluationLayoutProps) {
     const router = useRouter();
@@ -32,6 +32,7 @@ export default function EvaluationLayout({
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
+                {/* Close button - always on left */}
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
                     <View style={styles.iconCircle}>
                         <Ionicons name="close-outline" size={24} color="#000" />
@@ -50,9 +51,10 @@ export default function EvaluationLayout({
                     ))}
                 </View>
 
+                {/* Back arrow - always on right, pointing right */}
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
                     <View style={styles.iconCircle}>
-                        <Ionicons name={I18nManager.isRTL ? "chevron-back" : "chevron-forward"} size={24} color="#000" />
+                        <Ionicons name="chevron-forward" size={24} color="#000" />
                     </View>
                 </TouchableOpacity>
             </View>

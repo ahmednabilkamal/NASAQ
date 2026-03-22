@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
-import { scale, scaleVertical } from '@/utils/responsive';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
+import { scale } from '@/utils/responsive';
 import { FontSizes } from '@/utils/typography';
 
 interface HeightSliderProps {
@@ -9,11 +9,14 @@ interface HeightSliderProps {
 }
 
 export const HeightSlider: React.FC<HeightSliderProps> = ({ height, panHandlers }) => {
-    const { height: screenHeight } = useWindowDimensions();
-    const sliderHeight = screenHeight * 0.3; // 30% of screen height
+    const [sliderHeight, setSliderHeight] = useState(0);
+
+    const handleLayout = (event: LayoutChangeEvent) => {
+        setSliderHeight(event.nativeEvent.layout.height);
+    };
 
     return (
-        <View style={[styles.scaleContainer, { height: sliderHeight }]} {...panHandlers}>
+        <View style={styles.scaleContainer} onLayout={handleLayout} {...panHandlers}>
             <View style={styles.scaleRuler} pointerEvents="none">
                 {[190, 180, 170, 160, 150, 140].map((val) => (
                     <View key={val} style={styles.scaleMark}>
@@ -23,8 +26,12 @@ export const HeightSlider: React.FC<HeightSliderProps> = ({ height, panHandlers 
                 ))}
             </View>
 
-            <View style={[styles.activeLine, { top: ((190 - height) / (190 - 140)) * sliderHeight }]} pointerEvents="none" />
-            <View style={[styles.activeCircle, { top: ((190 - height) / (190 - 140)) * sliderHeight - 4 }]} pointerEvents="none" />
+            {sliderHeight > 0 && (
+                <>
+                    <View style={[styles.activeLine, { top: ((190 - height) / (190 - 140)) * sliderHeight }]} pointerEvents="none" />
+                    <View style={[styles.activeCircle, { top: ((190 - height) / (190 - 140)) * sliderHeight - 4 }]} pointerEvents="none" />
+                </>
+            )}
         </View>
     );
 };
@@ -32,7 +39,7 @@ export const HeightSlider: React.FC<HeightSliderProps> = ({ height, panHandlers 
 const styles = StyleSheet.create({
     scaleContainer: {
         width: scale(80),
-        marginTop: scaleVertical(50),
+        flex: 1,
         position: 'relative',
     },
     scaleRuler: {

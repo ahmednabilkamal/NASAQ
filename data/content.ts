@@ -129,8 +129,8 @@ const pageData = {
       portfolio: "Portfolio",
       reviews: "Reviews",
       services: "Services",
-      experience: "Years of experience",
       connectButton: "Connect with Stylist",
+      payToChatButton: "Pay to Chat",
       hour: "Hour"
     },
     profile: {
@@ -149,7 +149,16 @@ const pageData = {
       privacy: "Privacy & Safety",
       updateButton: "Update",
       verify: "Verify",
-      logout: "Logout"
+      logout: "Logout",
+      languageArabic: "Arabic",
+      languageEnglish: "English",
+      newPassword: "New Password",
+      confirmPassword: "Confirm Password",
+      enterPassword: "Enter password",
+      otpInstruction: "Enter the verification code sent to your phone",
+      didntReceiveCode: "Didn't receive the code?",
+      resendCode: "Resend code",
+      resendAfter: "Resend after"
     },
     payment: {
       title: "Payment",
@@ -164,6 +173,8 @@ const pageData = {
       total: "Total (incl. tax)"
     },
     home:{
+      heroBannerTitle: "Choosing the right cut for your body makes more difference than the piece itself.",
+      trustedStylists: "Stylists trusted by many",
       packages:{
         title:"Packages designed for your needs",
         box1:{
@@ -213,7 +224,10 @@ const pageData = {
         active: "Active",
         inactive: "Cancelled",
         cancelled: "Cancelled"
-      }
+      },
+      orderNumber: "Order #",
+      orderDetails: "Order details",
+      noOrders: "No orders"
     },
     common: {
       or: "or",
@@ -232,7 +246,8 @@ const pageData = {
       currency: "SAR",
       perHour: "/ hour",
       defaultName: "Guest User",
-      greeting: "Good morning"
+      greeting: "Good morning",
+      seconds: "seconds"
     },
     imageAction: {
       title: "Change Photo",
@@ -387,8 +402,8 @@ const pageData = {
       portfolio: "معرض الأعمال",
       reviews: "التقييمات",
       services: "الخدمات",
-      experience: "خبرة أكثر من سنتين",
       connectButton: "تواصل مع المنسقة",
+      payToChatButton: "ادفع للدردشة",
       hour: "ساعة"
     },
     profile: {
@@ -407,7 +422,16 @@ const pageData = {
       privacy: "الخصوصية والأمان",
       updateButton: "تحديث",
       verify: "تأكيد",
-      logout: "تسجيل الخروج"
+      logout: "تسجيل الخروج",
+      languageArabic: "العربية",
+      languageEnglish: "الانجليزية",
+      newPassword: "كلمة المرور الجديدة",
+      confirmPassword: "تأكيد كلمة المرور",
+      enterPassword: "أدخل كلمة المرور",
+      otpInstruction: "أدخل رمز التحقق المرسل إلى رقم هاتفك",
+      didntReceiveCode: "لم يصلك الرمز؟",
+      resendCode: "يمكنك إعادة الإرسال",
+      resendAfter: "يمكنك إعادة الإرسال بعد"
     },
     payment: {
       title: "الدفع",
@@ -422,6 +446,8 @@ const pageData = {
       total: "الإجمالي (شامل الضريبة)"
     },
       home:{
+      heroBannerTitle: "اختيار القصة المناسبة لجسمك يفرق أكثر من القطعة نفسها.",
+      trustedStylists: "منسقات موثوقات من الكثيرين",
       packages:{
         title:"باقات مصممة لتلبية احتياجاتك",
         box1:{
@@ -471,7 +497,10 @@ const pageData = {
         active: "نشط",
         inactive: "ملغى",
         cancelled: "ملغى"
-      }
+      },
+      orderNumber: "طلب رقم",
+      orderDetails: "تفاصيل الطلب",
+      noOrders: "لا توجد طلبات"
     },
     common: {
       or: "أو",
@@ -490,7 +519,8 @@ const pageData = {
       currency: "ريال سعودي",
       perHour: "/ الساعة",
       defaultName: "مستخدم ضيف",
-      greeting: "صباح الخير"
+      greeting: "صباح الخير",
+      seconds: "ثانية"
     },
     imageAction: {
       title: "تغيير الصورة",

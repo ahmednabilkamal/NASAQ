@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, I18nManager } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FontSizes } from '@/utils/typography';
 
@@ -14,20 +14,6 @@ interface HomeHeaderProps {
 export default function HomeHeader({ userName, greeting, avatarUri, onSearchPress, onNotificationPress }: HomeHeaderProps) {
     return (
         <View style={styles.container}>
-            <View style={styles.leftButtons}>
-                <TouchableOpacity style={styles.iconButton} onPress={onSearchPress}>
-                    <Ionicons name="search-outline" size={24} color="#064E3B" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.iconButton} onPress={onNotificationPress}>
-                    <Ionicons name="notifications-outline" size={24} color="#064E3B" />
-                </TouchableOpacity>
-            </View>
-
-            <View style={styles.userInfo}>
-                <Text style={styles.greeting}>{greeting}</Text>
-                <Text style={styles.userName}>{userName}</Text>
-            </View>
-
             <View style={styles.avatarContainer}>
                 {avatarUri ? (
                     <Image source={{ uri: avatarUri }} style={styles.avatar} />
@@ -37,21 +23,35 @@ export default function HomeHeader({ userName, greeting, avatarUri, onSearchPres
                     </View>
                 )}
             </View>
+
+            <View style={styles.userInfo}>
+                <Text style={styles.greeting}>{greeting}</Text>
+                <Text style={styles.userName}>{userName}</Text>
+            </View>
+
+            <View style={styles.rightButtons}>
+                <TouchableOpacity style={styles.iconButton} onPress={onNotificationPress}>
+                    <Ionicons name="notifications-outline" size={24} color="#064E3B" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconButton} onPress={onSearchPress}>
+                    <Ionicons name="search-outline" size={24} color="#064E3B" />
+                </TouchableOpacity>
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        flexDirection: 'row',
+        flexDirection: I18nManager.isRTL ? 'row' : 'row-reverse',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingVertical: 20,
         backgroundColor: '#fff',
     },
-    leftButtons: {
-        flexDirection: 'row',
+    rightButtons: {
+        flexDirection: I18nManager.isRTL ? 'row' : 'row-reverse',
         alignItems: 'center',
         gap: 12,
     },
@@ -67,8 +67,8 @@ const styles = StyleSheet.create({
     },
     userInfo: {
         flex: 1,
-        alignItems: 'flex-end',
-        marginRight: 12,
+        alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
+        marginHorizontal: 12,
     },
     greeting: {
         fontSize: FontSizes.bodySmall,

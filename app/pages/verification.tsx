@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Ionicons } from '@expo/vector-icons';
 import authService from '@/config/authService';
 import { showErrorToast, showSuccessToast } from '@/utils/errorHandler';
 import { scale, scaleVertical } from '@/utils/responsive';
@@ -31,11 +31,49 @@ export default function VerificationScreen() {
     const isRTL = I18nManager.isRTL;
     const [code, setCode] = useState(['', '', '', '', '']);
     const [loading, setLoading] = useState(false);
+
+    // Convert Arabic-Indic numerals to Western numerals
+    const convertArabicToWesternNumerals = (text: string): string => {
+        const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+        const persianNumerals = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+
+        let result = text;
+        arabicNumerals.forEach((num, index) => {
+            result = result.replace(new RegExp(num, 'g'), index.toString());
+        });
+        persianNumerals.forEach((num, index) => {
+            result = result.replace(new RegExp(num, 'g'), index.toString());
+        });
+        // Keep only digits
+        return result.replace(/[^0-9]/g, '');
+    };
     const [resending, setResending] = useState(false);
+    const [countdown, setCountdown] = useState(30);
+    const [canResend, setCanResend] = useState(false);
     const inputs = useRef<(TextInput | null)[]>([]);
 
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (countdown > 0 && !canResend) {
+            timer = setInterval(() => {
+                setCountdown((prev) => prev - 1);
+            }, 1000);
+        } else if (countdown === 0) {
+            setCanResend(true);
+        }
+        return () => clearInterval(timer);
+    }, [countdown, canResend]);
+
+    const formatTime = useCallback((seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }, []);
+
     const handleCodeChange = (text: string, index: number) => {
-        const char = text.slice(-1);
+        // Convert Arabic-Indic numerals to Western numerals
+        const convertedText = convertArabicToWesternNumerals(text);
+        const char = convertedText.slice(-1);
 
         const newCode = [...code];
         newCode[index] = char;
@@ -85,11 +123,13 @@ export default function VerificationScreen() {
     };
 
     const handleResendOtp = async () => {
-        if (!loginParam) { return; }
+        if (!loginParam || !canResend) { return; }
         setResending(true);
         try {
             await authService.sendOtp({ login: loginParam });
             showSuccessToast('verificationSent', languageCode);
+            setCountdown(30);
+            setCanResend(false);
         } catch (error: any) {
         } finally {
             setResending(false);
@@ -104,8 +144,8 @@ export default function VerificationScreen() {
             >
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <IconSymbol
-                            name={isRTL ? 'chevron.right' : 'chevron.left'}
+                        <Ionicons
+                            name={isRTL ? 'arrow-forward' : 'arrow-back'}
                             size={24}
                             color="#000"
                         />
@@ -153,16 +193,25 @@ export default function VerificationScreen() {
                     </TouchableOpacity>
 
                     <View style={styles.footer}>
-                        <TouchableOpacity onPress={handleResendOtp} disabled={resending}>
-                            <Text style={styles.footerText}>
-                                {content.footerText}
-                                {resending ? (
-                                    <ActivityIndicator size="small" color="#064E3B" />
-                                ) : (
-                                    <Text style={styles.footerLink}>{content.footerLink}</Text>
-                                )}
+                        {canResend ? (
+                            <TouchableOpacity onPress={handleResendOtp} disabled={resending}>
+                                <Text style={styles.footerText}>
+                                    {content.footerText}
+                                    {resending ? (
+                                        <ActivityIndicator size="small" color="#064E3B" />
+                                    ) : (
+                                        <Text style={styles.footerLink}>{content.footerLink}</Text>
+                                    )}
+                                </Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <Text style={styles.timerText}>
+                                {isRTL
+                                    ? `تم ارسال الرمز؟ يمكنك إعادة الإرسال بعد ${formatTime(countdown)} ثانية`
+                                    : `Code sent? You can resend after ${formatTime(countdown)}`
+                                }
                             </Text>
-                        </TouchableOpacity>
+                        )}
                     </View>
                 </View>
             </KeyboardAvoidingView>
@@ -276,5 +325,11 @@ const styles = StyleSheet.create({
     footerLink: {
         color: '#064E3B',
         fontFamily: 'Cairo_700Bold',
+    },
+    timerText: {
+        fontSize: FontSizes.body,
+        fontFamily: 'Cairo_400Regular',
+        color: '#666',
+        textAlign: 'center',
     },
 });

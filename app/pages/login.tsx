@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
     View,
     Text,
@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/config/authContext';
 import { useAuthForm } from '@/hooks/useAuthForm';
 import { showErrorToast } from '@/utils/errorHandler';
@@ -47,6 +47,27 @@ export default function AuthScreen() {
     } = useAuthForm();
 
     const { isAuthenticated, loading: authLoading, getOnboardingStep, user } = useAuth();
+
+    // Password validation states
+    const passwordValidation = useMemo(() => {
+        // Support both Latin and Arabic characters
+        const hasLatinUpper = /[A-Z]/.test(password);
+        const hasLatinLower = /[a-z]/.test(password);
+        const hasArabicLetter = /[\u0600-\u06FF]/.test(password); // Arabic Unicode range
+
+        // Support both Western (0-9) and Arabic-Indic numerals (٠-٩)
+        const hasWesternNumber = /[0-9]/.test(password);
+        const hasArabicNumber = /[\u0660-\u0669\u06F0-\u06F9]/.test(password);
+
+        return {
+            hasMinLength: password.length >= 8,
+            // For Arabic text, we accept any Arabic letter since Arabic has no case
+            // For English, we require both upper and lower
+            hasUppercase: hasLatinUpper || hasArabicLetter,
+            hasLowercase: hasLatinLower || hasArabicLetter,
+            hasNumber: hasWesternNumber || hasArabicNumber,
+        };
+    }, [password]);
 
 
     React.useEffect(() => {
@@ -80,8 +101,8 @@ export default function AuthScreen() {
             >
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <IconSymbol
-                            name={isRTL ? 'arrow.left' : 'arrow.right'}
+                        <Ionicons
+                            name={isRTL ? 'arrow-forward' : 'arrow-back'}
                             size={24}
                             color="#000"
                         />
@@ -136,22 +157,35 @@ export default function AuthScreen() {
                             <View style={styles.inputContainer}>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder={isLogin ? "محمد علي اسامة" : "example@mail.com"}
+                                    placeholder="example@mail.com"
                                     placeholderTextColor="#999"
                                     textAlign={isRTL ? 'right' : 'left'}
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
                                     value={identifier}
                                     onChangeText={setIdentifier}
                                 />
                             </View>
+                            {!isLogin && (
+                                <Text style={styles.hintText}>
+                                    {isRTL ? "يجب استخدام حروف إنجليزية للبريد الإلكتروني" : "Email must use English characters"}
+                                </Text>
+                            )}
                         </View>
 
                         {!isLogin && (
                             <View style={styles.inputWrapper}>
                                 <Text style={styles.label}>{registerContent.mobilePlaceholder}<Text style={styles.required}>*</Text></Text>
-                                <View style={styles.inputContainer}>
+                                <View style={styles.phoneInputContainer}>
+                                    <TouchableOpacity style={styles.countryCodeButton}>
+                                        <Text style={styles.flagEmoji}>🇸🇦</Text>
+                                        <Text style={styles.countryCode}>+966</Text>
+                                        <Ionicons name="chevron-down" size={16} color="#999" />
+                                    </TouchableOpacity>
+                                    <View style={styles.phoneDivider} />
                                     <TextInput
-                                        style={styles.input}
-                                        placeholder="01222569996"
+                                        style={styles.phoneInput}
+                                        placeholder="512345678"
                                         placeholderTextColor="#999"
                                         keyboardType="phone-pad"
                                         textAlign={isRTL ? 'right' : 'left'}
@@ -167,7 +201,7 @@ export default function AuthScreen() {
                             <View style={styles.inputContainer}>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="01222569996"
+                                    placeholder={isRTL ? "ادخل كلمة المرور" : "Enter password"}
                                     placeholderTextColor="#999"
                                     secureTextEntry
                                     textAlign={isRTL ? 'right' : 'left'}
@@ -175,6 +209,50 @@ export default function AuthScreen() {
                                     onChangeText={setPassword}
                                 />
                             </View>
+                            {!isLogin && password.length > 0 && (
+                                <View style={styles.passwordValidation}>
+                                    <View style={styles.validationRow}>
+                                        <Ionicons
+                                            name={passwordValidation.hasMinLength ? "checkmark-circle" : "close-circle"}
+                                            size={16}
+                                            color={passwordValidation.hasMinLength ? "#10B981" : "#EF4444"}
+                                        />
+                                        <Text style={[styles.validationText, passwordValidation.hasMinLength && styles.validationTextValid]}>
+                                            {isRTL ? "على الأقل ٨ أحرف" : "At least 8 characters"}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.validationRow}>
+                                        <Ionicons
+                                            name={passwordValidation.hasUppercase ? "checkmark-circle" : "close-circle"}
+                                            size={16}
+                                            color={passwordValidation.hasUppercase ? "#10B981" : "#EF4444"}
+                                        />
+                                        <Text style={[styles.validationText, passwordValidation.hasUppercase && styles.validationTextValid]}>
+                                            {isRTL ? "حرف كبير" : "Uppercase letter"}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.validationRow}>
+                                        <Ionicons
+                                            name={passwordValidation.hasLowercase ? "checkmark-circle" : "close-circle"}
+                                            size={16}
+                                            color={passwordValidation.hasLowercase ? "#10B981" : "#EF4444"}
+                                        />
+                                        <Text style={[styles.validationText, passwordValidation.hasLowercase && styles.validationTextValid]}>
+                                            {isRTL ? "حرف صغير" : "Lowercase letter"}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.validationRow}>
+                                        <Ionicons
+                                            name={passwordValidation.hasNumber ? "checkmark-circle" : "close-circle"}
+                                            size={16}
+                                            color={passwordValidation.hasNumber ? "#10B981" : "#EF4444"}
+                                        />
+                                        <Text style={[styles.validationText, passwordValidation.hasNumber && styles.validationTextValid]}>
+                                            {isRTL ? "رقم" : "Number"}
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
                         </View>
 
                         {isLogin ? (
@@ -190,7 +268,7 @@ export default function AuthScreen() {
                                 <View style={styles.inputContainer}>
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="01222569996"
+                                        placeholder={isRTL ? "تأكيد كلمة المرور" : "Confirm password"}
                                         placeholderTextColor="#999"
                                         secureTextEntry
                                         textAlign={isRTL ? 'right' : 'left'}
@@ -256,7 +334,7 @@ const styles = StyleSheet.create({
     header: {
         paddingHorizontal: Spacing.screenPaddingHorizontal,
         paddingVertical: Spacing.verticalSm,
-        alignItems: I18nManager.isRTL ? 'flex-start' : 'flex-end',
+        alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
     },
     backButton: {
         padding: Spacing.sm,
@@ -331,10 +409,67 @@ const styles = StyleSheet.create({
         fontFamily: 'Cairo_400Regular',
         color: '#000',
     },
+    passwordValidation: {
+        marginTop: Spacing.sm,
+        gap: Spacing.xs,
+    },
+    validationRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.xs,
+    },
+    validationText: {
+        fontSize: FontSizes.bodySmall,
+        fontFamily: 'Cairo_400Regular',
+        color: '#EF4444',
+    },
+    validationTextValid: {
+        color: '#10B981',
+    },
+    hintText: {
+        fontSize: FontSizes.caption,
+        fontFamily: 'Cairo_400Regular',
+        color: '#999',
+        marginTop: Spacing.xs,
+        textAlign: I18nManager.isRTL ? 'right' : 'left',
+    },
+    phoneInputContainer: {
+        backgroundColor: '#F8F9FA',
+        borderRadius: BorderRadius.lg,
+        height: InputSizes.height,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: InputSizes.paddingHorizontal,
+    },
+    countryCodeButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.xs,
+    },
+    flagEmoji: {
+        fontSize: FontSizes.bodyLarge,
+    },
+    countryCode: {
+        fontSize: FontSizes.input,
+        fontFamily: 'Cairo_400Regular',
+        color: '#000',
+    },
+    phoneDivider: {
+        width: 1,
+        height: '50%',
+        backgroundColor: '#DDD',
+        marginHorizontal: Spacing.md,
+    },
+    phoneInput: {
+        flex: 1,
+        fontSize: FontSizes.input,
+        fontFamily: 'Cairo_400Regular',
+        color: '#000',
+    },
     optionsRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: I18nManager.isRTL ? 'flex-start' : 'flex-end',
+        justifyContent: I18nManager.isRTL ? 'flex-end' : 'flex-start',
     },
     checkboxContainer: {
         flexDirection: 'row',

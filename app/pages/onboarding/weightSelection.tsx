@@ -80,16 +80,15 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         alignItems: 'center',
-        paddingTop: scaleVertical(20),
     },
     weightDisplay: {
         flexDirection: 'row',
         alignItems: 'baseline',
-        marginBottom: scaleVertical(40),
+        marginBottom: scaleVertical(15),
         justifyContent: 'center',
     },
     weightText: {
-        fontSize: FontSizes.display,
+        fontSize: FontSizes.displayMedium,
         fontFamily: 'Cairo_700Bold',
     },
     weightUnit: {

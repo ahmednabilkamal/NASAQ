@@ -10,9 +10,8 @@ import { HeightSlider } from '@/components/onboarding/HeightSlider';
 import { useHeightSelection } from '@/hooks/onboarding/useHeightSelection';
 import { useAuth } from '@/config/authContext';
 import { useGender } from '@/config/genderContext';
-import { scale, scaleVertical, getImageSize } from '@/utils/responsive';
-import { Spacing, BorderRadius } from '@/utils/spacing';
-import { FontSizes, LineHeights } from '@/utils/typography';
+import { scale, scaleVertical } from '@/utils/responsive';
+import { FontSizes } from '@/utils/typography';
 
 export default function HeightPage() {
     const router = useRouter();
@@ -59,33 +58,31 @@ export default function HeightPage() {
                 onNext={handleNext}
                 nextButtonText={saving ? '...' : content.nextButton}
             >
-                <View style={styles.container}>
+                <View style={styles.mainContent}>
                     <UnitToggle
                         unit={unit}
                         options={unitOptions}
                         onSelect={setUnit}
                     />
 
-                    <View style={styles.visualContainer}>
-                        <View style={styles.heightDisplay}>
-                            <Text style={styles.heightText}>{height}</Text>
-                            <Text style={styles.heightUnit}>{unit}</Text>
+                    <View style={styles.heightDisplay}>
+                        <Text style={styles.heightText}>{height}</Text>
+                        <Text style={styles.heightUnit}>{unit}</Text>
+                    </View>
+
+                    <View style={styles.contentRow}>
+                        <View style={styles.characterContainer}>
+                            <Image
+                                source={characterImage}
+                                style={[
+                                    styles.characterImage,
+                                    { transform: [{ scale: (height / 170) * 0.85 }] }
+                                ]}
+                                resizeMode="contain"
+                            />
                         </View>
 
-                        <View style={styles.contentRow}>
-                            <View style={styles.characterContainer}>
-                                <Image
-                                    source={characterImage}
-                                    style={[
-                                        styles.characterImage,
-                                        { transform: [{ scale: (height / 170) * 0.9 }] }
-                                    ]}
-                                    resizeMode="contain"
-                                />
-                            </View>
-
-                            <HeightSlider height={height} panHandlers={panHandlers} />
-                        </View>
+                        <HeightSlider height={height} panHandlers={panHandlers} />
                     </View>
                 </View>
             </EvaluationLayout>
@@ -96,21 +93,15 @@ export default function HeightPage() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        alignItems: 'center',
-        paddingTop: scaleVertical(20),
     },
-    visualContainer: {
+    mainContent: {
         flex: 1,
-        width: '100%',
-        position: 'relative',
+        alignItems: 'center',
     },
     heightDisplay: {
-        position: 'absolute',
-        top: scaleVertical(50),
-        left: scale(10),
         flexDirection: 'row',
         alignItems: 'baseline',
-        zIndex: 10,
+        marginTop: scaleVertical(10),
     },
     heightText: {
         fontSize: FontSizes.displayMedium,
@@ -123,15 +114,18 @@ const styles = StyleSheet.create({
     },
     contentRow: {
         flexDirection: 'row',
-        height: '100%',
+        flex: 1,
+        alignItems: 'flex-start',
+        justifyContent: 'flex-end',
+        paddingRight: scale(5),
     },
     characterContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        overflow: 'visible',
+        alignItems: 'flex-end',
+        justifyContent: 'flex-start',
+        marginRight: scale(-0),
     },
     characterImage: {
-        ...getImageSize(180, 400),
+        width: scale(160),
+        height: scaleVertical(280),
     },
 });

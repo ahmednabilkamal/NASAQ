@@ -32,6 +32,7 @@ export default function ProfileScreen() {
     const router = useRouter();
     const { languageCode, setLanguage } = useLanguage();
     const content = (pageData as any)[languageCode]?.profile || (pageData as any)['en'].profile;
+    const commonContent = (pageData as any)[languageCode]?.common || (pageData as any)['en'].common;
     const isRTL = I18nManager.isRTL;
     const { user, logout, refreshUser, isAuthenticated, loading: authLoading } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -184,9 +185,21 @@ export default function ProfileScreen() {
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.profileCard}>
+                    <View style={styles.avatarContainer}>
+                        {user?.image ? (
+                            <Image
+                                source={{ uri: user.image }}
+                                style={styles.avatar}
+                            />
+                        ) : (
+                            <View style={styles.avatarFallback}>
+                                <Ionicons name="person" size={30} color="#666" />
+                            </View>
+                        )}
+                    </View>
                     <View style={styles.profileInfo}>
-                        <Text style={styles.name}>{user?.name || "نور حسن"}</Text>
-                        <Text style={styles.email}>{user?.email || "nourhasan12@gmail.com"}</Text>
+                        <Text style={styles.name}>{user?.name || commonContent.defaultName}</Text>
+                        <Text style={styles.email}>{user?.email || ""}</Text>
 
                         {(user?.instagram || user?.twitter || user?.facebook) && (
                             <View style={styles.socialRow}>
@@ -208,25 +221,13 @@ export default function ProfileScreen() {
                             </View>
                         )}
                     </View>
-                    <View style={styles.avatarContainer}>
-                        {user?.image ? (
-                            <Image
-                                source={{ uri: user.image }}
-                                style={styles.avatar}
-                            />
-                        ) : (
-                            <View style={styles.avatarFallback}>
-                                <Ionicons name="person" size={30} color="#666" />
-                            </View>
-                        )}
-                    </View>
                 </View>
 
 
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>{content.personalInfo}</Text>
                         <Ionicons name="person-outline" size={18} color="#666" />
+                        <Text style={styles.sectionTitle}>{content.personalInfo}</Text>
                     </View>
                     <View style={styles.sectionContent}>
                         <MenuItem
@@ -249,8 +250,8 @@ export default function ProfileScreen() {
 
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>{content.settings}</Text>
                         <Ionicons name="settings-outline" size={18} color="#666" />
+                        <Text style={styles.sectionTitle}>{content.settings}</Text>
                     </View>
                     <View style={styles.sectionContent}>
                         <MenuItem
@@ -280,8 +281,8 @@ export default function ProfileScreen() {
 
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>{content.support}</Text>
                         <Ionicons name="headset-outline" size={18} color="#666" />
+                        <Text style={styles.sectionTitle}>{content.support}</Text>
                     </View>
                     <View style={styles.sectionContent}>
                         <MenuItem
@@ -338,7 +339,7 @@ export default function ProfileScreen() {
                                     setLanguageModalVisible(false);
                                 }}
                             >
-                                <Text style={styles.modalOptionLabel}>العربية</Text>
+                                <Text style={styles.modalOptionLabel}>{content.languageArabic}</Text>
                                 <View style={[styles.modalCheckbox, languageCode === 'ar' && styles.modalCheckboxSelected]}>
                                     {languageCode === 'ar' && <Ionicons name="checkmark" size={16} color="#FFF" />}
                                 </View>
@@ -353,7 +354,7 @@ export default function ProfileScreen() {
                                     setLanguageModalVisible(false);
                                 }}
                             >
-                                <Text style={styles.modalOptionLabel}>الانجليزية</Text>
+                                <Text style={styles.modalOptionLabel}>{content.languageEnglish}</Text>
                                 <View style={[styles.modalCheckbox, languageCode === 'en' && styles.modalCheckboxSelected]}>
                                     {languageCode === 'en' && <Ionicons name="checkmark" size={16} color="#FFF" />}
                                 </View>
@@ -385,7 +386,7 @@ export default function ProfileScreen() {
 
                             <View style={styles.modalBody}>
                                 <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>كلمة المرور الجديدة</Text>
+                                    <Text style={styles.label}>{content.newPassword}</Text>
                                     <View style={styles.passwordContainer}>
                                         <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)} style={styles.eyeButton}>
                                             <Ionicons name={showNewPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#999" />
@@ -395,15 +396,15 @@ export default function ProfileScreen() {
                                             value={newPassword}
                                             onChangeText={setNewPassword}
                                             secureTextEntry={!showNewPassword}
-                                            textAlign="right"
-                                            placeholder="أدخل كلمة المرور"
+                                            textAlign={isRTL ? "right" : "left"}
+                                            placeholder={content.enterPassword}
                                             placeholderTextColor="#CCC"
                                         />
                                     </View>
                                 </View>
 
                                 <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>تأكيد كلمة المرور</Text>
+                                    <Text style={styles.label}>{content.confirmPassword}</Text>
                                     <View style={styles.passwordContainer}>
                                         <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
                                             <Ionicons name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#999" />
@@ -413,8 +414,8 @@ export default function ProfileScreen() {
                                             value={confirmPassword}
                                             onChangeText={setConfirmPassword}
                                             secureTextEntry={!showConfirmPassword}
-                                            textAlign="right"
-                                            placeholder="تأكيد كلمة المرور"
+                                            textAlign={isRTL ? "right" : "left"}
+                                            placeholder={content.confirmPassword}
                                             placeholderTextColor="#CCC"
                                         />
                                     </View>
@@ -454,8 +455,8 @@ export default function ProfileScreen() {
                             </View>
 
                             <View style={styles.modalBody}>
-                                <Text style={styles.otpSubtitle}>أدخل رمز التحقق المرسل إلى رقم هاتفك</Text>
-                                
+                                <Text style={styles.otpSubtitle}>{content.otpInstruction}</Text>
+
                                 <View style={styles.otpContainer}>
                                     {otp.map((digit, index) => (
                                         <TextInput
@@ -477,20 +478,20 @@ export default function ProfileScreen() {
                                 </View>
 
                                 <View style={styles.resendContainer}>
-                                    <Text style={styles.resendText}>لم يصلك الرمز؟ </Text>
+                                    <Text style={styles.resendText}>{content.didntReceiveCode} </Text>
                                     <TouchableOpacity onPress={handleResendOtp} disabled={!canResend}>
                                         <Text style={[styles.resendLink, !canResend && { color: '#999' }]}>
-                                            {canResend ? 'يمكنك إعادة الإرسال' : `يمكنك إعادة الإرسال بعد 00:${timer < 10 ? `0${timer}` : timer} ثانية`}
+                                            {canResend ? content.resendCode : `${content.resendAfter} 00:${timer < 10 ? `0${timer}` : timer} ${commonContent.seconds}`}
                                         </Text>
                                     </TouchableOpacity>
                                 </View>
-                                
+
                                 <TouchableOpacity
                                     style={[styles.modalButton, loading && { opacity: 0.7 }]}
                                     onPress={() => handleOtpVerify()}
                                     disabled={loading}
                                 >
-                                    {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.modalButtonText}>{content.verify || 'تأكيد'}</Text>}
+                                    {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.modalButtonText}>{content.verify}</Text>}
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -523,7 +524,6 @@ const styles = StyleSheet.create({
     profileCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-end',
         paddingVertical: Spacing.verticalXl,
         marginBottom: Spacing.verticalXl,
     },
@@ -555,8 +555,8 @@ const styles = StyleSheet.create({
     },
 
     profileInfo: {
-        marginRight: Spacing.lg,
-        alignItems: 'flex-end',
+        marginLeft: Spacing.lg,
+        alignItems: 'flex-start',
     },
     name: {
         fontSize: FontSizes.h4,
@@ -574,7 +574,6 @@ const styles = StyleSheet.create({
     sectionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-end',
         gap: Spacing.md,
         marginBottom: Spacing.verticalSm,
         paddingHorizontal: Spacing.xs,
@@ -620,7 +619,6 @@ const styles = StyleSheet.create({
     languageOption: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-end',
         paddingVertical: Spacing.verticalSm,
         gap: Spacing.md,
     },
@@ -664,7 +662,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: Spacing.sm,
         marginTop: Spacing.verticalXs,
-        justifyContent: 'flex-end',
     },
     socialIconMini: {
         width: scale(24),
@@ -737,7 +734,7 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.body,
         fontFamily: 'Cairo_600SemiBold',
         color: '#333',
-        textAlign: 'right',
+        textAlign: I18nManager.isRTL ? 'right' : 'left',
     },
     passwordContainer: {
         flexDirection: 'row',
@@ -780,7 +777,7 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.verticalXl,
     },
     otpContainer: {
-        flexDirection: 'row-reverse',
+        flexDirection: 'row',
         justifyContent: 'center',
         gap: Spacing.md,
     },
@@ -796,7 +793,7 @@ const styles = StyleSheet.create({
         color: '#333',
     },
     resendContainer: {
-        flexDirection: 'row-reverse',
+        flexDirection: 'row',
         justifyContent: 'center',
         marginTop: Spacing.verticalXl,
         marginBottom: Spacing.verticalSm,

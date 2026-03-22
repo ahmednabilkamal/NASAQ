@@ -9,9 +9,11 @@ import {
     Dimensions,
     I18nManager,
     ActivityIndicator,
-    Alert,
     Linking,
+    Modal,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
+import { CreditCard, PaymentConfig, PaymentStatus } from 'react-native-moyasar-sdk';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,8 +27,8 @@ import { FontSizes, LineHeights } from '@/utils/typography';
 
 const { width } = Dimensions.get('window');
 
-const showAlert = (title: string, message: string) => {
-    Alert.alert(title, message);
+const showToast = (title: string, message: string, type: 'error' | 'success' | 'info' = 'error') => {
+    Toast.show({ type, text1: title, text2: message });
 };
 
 export default function StylistDetailScreen() {
@@ -43,6 +45,8 @@ export default function StylistDetailScreen() {
     const [isFavorite, setIsFavorite] = useState(false);
     const [booking, setBooking] = useState(false);
     const [showServicePicker, setShowServicePicker] = useState(false);
+    const [showMoyasar, setShowMoyasar] = useState(false);
+    const [moyasarConfig, setMoyasarConfig] = useState<PaymentConfig | null>(null);
 
     useEffect(() => {
         if (!id) { return; }
@@ -101,6 +105,75 @@ export default function StylistDetailScreen() {
         }
     };
 
+    const handlePayToChat = async () => {
+        if (!id || !stylist) return;
+        setBooking(true);
+        try {
+            // 1. Get Chat Service or use stylist's base price
+            const chatService = services.find(s =>
+                s.title.toLowerCase().includes('chat') ||
+                s.title.toLowerCase().includes('دردشة') ||
+                s.title.toLowerCase().includes('استشارة') ||
+                s.title.toLowerCase().includes('consultation') ||
+                s.title.toLowerCase().includes('محادثة')
+            );
+
+            const selectedService = chatService ?? services.find(s => s.available !== false) ?? services[0];
+
+            // Determine price: use service price or stylist's base price
+            let paymentPrice = 0;
+            let paymentDescription = `${content.stylistDetail?.payToChatButton || 'Pay to Chat'}: ${stylist.name}`;
+
+            if (selectedService) {
+                paymentPrice = Number(selectedService.price) || 0;
+                paymentDescription = `${selectedService.title}: ${stylist.name}`;
+            } else if (stylist.price) {
+                // Use stylist's base price for chat consultation
+                paymentPrice = Number(stylist.price) || 0;
+                paymentDescription = `${content.stylistDetail?.chatConsultation || 'استشارة دردشة'}: ${stylist.name}`;
+            }
+
+            if (paymentPrice <= 0) {
+                showToast(content.errors?.title || 'خطأ', content.errors?.noPriceAvailable || 'لا يوجد سعر متاح لهذه الخدمة.');
+                return;
+            }
+
+            // 2. Fetch Payment Config (API Key)
+            const configRes = await apiService.getPaymentConfig();
+            const publishableKey = configRes.data?.publishable_key || 'pk_test_placeholder';
+
+            // 3. Setup Moyasar Config
+            const config: PaymentConfig = {
+                apiKey: publishableKey,
+                amount: paymentPrice * 100, // Halalas
+                currency: 'SAR',
+                description: paymentDescription,
+            };
+
+            setMoyasarConfig(config);
+            setShowMoyasar(true);
+        } catch (error: any) {
+            console.error('Pay to Chat initialization error:', error);
+            showToast(content.errors?.title || 'خطأ', 'تعذّر بدء عملية الدفع.');
+        } finally {
+            setBooking(false);
+        }
+    };
+
+    const onPaymentResult = async (result: any) => {
+        if (result.status === PaymentStatus.paid) {
+            setShowMoyasar(false);
+            // On success, start conversation
+            await handleContact();
+        } else {
+            console.log('Payment failed or cancelled:', result);
+            if (result.status === PaymentStatus.failed) {
+                showToast('Payment Failed', 'Transaction could not be completed.');
+            }
+            setShowMoyasar(false);
+        }
+    };
+
     const handleBookAndPay = async (service?: StylistService) => {
         if (!id) return;
         const availableServices = services.filter(s => s.available !== false);
@@ -112,7 +185,7 @@ export default function StylistDetailScreen() {
 
         const selectedService = service ?? availableServices[0];
         if (!selectedService) {
-            showAlert(content.common?.noData || 'لا توجد خدمات', content.common?.noData || 'لا توجد خدمات متاحة لهذه المنسقة حالياً.');
+            showToast(content.common?.noData || 'لا توجد خدمات', content.common?.noData || 'لا توجد خدمات متاحة لهذه المنسقة حالياً.');
             return;
         }
 
@@ -129,17 +202,14 @@ export default function StylistDetailScreen() {
             const payRes = await apiService.initiatePayment(Number(orderId));
             const paymentUrl = (payRes?.data as any)?.payment_url;
 
-            if (!paymentUrl) throw new Error('payment_url missing from response');
-
-            const supported = await Linking.canOpenURL(paymentUrl);
-            if (supported) {
-                await Linking.openURL(paymentUrl);
-            } else {
-                showAlert(content.errors?.title || 'خطأ', 'تعذّر فتح صفحة الدفع.');
+            if (paymentUrl) {
+                const supported = await Linking.canOpenURL(paymentUrl);
+                if (supported) {
+                    await Linking.openURL(paymentUrl);
+                }
             }
         } catch (error: any) {
             console.error('Book & Pay error:', error);
-            showAlert(content.errors?.title || 'خطأ', error?.message || 'تعذّر إتمام الحجز. يرجى المحاولة لاحقاً.');
         } finally {
             setBooking(false);
             setShowServicePicker(false);
@@ -149,7 +219,7 @@ export default function StylistDetailScreen() {
     const ServiceCard = ({ item }: { item: StylistService }) => (
         <View style={styles.serviceCard}>
             <View style={styles.serviceIconContainer}>
-                <Ionicons name="chevron-back" size={18} color="#064E3B" />
+                <Ionicons name="chevron-forward" size={18} color="#064E3B" />
             </View>
             <View style={styles.serviceContent}>
                 <Text style={styles.serviceTitle}>{item.title}</Text>
@@ -287,26 +357,42 @@ export default function StylistDetailScreen() {
             </ScrollView>
 
             <View style={styles.footer}>
-                <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
-                    <Ionicons name="chatbubble-ellipses-outline" size={18} color="#064E3B" style={{ marginLeft: 8 }} />
-                    <Text style={styles.contactButtonText}>تواصلي مع المنسقة</Text>
-                </TouchableOpacity>
-
                 <TouchableOpacity
-                    style={[styles.bookButton, booking && { opacity: 0.7 }]}
-                    onPress={() => handleBookAndPay()}
+                    style={[styles.contactButton, booking && { opacity: 0.7 }]}
+                    onPress={handlePayToChat}
                     disabled={booking}
                 >
                     {booking ? (
                         <ActivityIndicator color="#FFF" />
                     ) : (
                         <>
-                            <Ionicons name="calendar-outline" size={18} color="#FFF" style={{ marginLeft: 8 }} />
-                            <Text style={styles.bookButtonText}>احجزي والدفع</Text>
+                            <Ionicons name="chatbubble-ellipses-outline" size={18} color="#FFF" style={{ marginHorizontal: 8 }} />
+                            <Text style={styles.contactButtonText}>{content.stylistDetail?.payToChatButton || 'ادفع للدردشة'}</Text>
                         </>
                     )}
                 </TouchableOpacity>
             </View>
+
+            {/* Moyasar Payment Modal */}
+            <Modal visible={showMoyasar} animationType="slide">
+                <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
+                    <View style={styles.modalHeader}>
+                        <TouchableOpacity onPress={() => setShowMoyasar(false)} style={styles.closeButton}>
+                            <Ionicons name="close" size={28} color="#000" />
+                        </TouchableOpacity>
+                        <Text style={styles.modalTitle}>{content.payment?.title || 'Payment'}</Text>
+                        <View style={{ width: 28 }} />
+                    </View>
+                    {moyasarConfig && (
+                        <View style={{ flex: 1, padding: 10 }}>
+                            <CreditCard
+                                onPaymentResult={onPaymentResult}
+                                paymentConfig={moyasarConfig}
+                            />
+                        </View>
+                    )}
+                </SafeAreaView>
+            </Modal>
 
             {showServicePicker && (
                 <View style={styles.pickerOverlay}>
@@ -318,8 +404,8 @@ export default function StylistDetailScreen() {
                                 style={styles.pickerItem}
                                 onPress={() => handleBookAndPay(svc)}
                             >
-                                <Text style={styles.pickerPrice}>{svc.price} {content.common?.currency || 'ر.س'}</Text>
                                 <Text style={styles.pickerItemTitle}>{svc.title}</Text>
+                                <Text style={styles.pickerPrice}>{svc.price} {content.common?.currency || 'ر.س'}</Text>
                             </TouchableOpacity>
                         ))}
                         <TouchableOpacity
@@ -400,7 +486,6 @@ const styles = StyleSheet.create({
         fontFamily: 'Cairo_400Regular',
         color: '#666',
         marginBottom: Spacing.verticalLg,
-        textAlign: 'right',
     },
     statsRow: {
         gap: Spacing.gapMd,
@@ -447,7 +532,6 @@ const styles = StyleSheet.create({
         fontFamily: 'Cairo_400Regular',
         color: '#444',
         lineHeight: LineHeights.body,
-        textAlign: 'right',
     },
     portfolioGrid: {
         flexDirection: 'row',
@@ -483,32 +567,30 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: Spacing.verticalMd,
-        alignSelf: 'flex-end',
+        alignSelf: 'flex-start',
     },
     serviceContent: {
-        alignItems: 'flex-end',
         marginBottom: Spacing.verticalMd,
+        alignItems: 'flex-start',
     },
     serviceTitle: {
         fontSize: FontSizes.body,
         fontFamily: 'Cairo_700Bold',
         color: '#333',
-        textAlign: 'right',
     },
     serviceSubtitle: {
         fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_400Regular',
         color: '#888',
-        textAlign: 'right',
     },
     servicePriceBadge: {
         flexDirection: 'row',
         alignItems: 'center',
+        alignSelf: 'flex-start',
         backgroundColor: '#E8F5E9',
         paddingHorizontal: Spacing.md,
         paddingVertical: Spacing.verticalXs,
         borderRadius: BorderRadius.round,
-        alignSelf: 'flex-start',
         gap: Spacing.gapXs,
     },
     servicePriceText: {
@@ -538,32 +620,32 @@ const styles = StyleSheet.create({
     },
     contactButton: {
         flex: 1,
-        height: scaleVertical(52),
-        borderRadius: scale(26),
-        borderWidth: 2,
-        borderColor: '#064E3B',
-        justifyContent: 'center',
-        alignItems: 'center',
         flexDirection: 'row',
-    },
-    contactButtonText: {
-        color: '#064E3B',
-        fontSize: FontSizes.body,
-        fontFamily: 'Cairo_700Bold',
-    },
-    bookButton: {
-        flex: 1,
         height: scaleVertical(52),
         borderRadius: scale(26),
         backgroundColor: '#064E3B',
         justifyContent: 'center',
         alignItems: 'center',
-        flexDirection: 'row',
     },
-    bookButtonText: {
+    contactButtonText: {
         color: '#FFF',
         fontSize: FontSizes.body,
         fontFamily: 'Cairo_700Bold',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: '#EEE',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontFamily: 'Cairo_700Bold',
+    },
+    closeButton: {
+        padding: 5,
     },
     pickerOverlay: {
         position: 'absolute',
@@ -599,7 +681,6 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.body,
         fontFamily: 'Cairo_700Bold',
         color: '#111',
-        textAlign: 'right',
     },
     pickerPrice: {
         fontSize: FontSizes.body,

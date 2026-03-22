@@ -57,13 +57,13 @@ export const BMISection: React.FC<BMISectionProps> = ({ title, categories, weigh
 const styles = StyleSheet.create({
     bmiSection: {
         width: '100%',
-        marginBottom: 60,
+        marginBottom: 20,
     },
     bmiTitle: {
         fontSize: FontSizes.body,
         fontFamily: 'Cairo_700Bold',
         textAlign: 'center',
-        marginBottom: 15,
+        marginBottom: 10,
     },
     bmiScale: {
         flexDirection: 'row',

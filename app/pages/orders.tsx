@@ -78,10 +78,10 @@ export default function OrdersScreen() {
     };
 
     const tabs = [
-        { id: 'saved',  label: content.orders?.tabs?.saved || 'محفوظ'  },
-        { id: 'recent', label: content.orders?.tabs?.recent || 'حديث'   },
-        { id: 'new',    label: content.orders?.tabs?.new || 'جديد'   },
-        { id: 'all',    label: content.orders?.tabs?.all || 'الكل'   },
+        { id: 'saved',  label: content.orders?.tabs?.saved  },
+        { id: 'recent', label: content.orders?.tabs?.recent },
+        { id: 'new',    label: content.orders?.tabs?.new    },
+        { id: 'all',    label: content.orders?.tabs?.all    },
     ];
 
     const filteredOrders = activeTab === 'all'
@@ -107,11 +107,11 @@ export default function OrdersScreen() {
 
         const title   = (item as any).service?.title
             ?? (item as any).title
-            ?? `طلب رقم ${item.id}`;
+            ?? `${content.orders?.orderNumber} ${item.id}`;
 
         const desc    = (item as any).stylist?.name
             ?? (item as any).description
-            ?? 'تفاصيل الطلب';
+            ?? content.orders?.orderDetails;
 
         return (
             <TouchableOpacity
@@ -127,7 +127,7 @@ export default function OrdersScreen() {
                 <View style={styles.orderContent}>
                     <Text style={styles.orderTitle} numberOfLines={1}>{title}</Text>
                     <Text style={styles.orderDescription} numberOfLines={1}>{desc}</Text>
-                    <Text style={styles.orderPrice}>{price} {content.common?.currency || 'ريال'}</Text>
+                    <Text style={styles.orderPrice}>{price} {content.common?.currency}</Text>
                 </View>
 
                 <Image source={imageUri} style={styles.orderImage} />
@@ -144,7 +144,7 @@ export default function OrdersScreen() {
                 <TouchableOpacity onPress={() => router.push('/pages/notifications' as any)}>
                     <Ionicons name="notifications-outline" size={24} color="#333" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{content.orders?.title || 'الطلبات'}</Text>
+                <Text style={styles.headerTitle}>{content.orders?.title}</Text>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -169,7 +169,7 @@ export default function OrdersScreen() {
             ) : filteredOrders.length === 0 ? (
                 <View style={styles.centered}>
                     <Ionicons name="receipt-outline" size={64} color="#DDD" />
-                    <Text style={styles.emptyText}>{content.common?.noResults || 'لا توجد طلبات'}</Text>
+                    <Text style={styles.emptyText}>{content.orders?.noOrders || content.common?.noResults}</Text>
                 </View>
             ) : (
                 <FlatList

@@ -127,8 +127,8 @@ const HomeScreen = () => {
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <HomeHeader
-                userName={user?.name || content.common?.defaultName || 'نور حسن'}
-                greeting={content.common?.greeting || 'صباح الخير'}
+                userName={user?.name || content.common?.defaultName}
+                greeting={content.common?.greeting}
                 onSearchPress={() => console.log('Search pressed')}
                 onNotificationPress={() => router.push('/pages/notifications' as any)}
             />
@@ -144,9 +144,9 @@ const HomeScreen = () => {
                     showsVerticalScrollIndicator={false}
                 >
                     <HeroBanner
-                        title="اختيار القصة المناسبة لجسمك يفرق أكثر من القطعة نفسها."
+                        title={content.home?.heroBannerTitle}
                         subtitle=""
-                        buttonText={content.common?.viewAll || 'عرض الكل'}
+                        buttonText={content.common?.viewAll}
                         imageUri={require('@/assets/mirroimagewomen.png')}
                         onPress={() => console.log('Banner pressed')}
                     />
@@ -154,8 +154,8 @@ const HomeScreen = () => {
                     {stylists.length > 0 && (
                         <View style={styles.section}>
                             <View style={styles.sectionHeader}>
-                                <Text style={styles.sectionLink}>{content.common?.viewAll || 'View all.'}</Text>
-                                <Text style={styles.sectionTitle}>Stylists trusted by many</Text>
+                                <Text style={styles.sectionLink}>{content.common?.viewAll}</Text>
+                                <Text style={styles.sectionTitle}>{content.home?.trustedStylists}</Text>
                             </View>
 
                             <FlatList
