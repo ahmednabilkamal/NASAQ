@@ -45,10 +45,9 @@ export default function MeasurementsPage() {
     const { width: windowWidth } = useWindowDimensions();
     const isSmallScreen = windowWidth < 380;
 
-    // Calculate minimum container height to prevent overlaps
-    const MIN_INPUT_SPACING = 48; // Minimum spacing between inputs
+    const MIN_INPUT_SPACING = 48;
     const NUM_INPUTS = 7;
-    const minContainerHeight = MIN_INPUT_SPACING * (NUM_INPUTS + 2); // Extra space for top and bottom
+    const minContainerHeight = MIN_INPUT_SPACING * (NUM_INPUTS + 2);
 
     const handleNext = async () => {
         setSaving(true);
@@ -110,7 +109,6 @@ export default function MeasurementsPage() {
                     bounces={false}
                 >
                     <View style={[styles.mainContainer, { minHeight: minContainerHeight }]} onLayout={handleLayout}>
-                        {/* Body Image - using stretch to fill container exactly */}
                         <Image
                             source={gender === 'female'
                                 ? require('../../../assets/femalefigurine.png')
@@ -120,10 +118,8 @@ export default function MeasurementsPage() {
                             resizeMode="contain"
                         />
 
-                        {/* Only render SVG and inputs after we have dimensions */}
                         {dimensions.width > 0 && (
                             <>
-                                {/* SVG Layer for Lines and Dots */}
                                 <Svg style={StyleSheet.absoluteFill}>
                                     {measurementItems.map((item, index) => {
                                         const bodyPos = getPosition(item.point.bodyXRatio, item.point.bodyYRatio);
@@ -132,7 +128,6 @@ export default function MeasurementsPage() {
 
                                         return (
                                             <React.Fragment key={item.key}>
-                                                {/* Line from input to body */}
                                                 <Line
                                                     x1={inputPos.x}
                                                     y1={inputPos.y}
@@ -141,7 +136,6 @@ export default function MeasurementsPage() {
                                                     stroke="#888"
                                                     strokeWidth="1"
                                                 />
-                                                {/* Dot on body */}
                                                 <Circle
                                                     cx={bodyPos.x}
                                                     cy={bodyPos.y}
@@ -153,7 +147,6 @@ export default function MeasurementsPage() {
                                     })}
                                 </Svg>
 
-                                {/* Input boxes - absolutely positioned with fixed spacing */}
                                 {measurementItems.map((item, index) => {
                                     const inputY = MIN_INPUT_SPACING * (index + 1);
 

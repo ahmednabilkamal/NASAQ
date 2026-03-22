@@ -52,7 +52,6 @@ const FilterModalScreen2 = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.closeIcon}>✕</Text>
@@ -64,7 +63,6 @@ const FilterModalScreen2 = () => {
       </View>
 
       <ScrollView style={styles.content}>
-        {/* Title Section */}
         <View style={styles.titleSection}>
           <Text style={styles.mainTitle}>قيمة ملابس النساء</Text>
           <Text style={styles.description}>
@@ -72,7 +70,6 @@ const FilterModalScreen2 = () => {
           </Text>
         </View>
 
-        {/* Image Gallery */}
         <View style={styles.imageGallery}>
           {images.map((image, index) => (
             <Image
@@ -83,7 +80,6 @@ const FilterModalScreen2 = () => {
           ))}
         </View>
 
-        {/* Search/Input Area */}
         <View style={styles.searchArea}>
           <Text style={styles.searchLabel}>المساحة المطلوبة للبحث</Text>
           <View style={styles.searchInputContainer}>
@@ -92,7 +88,6 @@ const FilterModalScreen2 = () => {
           </View>
         </View>
 
-        {/* Filter Sections */}
         <View style={styles.sectionsContainer}>
           {filterSections.map((section) => (
             <View key={section.id} style={styles.filterSection}>
@@ -121,7 +116,6 @@ const FilterModalScreen2 = () => {
         </View>
       </ScrollView>
 
-      {/* Bottom Button */}
       <View style={styles.bottomSection}>
         <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/pages/tabs/homescreen')}>
           <Text style={styles.actionButtonText}>التالي</Text>

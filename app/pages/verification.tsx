@@ -32,7 +32,6 @@ export default function VerificationScreen() {
     const [code, setCode] = useState(['', '', '', '', '']);
     const [loading, setLoading] = useState(false);
 
-    // Convert Arabic-Indic numerals to Western numerals
     const convertArabicToWesternNumerals = (text: string): string => {
         const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
         const persianNumerals = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
@@ -44,7 +43,6 @@ export default function VerificationScreen() {
         persianNumerals.forEach((num, index) => {
             result = result.replace(new RegExp(num, 'g'), index.toString());
         });
-        // Keep only digits
         return result.replace(/[^0-9]/g, '');
     };
     const [resending, setResending] = useState(false);
@@ -71,7 +69,6 @@ export default function VerificationScreen() {
     }, []);
 
     const handleCodeChange = (text: string, index: number) => {
-        // Convert Arabic-Indic numerals to Western numerals
         const convertedText = convertArabicToWesternNumerals(text);
         const char = convertedText.slice(-1);
 

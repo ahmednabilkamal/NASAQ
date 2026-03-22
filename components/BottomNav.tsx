@@ -1,6 +1,6 @@
 import { usePathname, useRouter } from 'expo-router';
 import React from 'react';
-import { StyleSheet, TouchableOpacity, View, Image, useWindowDimensions } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, Image } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scale, scaleVertical } from '@/utils/responsive';
 import { IconSizes, ComponentSizes } from '@/utils/spacing';
@@ -8,7 +8,6 @@ import { IconSizes, ComponentSizes } from '@/utils/spacing';
 export default function BottomNav() {
     const router = useRouter();
     const pathname = usePathname();
-    const { width } = useWindowDimensions();
     const insets = useSafeAreaInsets();
 
     const tabs = [
@@ -20,7 +19,7 @@ export default function BottomNav() {
     ];
 
     return (
-        <SafeAreaView style={[styles.container, { width }]} edges={['bottom']}>
+        <SafeAreaView style={styles.container} edges={['bottom']}>
             <View style={[styles.navBar, { paddingBottom: insets.bottom }]}>
                 {tabs.map((tab, index) => {
                     const isActive = pathname === tab.route;

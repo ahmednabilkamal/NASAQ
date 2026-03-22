@@ -7,15 +7,14 @@ import Toast from 'react-native-toast-message';
 export const useAuthForm = () => {
     const [isLogin, setIsLogin] = useState(true);
 
-    const [identifier, setIdentifier] = useState('');    // email or phone for login/register
+    const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [mobile, setMobile] = useState('');
-    const [countryCode, setCountryCode] = useState('+966'); // Default country code
+    const [countryCode, setCountryCode] = useState('+966');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // Convert Arabic-Indic numerals to Western numerals
     const convertArabicToWesternNumerals = (text: string): string => {
         const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
         const persianNumerals = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
@@ -27,19 +26,15 @@ export const useAuthForm = () => {
         persianNumerals.forEach((num, index) => {
             result = result.replace(new RegExp(num, 'g'), index.toString());
         });
-        // Remove any non-digit characters (spaces, etc.)
         return result.replace(/[^0-9]/g, '');
     };
 
-    // Custom setter for mobile that auto-converts Arabic numerals
     const setMobileWithConversion = (text: string) => {
         const converted = convertArabicToWesternNumerals(text);
         setMobile(converted);
     };
 
-    // Custom setter for email that converts Arabic numerals only
     const setIdentifierWithConversion = (text: string) => {
-        // Only convert Arabic-Indic numerals, keep everything else
         const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
         const persianNumerals = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
 
@@ -79,7 +74,6 @@ export const useAuthForm = () => {
                     return;
                 }
 
-                // Validate email format (must be Latin characters)
                 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
                 if (!emailRegex.test(identifier.trim())) {
                     Toast.show({
@@ -91,7 +85,6 @@ export const useAuthForm = () => {
                     return;
                 }
 
-                // Validate phone number length
                 if (mobile.trim().length < 9) {
                     Toast.show({
                         type: 'error',
@@ -108,7 +101,6 @@ export const useAuthForm = () => {
                     return;
                 }
 
-                // Format phone number with country code
                 const fullPhoneNumber = `${countryCode}${mobile.trim()}`.replace('+', '');
 
                 await register({
@@ -135,13 +127,13 @@ export const useAuthForm = () => {
     return {
         isLogin,
         identifier,
-        setIdentifier: setIdentifierWithConversion, // Auto-converts Arabic numerals in email
+        setIdentifier: setIdentifierWithConversion,
         password,
         setPassword,
         name,
         setName,
         mobile,
-        setMobile: setMobileWithConversion, // Auto-converts Arabic numerals
+        setMobile: setMobileWithConversion,
         countryCode,
         setCountryCode,
         confirmPassword,

@@ -87,7 +87,7 @@ export default function NotificationsScreen() {
 
     const onRefresh = () => {
         setRefreshing(true);
-        setTimeout(() => setRefreshing(false), 800); // replace with real fetch
+        setTimeout(() => setRefreshing(false), 800);
     };
 
     const renderItem = ({ item }: { item: Notification }) => {
@@ -98,15 +98,12 @@ export default function NotificationsScreen() {
                 onPress={() => markRead(item.id)}
                 activeOpacity={0.85}
             >
-                {/* Unread dot */}
                 {!item.read && <View style={styles.unreadDot} />}
 
-                {/* Icon */}
                 <View style={[styles.iconBox, { backgroundColor: cfg.bg }]}>
                     <Ionicons name={cfg.icon as any} size={22} color={cfg.color} />
                 </View>
 
-                {/* Text */}
                 <View style={styles.textBlock}>
                     <Text style={[styles.title, !item.read && styles.titleBold]} numberOfLines={2}>
                         {item.title}
@@ -122,7 +119,6 @@ export default function NotificationsScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
                     <Ionicons name="chevron-forward" size={24} color="#000" />

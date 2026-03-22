@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import authService, { LoginData, RegisterData, UpdateProfileData } from './authService';
+import authService, { LoginData, RegisterData, UpdateProfileData, GoogleLoginData } from './authService';
 import { initializeToken, clearAuthData } from './authToken';
 
 export interface User {
@@ -27,6 +27,7 @@ interface AuthContextType {
     loading: boolean;
     login: (data: LoginData) => Promise<void>;
     register: (data: RegisterData) => Promise<void>;
+    googleLogin: (data: GoogleLoginData) => Promise<void>;
     logout: () => Promise<void>;
     refreshUser: () => Promise<void>;
     updateProfile: (data: UpdateProfileData) => Promise<void>;
@@ -81,6 +82,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await authService.register(data);
     };
 
+    const googleLogin = async (data: GoogleLoginData): Promise<void> => {
+        const result = await authService.googleLogin(data);
+        const profile: User = result?.data?.user ?? result?.user ?? result?.data ?? result;
+        if (profile?.id) {
+            setUser(profile);
+        } else {
+            await refreshUser();
+        }
+    };
+
     const updateProfile = async (data: UpdateProfileData): Promise<void> => {
         await authService.updateProfile(data);
         await refreshUser();
@@ -115,6 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 loading,
                 login,
                 register,
+                googleLogin,
                 logout,
                 refreshUser,
                 updateProfile,

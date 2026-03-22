@@ -46,22 +46,18 @@ export default function FilterScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* Handle */}
             <View style={styles.handle} />
 
-            {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>فلتر المنسقات</Text>
                 <Text style={styles.headerSubtitle}>أعرض المنسقات ضمن ميزانيتك</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                {/* Price Range Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Price Range</Text>
 
                     <View style={styles.priceRow}>
-                        {/* To (Left side in RTL) */}
                         <View style={styles.priceInputWrapper}>
                             <Text style={styles.priceLabel}>إلى</Text>
                             <View style={styles.priceInput}>
@@ -75,7 +71,6 @@ export default function FilterScreen() {
                             </View>
                         </View>
 
-                        {/* Slider in middle */}
                         <View style={styles.sliderContainer}>
                             <View style={styles.sliderTrack}>
                                 <View style={[styles.sliderFill, { width: `${((maxPrice - minPrice) / 720) * 100}%` }]} />
@@ -84,7 +79,6 @@ export default function FilterScreen() {
                             </View>
                         </View>
 
-                        {/* From (Right side in RTL) */}
                         <View style={styles.priceInputWrapper}>
                             <Text style={styles.priceLabel}>من</Text>
                             <View style={styles.priceInput}>
@@ -100,7 +94,6 @@ export default function FilterScreen() {
                     </View>
                 </View>
 
-                {/* Style Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>: الأستايل</Text>
 
@@ -131,7 +124,6 @@ export default function FilterScreen() {
                 </View>
             </ScrollView>
 
-            {/* Footer Buttons */}
             <View style={styles.footer}>
                 <TouchableOpacity
                     style={styles.applyButton}

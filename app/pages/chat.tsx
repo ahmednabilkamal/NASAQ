@@ -315,10 +315,8 @@ export default function ChatScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* Rating Modal */}
             <RatingModal />
 
-            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="chevron-forward" size={24} color="#000" />
@@ -332,7 +330,6 @@ export default function ChatScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* Messages List */}
             {loading ? (
                 <View style={styles.centerContainer}>
                     <ActivityIndicator size="large" color="#064E3B" />
@@ -354,7 +351,6 @@ export default function ChatScreen() {
                 />
             )}
 
-            {/* Attachment Menu */}
             {showAttachMenu && (
                 <View style={styles.attachMenu}>
                     <TouchableOpacity style={styles.attachOption} onPress={handlePickImage}>
@@ -376,7 +372,6 @@ export default function ChatScreen() {
                 </View>
             )}
 
-            {/* Input Area */}
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}

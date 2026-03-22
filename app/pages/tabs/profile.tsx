@@ -28,6 +28,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import authService from '@/config/authService';
 import { showErrorToast, showSuccessToast } from '@/utils/errorHandler';
 
+const FALLBACK_AVATARS = [
+    'https://i.pinimg.com/736x/0f/01/fd/0f01fd7ee72fa6603a84a023c1a6e7df.jpg',
+    'https://static.vecteezy.com/system/resources/thumbnails/021/398/530/small/sad-boy-illustration-free-vector.jpg',
+];
+
 export default function ProfileScreen() {
     const router = useRouter();
     const { languageCode, setLanguage } = useLanguage();
@@ -36,6 +41,8 @@ export default function ProfileScreen() {
     const isRTL = I18nManager.isRTL;
     const { user, logout, refreshUser, isAuthenticated, loading: authLoading } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
+    const [fallbackIndex, setFallbackIndex] = useState(0);
 
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
@@ -53,7 +60,7 @@ export default function ProfileScreen() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [otp, setOtp] = useState(['', '', '', '', '']); // 5 digits
+    const [otp, setOtp] = useState(['', '', '', '', '']);
     const [timer, setTimer] = useState(30);
     const [canResend, setCanResend] = useState(false);
 
@@ -186,15 +193,22 @@ export default function ProfileScreen() {
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.profileCard}>
                     <View style={styles.avatarContainer}>
-                        {user?.image ? (
+                        {user?.image && !avatarError ? (
                             <Image
                                 source={{ uri: user.image }}
                                 style={styles.avatar}
+                                onError={() => setAvatarError(true)}
                             />
                         ) : (
-                            <View style={styles.avatarFallback}>
-                                <Ionicons name="person" size={30} color="#666" />
-                            </View>
+                            <Image
+                                source={{ uri: FALLBACK_AVATARS[fallbackIndex] }}
+                                style={styles.avatar}
+                                onError={() => {
+                                    if (fallbackIndex < FALLBACK_AVATARS.length - 1) {
+                                        setFallbackIndex(fallbackIndex + 1);
+                                    }
+                                }}
+                            />
                         )}
                     </View>
                     <View style={styles.profileInfo}>

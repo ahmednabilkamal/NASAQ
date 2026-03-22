@@ -96,7 +96,6 @@ export default function ChatListScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Search Bar */}
             <View style={styles.searchContainer}>
                 <View style={styles.searchBar}>
                     <Ionicons name="search" size={20} color="#999" />
@@ -111,7 +110,6 @@ export default function ChatListScreen() {
                 </View>
             </View>
 
-            {/* Conversations List */}
             {loading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#064E3B" />

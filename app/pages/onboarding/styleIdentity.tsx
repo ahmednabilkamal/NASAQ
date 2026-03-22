@@ -105,12 +105,10 @@ export default function StyleIdentityPage() {
                             let defaultImage;
 
                             if (isMale) {
-                                // Male: Side columns (0, 2) are black image 164, middle (1) is yellow image 163
                                 defaultImage = (colIndex === 1)
                                     ? require('../../../assets/image 163.png')
                                     : require('../../../assets/image 164.png');
                             } else {
-                                // Female: Side columns (0, 2) are denim stylewomen1, middle (1) is blazer stylewomen2
                                 defaultImage = (colIndex === 1)
                                     ? require('../../../assets/stylewomen2.png')
                                     : require('../../../assets/stylewomen1.png');

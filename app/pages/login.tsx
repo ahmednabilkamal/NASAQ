@@ -19,11 +19,13 @@ import pageData from '@/data/content';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/config/authContext';
 import { useAuthForm } from '@/hooks/useAuthForm';
+import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { showErrorToast } from '@/utils/errorHandler';
 import { scale, scaleVertical } from '@/utils/responsive';
 import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
 import { FontSizes, LineHeights } from '@/utils/typography';
 import { InputSizes, ButtonSizes } from '@/utils/spacing';
+import Toast from 'react-native-toast-message';
 
 export default function AuthScreen() {
     const router = useRouter();
@@ -46,23 +48,34 @@ export default function AuthScreen() {
         loading
     } = useAuthForm();
 
-    const { isAuthenticated, loading: authLoading, getOnboardingStep, user } = useAuth();
+    const { isAuthenticated, loading: authLoading, getOnboardingStep, user, refreshUser } = useAuth();
+    const { signInWithGoogle, loading: googleLoading, isReady: googleReady } = useGoogleAuth();
 
-    // Password validation states
+    const handleGoogleSignIn = async () => {
+        try {
+            const result = await signInWithGoogle();
+            if (result?.data?.user || result?.user) {
+                await refreshUser();
+            }
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: I18nManager.isRTL ? 'خطأ' : 'Error',
+                text2: error.message || (I18nManager.isRTL ? 'فشل تسجيل الدخول بجوجل' : 'Google sign-in failed'),
+            });
+        }
+    };
+
     const passwordValidation = useMemo(() => {
-        // Support both Latin and Arabic characters
         const hasLatinUpper = /[A-Z]/.test(password);
         const hasLatinLower = /[a-z]/.test(password);
-        const hasArabicLetter = /[\u0600-\u06FF]/.test(password); // Arabic Unicode range
+        const hasArabicLetter = /[\u0600-\u06FF]/.test(password);
 
-        // Support both Western (0-9) and Arabic-Indic numerals (٠-٩)
         const hasWesternNumber = /[0-9]/.test(password);
         const hasArabicNumber = /[\u0660-\u0669\u06F0-\u06F9]/.test(password);
 
         return {
             hasMinLength: password.length >= 8,
-            // For Arabic text, we accept any Arabic letter since Arabic has no case
-            // For English, we require both upper and lower
             hasUppercase: hasLatinUpper || hasArabicLetter,
             hasLowercase: hasLatinLower || hasArabicLetter,
             hasNumber: hasWesternNumber || hasArabicNumber,
@@ -297,12 +310,22 @@ export default function AuthScreen() {
                             <View style={styles.divider} />
                         </View>
 
-                        <TouchableOpacity style={styles.googleButton}>
-                            <Image
-                                source={{ uri: 'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png' }}
-                                style={styles.googleIcon}
-                            />
-                            <Text style={styles.googleButtonText}>{loginContent.googleButton}</Text>
+                        <TouchableOpacity
+                            style={[styles.googleButton, (!googleReady || googleLoading) && styles.googleButtonDisabled]}
+                            onPress={handleGoogleSignIn}
+                            disabled={!googleReady || googleLoading}
+                        >
+                            {googleLoading ? (
+                                <ActivityIndicator color="#000" />
+                            ) : (
+                                <>
+                                    <Image
+                                        source={{ uri: 'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png' }}
+                                        style={styles.googleIcon}
+                                    />
+                                    <Text style={styles.googleButtonText}>{loginContent.googleButton}</Text>
+                                </>
+                            )}
                         </TouchableOpacity>
 
                         <View style={styles.footer}>
@@ -526,6 +549,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: Spacing.md,
+    },
+    googleButtonDisabled: {
+        opacity: 0.6,
     },
     googleIcon: {
         width: IconSizes.sm,

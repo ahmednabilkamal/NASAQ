@@ -48,7 +48,6 @@ export default function GenderPage() {
 
                 <View>
                     <View style={styles.cardsRow}>
-                        {/* Male first (left) */}
                         <TouchableOpacity
                             style={[styles.card, selected === 'male' && styles.cardSelected]}
                             onPress={() => setSelected('male')}
@@ -58,7 +57,6 @@ export default function GenderPage() {
                             </View>
                         </TouchableOpacity>
 
-                        {/* Female second (right) */}
                         <TouchableOpacity
                             style={[styles.card, selected === 'female' && styles.cardSelected]}
                             onPress={() => setSelected('female')}

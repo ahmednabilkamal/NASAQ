@@ -109,7 +109,6 @@ export default function StylistDetailScreen() {
         if (!id || !stylist) return;
         setBooking(true);
         try {
-            // 1. Get Chat Service or use stylist's base price
             const chatService = services.find(s =>
                 s.title.toLowerCase().includes('chat') ||
                 s.title.toLowerCase().includes('دردشة') ||
@@ -120,7 +119,6 @@ export default function StylistDetailScreen() {
 
             const selectedService = chatService ?? services.find(s => s.available !== false) ?? services[0];
 
-            // Determine price: use service price or stylist's base price
             let paymentPrice = 0;
             let paymentDescription = `${content.stylistDetail?.payToChatButton || 'Pay to Chat'}: ${stylist.name}`;
 
@@ -128,7 +126,6 @@ export default function StylistDetailScreen() {
                 paymentPrice = Number(selectedService.price) || 0;
                 paymentDescription = `${selectedService.title}: ${stylist.name}`;
             } else if (stylist.price) {
-                // Use stylist's base price for chat consultation
                 paymentPrice = Number(stylist.price) || 0;
                 paymentDescription = `${content.stylistDetail?.chatConsultation || 'استشارة دردشة'}: ${stylist.name}`;
             }
@@ -138,11 +135,9 @@ export default function StylistDetailScreen() {
                 return;
             }
 
-            // 2. Fetch Payment Config (API Key)
             const configRes = await apiService.getPaymentConfig();
             const publishableKey = configRes.data?.publishable_key || 'pk_test_placeholder';
 
-            // 3. Setup Moyasar Config
             const config: PaymentConfig = {
                 apiKey: publishableKey,
                 amount: paymentPrice * 100, // Halalas
@@ -153,7 +148,7 @@ export default function StylistDetailScreen() {
             setMoyasarConfig(config);
             setShowMoyasar(true);
         } catch (error: any) {
-            console.error('Pay to Chat initialization error:', error);
+            console.error('Pay to chat initialization error:', error);
             showToast(content.errors?.title || 'خطأ', 'تعذّر بدء عملية الدفع.');
         } finally {
             setBooking(false);
@@ -163,7 +158,6 @@ export default function StylistDetailScreen() {
     const onPaymentResult = async (result: any) => {
         if (result.status === PaymentStatus.paid) {
             setShowMoyasar(false);
-            // On success, start conversation
             await handleContact();
         } else {
             console.log('Payment failed or cancelled:', result);
@@ -265,7 +259,6 @@ export default function StylistDetailScreen() {
                     />
                 </View>
 
-                {/* Info Section */}
                 <View style={styles.infoContainer}>
                     <View style={styles.nameRow}>
                         <Text style={styles.nameText}>{stylist?.name ?? ''}</Text>
@@ -298,7 +291,6 @@ export default function StylistDetailScreen() {
                     </View>
                 </View>
 
-                {/* Tabs */}
                 <View style={styles.tabsContainer}>
                     <ScrollView
                         horizontal
@@ -373,7 +365,6 @@ export default function StylistDetailScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* Moyasar Payment Modal */}
             <Modal visible={showMoyasar} animationType="slide">
                 <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
                     <View style={styles.modalHeader}>

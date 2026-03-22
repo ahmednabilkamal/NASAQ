@@ -40,7 +40,6 @@ const OrderDetailsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.timeText}>9:41</Text>
         <View style={styles.statusBar}>
@@ -50,13 +49,11 @@ const OrderDetailsScreen = () => {
         </View>
       </View>
 
-      {/* Back Arrow */}
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
         <Text style={styles.backArrow}>→</Text>
       </TouchableOpacity>
 
       <ScrollView style={styles.content}>
-        {/* Green Header Section */}
         <View style={styles.greenHeader}>
           <View style={styles.orderInfo}>
             <View style={styles.orderLabel}>
@@ -74,7 +71,6 @@ const OrderDetailsScreen = () => {
           />
         </View>
 
-        {/* Size Guide Section */}
         <View style={styles.sizeGuideSection}>
           <View style={styles.sizeGuideHeader}>
             <Image
@@ -84,7 +80,6 @@ const OrderDetailsScreen = () => {
             <Text style={styles.sizeGuideTitle}>دليل المقاسات</Text>
           </View>
 
-          {/* Measurements Grid */}
           <View style={styles.measurementsContainer}>
             {measurements.map((item, index) => (
               <View key={index} style={styles.measurementItem}>
@@ -96,7 +91,6 @@ const OrderDetailsScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Bottom Action Buttons */}
       <View style={styles.bottomSection}>
         {showError ? (
           <View style={styles.errorMessage}>

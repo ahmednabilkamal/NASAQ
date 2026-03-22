@@ -58,7 +58,6 @@ const FilterModalScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.closeIcon}>✕</Text>
@@ -70,7 +69,6 @@ const FilterModalScreen = () => {
       </View>
 
       <ScrollView style={styles.content}>
-        {/* Title Section */}
         <View style={styles.titleSection}>
           <Text style={styles.mainTitle}>
             {expandedSections.section1 ? 'طقم ملابس وإكسسوارات' : 'صغيرة ومتنوعة'}
@@ -82,7 +80,6 @@ const FilterModalScreen = () => {
           </Text>
         </View>
 
-        {/* Image Gallery */}
         <View style={styles.imageGallery}>
           {images.map((image, index) => (
             <Image
@@ -93,7 +90,6 @@ const FilterModalScreen = () => {
           ))}
         </View>
 
-        {/* Filter Sections */}
         <View style={styles.sectionsContainer}>
           {filterSections.map((section) => (
             <View key={section.id} style={styles.filterSection}>
@@ -122,7 +118,6 @@ const FilterModalScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Bottom Button */}
       <View style={styles.bottomSection}>
         <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/pages/filter_modal_2')}>
           <Text style={styles.actionButtonText}>اضف واحد منهم</Text>

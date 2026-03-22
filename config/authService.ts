@@ -26,6 +26,11 @@ export interface OtpVerifyData {
     device_name?: string;
 }
 
+export interface GoogleLoginData {
+    id_token: string;
+    device_name?: string;
+}
+
 export interface UpdateProfileData {
     name?: string;
     email?: string;
@@ -170,6 +175,21 @@ export const authService = {
 
     changePassword: async (data: { otp: string, password: string, password_confirmation: string }) => {
         const response = await api.post("/user/change-password", data);
+        return response.data;
+    },
+
+    googleLogin: async (data: GoogleLoginData) => {
+        const payload = { device_name: 'venus-app-google', ...data };
+        const response = await api.post("/user/google-login", payload);
+        const token: string | undefined =
+            response.data?.data?.token ??
+            response.data?.token ??
+            response.data?.access_token ??
+            response.data?.accessToken;
+        if (token) {
+            await setAccessToken(token);
+            console.log('✅ Google login successful, token stored');
+        }
         return response.data;
     },
 };

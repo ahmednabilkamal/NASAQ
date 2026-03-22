@@ -119,7 +119,6 @@ export default function OrdersScreen() {
                 onPress={() => router.push(`/pages/order_details?id=${item.id}` as any)}
                 activeOpacity={0.8}
             >
-                {/* Status Badge */}
                 <View style={[styles.statusBadge, { backgroundColor: color }]}>
                     <Text style={styles.statusText}>{label}</Text>
                 </View>

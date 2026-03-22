@@ -32,7 +32,6 @@ export default function EvaluationLayout({
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                {/* Close button - always on left */}
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
                     <View style={styles.iconCircle}>
                         <Ionicons name="close-outline" size={24} color="#000" />
@@ -51,7 +50,6 @@ export default function EvaluationLayout({
                     ))}
                 </View>
 
-                {/* Back arrow - always on right, pointing right */}
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
                     <View style={styles.iconCircle}>
                         <Ionicons name="chevron-forward" size={24} color="#000" />
