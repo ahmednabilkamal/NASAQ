@@ -1,81 +1,44 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TextInput,
     TouchableOpacity,
+    SafeAreaView,
     KeyboardAvoidingView,
     Platform,
-    I18nManager,
     ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { Ionicons } from '@expo/vector-icons';
+import { getBackChevron } from '@/config/directionalIcons';
 import authService from '@/config/authService';
-import { showErrorToast, showSuccessToast } from '@/utils/errorHandler';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
-import { FontSizes, LineHeights } from '@/utils/typography';
-import { InputSizes, ButtonSizes } from '@/utils/spacing';
 
 export default function VerificationScreen() {
     const router = useRouter();
     const { languageCode } = useLanguage();
-    const content = (pageData as any)[languageCode]?.verification || (pageData as any)['en'].verification;
+    const content = (pageData as any)[languageCode]?.verification || (pageData as any)['ar'].verification;
     const { login: loginParam } = useLocalSearchParams<{ login?: string }>();
 
-    const isRTL = I18nManager.isRTL;
     const [code, setCode] = useState(['', '', '', '', '']);
     const [loading, setLoading] = useState(false);
-
-    const convertArabicToWesternNumerals = (text: string): string => {
-        const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-        const persianNumerals = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-
-        let result = text;
-        arabicNumerals.forEach((num, index) => {
-            result = result.replace(new RegExp(num, 'g'), index.toString());
-        });
-        persianNumerals.forEach((num, index) => {
-            result = result.replace(new RegExp(num, 'g'), index.toString());
-        });
-        return result.replace(/[^0-9]/g, '');
-    };
     const [resending, setResending] = useState(false);
-    const [countdown, setCountdown] = useState(30);
-    const [canResend, setCanResend] = useState(false);
     const inputs = useRef<(TextInput | null)[]>([]);
 
-    useEffect(() => {
-        let timer: NodeJS.Timeout;
-        if (countdown > 0 && !canResend) {
-            timer = setInterval(() => {
-                setCountdown((prev) => prev - 1);
-            }, 1000);
-        } else if (countdown === 0) {
-            setCanResend(true);
-        }
-        return () => clearInterval(timer);
-    }, [countdown, canResend]);
-
-    const formatTime = useCallback((seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }, []);
-
     const handleCodeChange = (text: string, index: number) => {
-        const convertedText = convertArabicToWesternNumerals(text);
-        const char = convertedText.slice(-1);
-
+        // If user pastes or types multiple characters, just take the last one or handle as needed
+        // But here maxLength={1} handles it.
+        const char = text.slice(-1);
+        
         const newCode = [...code];
         newCode[index] = char;
         setCode(newCode);
 
+        // Move to next input if a digit was entered
         if (char && index < 4) {
             inputs.current[index + 1]?.focus();
         }
@@ -85,12 +48,14 @@ export default function VerificationScreen() {
         if (e.nativeEvent.key === 'Backspace') {
             const newCode = [...code];
             if (code[index] !== '') {
+                // If box has a value, clear it and move focus back
                 newCode[index] = '';
                 setCode(newCode);
                 if (index > 0) {
                     inputs.current[index - 1]?.focus();
                 }
             } else if (index > 0) {
+                // If box is already empty, move to previous box and clear its content
                 newCode[index - 1] = '';
                 setCode(newCode);
                 inputs.current[index - 1]?.focus();
@@ -101,51 +66,50 @@ export default function VerificationScreen() {
     const handleVerify = async () => {
         const otp = code.join('');
         if (otp.length < 5) {
-            showErrorToast('verificationIncomplete', languageCode);
+            Toast.show({ type: 'error', text1: 'خطأ', text2: 'يرجى إدخال رمز التحقق كاملاً' });
             return;
         }
         if (!loginParam) {
-            showErrorToast('verificationDataMissing', languageCode);
+            Toast.show({ type: 'error', text1: 'خطأ', text2: 'لم يتم العثور على بيانات التحقق' });
             return;
         }
 
         setLoading(true);
         try {
             const result = await authService.verifyOtp({ login: loginParam, otp });
+            console.log('OTP Verification Response:', result);
+            // Token is stored by verifyOtp; navigate to onboarding starting with gender selection
             router.replace('/pages/onboarding/genderSelection' as any);
+
         } catch (error: any) {
+            // Handled globally
         } finally {
             setLoading(false);
         }
     };
 
     const handleResendOtp = async () => {
-        if (!loginParam || !canResend) { return; }
+        if (!loginParam) { return; }
         setResending(true);
         try {
             await authService.sendOtp({ login: loginParam });
-            showSuccessToast('verificationSent', languageCode);
-            setCountdown(30);
-            setCanResend(false);
+            Toast.show({ type: 'success', text1: 'تم', text2: 'تم إرسال رمز التحقق مرة أخرى' });
         } catch (error: any) {
+            // Handled by axios interceptor
         } finally {
             setResending(false);
         }
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
             >
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons
-                            name={isRTL ? 'arrow-forward' : 'arrow-back'}
-                            size={24}
-                            color="#000"
-                        />
+                        <Ionicons name={getBackChevron()} size={24} color="#000" />
                     </TouchableOpacity>
                     <View style={{ width: 40 }} />
                 </View>
@@ -158,7 +122,7 @@ export default function VerificationScreen() {
                         <Text style={styles.loginHint}>{loginParam}</Text>
                     ) : null}
 
-                    <View style={[styles.codeContainer, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                    <View style={styles.codeContainer}>
                         {code.map((digit, index) => (
                             <View key={index} style={styles.digitBox}>
                                 <TextInput
@@ -185,30 +149,21 @@ export default function VerificationScreen() {
                         {loading ? (
                             <ActivityIndicator color="#FFF" />
                         ) : (
-                            <Text style={styles.verifyButtonText}>{content.verifyButton || 'Verify'}</Text>
+                            <Text style={styles.verifyButtonText}>تحقق</Text>
                         )}
                     </TouchableOpacity>
 
                     <View style={styles.footer}>
-                        {canResend ? (
-                            <TouchableOpacity onPress={handleResendOtp} disabled={resending}>
-                                <Text style={styles.footerText}>
-                                    {content.footerText}
-                                    {resending ? (
-                                        <ActivityIndicator size="small" color="#064E3B" />
-                                    ) : (
-                                        <Text style={styles.footerLink}>{content.footerLink}</Text>
-                                    )}
-                                </Text>
-                            </TouchableOpacity>
-                        ) : (
-                            <Text style={styles.timerText}>
-                                {isRTL
-                                    ? `تم ارسال الرمز؟ يمكنك إعادة الإرسال بعد ${formatTime(countdown)} ثانية`
-                                    : `Code sent? You can resend after ${formatTime(countdown)}`
-                                }
+                        <TouchableOpacity onPress={handleResendOtp} disabled={resending}>
+                            <Text style={styles.footerText}>
+                                {content.footerText}
+                                {resending ? (
+                                    <ActivityIndicator size="small" color="#064E3B" />
+                                ) : (
+                                    <Text style={styles.footerLink}>{content.footerLink}</Text>
+                                )}
                             </Text>
-                        )}
+                        </TouchableOpacity>
                     </View>
                 </View>
             </KeyboardAvoidingView>
@@ -228,67 +183,67 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: Spacing.screenPaddingHorizontal,
-        paddingVertical: Spacing.verticalSm,
+        paddingHorizontal: 20,
+        paddingVertical: 15,
     },
     backButton: {
-        padding: Spacing.sm,
+        padding: 8,
     },
     headerTitle: {
-        fontSize: FontSizes.h4,
+        fontSize: 18,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },
     content: {
         flex: 1,
-        paddingHorizontal: Spacing.screenPaddingHorizontal,
-        paddingTop: Spacing.verticalXxxxl,
+        paddingHorizontal: 25,
+        paddingTop: 40,
         alignItems: 'center',
     },
     title: {
-        fontSize: FontSizes.h1,
+        fontSize: 28,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
         textAlign: 'center',
-        marginBottom: Spacing.verticalXs,
+        marginBottom: 8,
     },
     subtitle: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
         textAlign: 'center',
-        marginBottom: Spacing.verticalXs,
-        lineHeight: LineHeights.body,
+        marginBottom: 10,
+        lineHeight: 20,
     },
     loginHint: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         fontFamily: 'Cairo_700Bold',
         color: '#064E3B',
-        marginBottom: Spacing.verticalXxxl,
+        marginBottom: 30,
     },
     codeContainer: {
-        gap: Spacing.md,
-        marginBottom: Spacing.verticalXxxxl,
+        gap: 12,
+        marginBottom: 40,
         width: '100%',
         justifyContent: 'center',
     },
     digitBox: {
         flex: 1,
-        height: scaleVertical(65),
+        height: 65,
         backgroundColor: '#FFF',
-        borderRadius: BorderRadius.md,
+        borderRadius: 12,
         borderWidth: 1,
         borderColor: '#EEE',
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 2,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: scale(2) },
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
-        shadowRadius: scale(5),
+        shadowRadius: 5,
     },
     digitInput: {
-        fontSize: FontSizes.displayMedium,
+        fontSize: 24,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
         width: '100%',
@@ -296,37 +251,31 @@ const styles = StyleSheet.create({
     },
     verifyButton: {
         backgroundColor: '#064E3B',
-        height: ButtonSizes.heightMedium,
+        height: 55,
         width: '100%',
-        borderRadius: BorderRadius.md,
+        borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: Spacing.verticalXxxxl,
+        marginBottom: 30,
     },
     verifyButtonDisabled: {
         opacity: 0.7,
     },
     verifyButtonText: {
         color: '#FFF',
-        fontSize: FontSizes.bodyLarge,
+        fontSize: 16,
         fontFamily: 'Cairo_700Bold',
     },
     footer: {
         alignItems: 'center',
     },
     footerText: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
     },
     footerLink: {
         color: '#064E3B',
         fontFamily: 'Cairo_700Bold',
-    },
-    timerText: {
-        fontSize: FontSizes.body,
-        fontFamily: 'Cairo_400Regular',
-        color: '#666',
-        textAlign: 'center',
     },
 });

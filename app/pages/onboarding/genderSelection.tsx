@@ -4,19 +4,15 @@ import { useRouter } from 'expo-router';
 import EvaluationLayout from '../../../components/EvaluationLayout';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGenderSelection } from '@/hooks/onboarding/useGenderSelection';
 import { useAuth } from '@/config/authContext';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius, Shadows } from '@/utils/spacing';
-import { FontSizes, LineHeights } from '@/utils/typography';
 
 export default function GenderPage() {
     const router = useRouter();
     const { languageCode } = useLanguage();
-    const content = (pageData as any)[languageCode]?.genderSelection || (pageData as any)['en'].genderSelection;
+    const content = (pageData as any)[languageCode]?.genderSelection || (pageData as any)['ar'].genderSelection;
     const { selected, setSelected } = useGenderSelection();
-    const { updateProfile } = useAuth();
+    const { updateProfile, isAuthenticated } = useAuth();
     const [saving, setSaving] = useState(false);
 
     const handleNext = async () => {
@@ -35,7 +31,7 @@ export default function GenderPage() {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.container}>
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
@@ -44,9 +40,9 @@ export default function GenderPage() {
                 onNext={handleNext}
                 isNextDisabled={!selected}
                 nextButtonText={saving ? '...' : content.nextButton}
+                backRoute={isAuthenticated ? '/pages/onboarding/page3' : '/pages/onboarding/page4'}
             >
-
-                <View>
+                <View style={styles.cardsWrap}>
                     <View style={styles.cardsRow}>
                         <TouchableOpacity
                             style={[styles.card, selected === 'male' && styles.cardSelected]}
@@ -68,31 +64,39 @@ export default function GenderPage() {
                     </View>
                 </View>
             </EvaluationLayout>
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    cardsWrap: {
+        flex: 1,
+        minHeight: 0,
         justifyContent: 'center',
     },
     cardsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        gap: Spacing.xl,
+        gap: 20,
     },
     card: {
         flex: 1,
         aspectRatio: 0.8,
         backgroundColor: '#FFF',
-        borderRadius: BorderRadius.lg,
+        borderRadius: 15,
         borderWidth: 2,
         borderColor: 'transparent',
-        padding: Spacing.md,
+        padding: 10,
         justifyContent: 'center',
         alignItems: 'center',
-        ...Shadows.small,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
     },
     cardSelected: {
         borderColor: '#000',
@@ -101,7 +105,7 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
         backgroundColor: '#F9F9F9',
-        borderRadius: BorderRadius.md,
+        borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
     },

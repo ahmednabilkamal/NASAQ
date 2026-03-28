@@ -4,7 +4,6 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    I18nManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -12,16 +11,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '@/config/languageRef';
 import { useAuth } from '@/config/authContext';
 import pageData from '@/data/content';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
-import { FontSizes } from '@/utils/typography';
+import { getBackChevron } from '@/config/directionalIcons';
 
 export default function ContactUsScreen() {
     const router = useRouter();
     const { user } = useAuth();
     const { languageCode } = useLanguage();
-    const content = (pageData as any)[languageCode]?.profile || (pageData as any)['en'].profile;
-    const isRTL = I18nManager.isRTL;
+    const content = (pageData as any)[languageCode]?.profile || (pageData as any)['ar'].profile;
 
     const ContactItem = ({ icon, label, value }: any) => (
         <View style={styles.contactItem}>
@@ -45,7 +41,7 @@ export default function ContactUsScreen() {
             </View>
             <View style={styles.socialText}>
                 <Text style={styles.socialLabel}>{label}</Text>
-                <Text style={styles.socialHandle}>{handle || 'Not set'}</Text>
+                <Text style={styles.socialHandle}>{handle || 'غير مضاف'}</Text>
             </View>
         </TouchableOpacity>
     );
@@ -54,7 +50,7 @@ export default function ContactUsScreen() {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()}>
-                    <Ionicons name={isRTL ? "chevron-forward" : "chevron-back"} size={24} color="#000" />
+                    <Ionicons name={getBackChevron()} size={24} color="#000" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{content.contactUs}</Text>
                 <TouchableOpacity onPress={() => router.push('/pages/profile/edit?mode=social' as any)}>
@@ -119,37 +115,37 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: Spacing.screenPaddingHorizontal,
-        paddingVertical: Spacing.verticalMd,
+        paddingHorizontal: 20,
+        paddingVertical: 15,
         backgroundColor: '#FFF',
     },
     headerTitle: {
-        fontSize: FontSizes.h4,
+        fontSize: 18,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },
     editBtnText: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         fontFamily: 'Cairo_700Bold',
         color: '#064E3B',
     },
     content: {
-        padding: Spacing.screenPadding,
+        padding: 20,
     },
     section: {
-        marginBottom: scaleVertical(30),
+        marginBottom: 30,
     },
     sectionTitle: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         fontFamily: 'Cairo_700Bold',
         color: '#999',
-        marginBottom: Spacing.verticalMd,
+        marginBottom: 10,
         textAlign: 'right',
     },
     card: {
         backgroundColor: '#FFF',
-        borderRadius: BorderRadius.lg,
-        padding: Spacing.cardPadding,
+        borderRadius: 15,
+        padding: 15,
         shadowColor: '#000',
         shadowOpacity: 0.05,
         shadowRadius: 10,
@@ -158,59 +154,59 @@ const styles = StyleSheet.create({
     contactItem: {
         flexDirection: 'row-reverse',
         alignItems: 'center',
-        paddingVertical: Spacing.verticalMd,
+        paddingVertical: 10,
     },
     contactIcon: {
-        width: IconSizes.md,
-        height: IconSizes.md,
-        borderRadius: BorderRadius.round,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: '#F8F9FA',
         justifyContent: 'center',
         alignItems: 'center',
-        marginLeft: Spacing.lg,
+        marginLeft: 15,
     },
     contactText: {
-        alignItems: 'flex-end',
+        alignItems: 'flex-start',
     },
     contactLabel: {
-        fontSize: FontSizes.bodySmall,
+        fontSize: 12,
         color: '#999',
         fontFamily: 'Cairo_400Regular',
     },
     contactValue: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         color: '#000',
         fontFamily: 'Cairo_700Bold',
     },
     socialItem: {
         flexDirection: 'row-reverse',
         alignItems: 'center',
-        paddingVertical: Spacing.verticalMd,
+        paddingVertical: 10,
     },
     socialIcon: {
-        width: IconSizes.md,
-        height: IconSizes.md,
-        borderRadius: BorderRadius.round,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
-        marginLeft: Spacing.lg,
+        marginLeft: 15,
     },
     socialText: {
-        alignItems: 'flex-end',
+        alignItems: 'flex-start',
     },
     socialLabel: {
-        fontSize: FontSizes.bodySmall,
+        fontSize: 12,
         color: '#999',
         fontFamily: 'Cairo_400Regular',
     },
     socialHandle: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         color: '#000',
         fontFamily: 'Cairo_700Bold',
     },
     divider: {
         height: 1,
         backgroundColor: '#F0F0F0',
-        marginVertical: Spacing.verticalXs,
+        marginVertical: 5,
     },
 });

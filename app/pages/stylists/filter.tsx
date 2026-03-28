@@ -1,6 +1,7 @@
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     ScrollView,
     StyleSheet,
     Text,
@@ -9,55 +10,196 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
-import { FontSizes, LineHeights } from '@/utils/typography';
-import { InputSizes, ButtonSizes } from '@/utils/spacing';
+import apiService, { FashionStyle, Stylist } from '@/config/apiService';
+import { clearStylistFilters, defaultStylistFilters, loadStylistFilters, saveStylistFilters } from '@/config/stylistFilters';
 
 export default function FilterScreen() {
     const router = useRouter();
+    const { q } = useLocalSearchParams<{ q?: string }>();
 
     const [minPrice, setMinPrice] = useState(0);
     const [maxPrice, setMaxPrice] = useState(720);
     const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
+    const [fashionStyles, setFashionStyles] = useState<FashionStyle[]>([]);
+    const [loadingStyles, setLoadingStyles] = useState(true);
+    const [baseStylists, setBaseStylists] = useState<Stylist[]>([]);
+    const [loadingBaseStylists, setLoadingBaseStylists] = useState(true);
 
-    const stylesList = [
-        'مناسبات',
-        'استايل رسمي',
-        'سهرة',
-        'أزياء عصرية',
-        'خزانة كاملة',
-        'كاجوال',
+    useEffect(() => {
+        let mounted = true;
+
+        const load = async () => {
+            const stored = await loadStylistFilters();
+            if (!mounted) return;
+            setMinPrice(stored.minPrice);
+            setMaxPrice(stored.maxPrice);
+            setSelectedStyles(stored.selectedStyleIds);
+        };
+
+        const loadStyles = async () => {
+            try {
+                setLoadingStyles(true);
+                const res = await apiService.getFashionStyles({ per_page: 50 });
+                const data = res?.data;
+                if (!mounted) return;
+                setFashionStyles(Array.isArray(data) ? data : []);
+            } catch {
+                if (!mounted) return;
+                setFashionStyles([]);
+            } finally {
+                if (!mounted) return;
+                setLoadingStyles(false);
+            }
+        };
+
+        load();
+        loadStyles();
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        let mounted = true;
+
+        const loadBaseStylists = async () => {
+            try {
+                setLoadingBaseStylists(true);
+                const res = await apiService.getStylists({
+                    per_page: 20,
+                    search: q ? String(q).trim() : undefined,
+                });
+                const data = res?.data;
+                if (!mounted) return;
+                setBaseStylists(Array.isArray(data) ? data : []);
+            } catch {
+                if (!mounted) return;
+                setBaseStylists([]);
+            } finally {
+                if (!mounted) return;
+                setLoadingBaseStylists(false);
+            }
+        };
+
+        loadBaseStylists();
+        return () => {
+            mounted = false;
+        };
+    }, [q]);
+
+    const fallbackStyles: FashionStyle[] = [
+        { id: '1', name: 'مناسبات' },
+        { id: '2', name: 'استايل رسمي' },
+        { id: '3', name: 'سهرة' },
+        { id: '4', name: 'أزياء عصرية' },
+        { id: '5', name: 'خزانة كاملة' },
+        { id: '6', name: 'كاجوال' },
     ];
 
-    const toggleStyle = (style: string) => {
-        if (selectedStyles.includes(style)) {
-            setSelectedStyles(selectedStyles.filter((s) => s !== style));
+    const stylesList = fashionStyles.length > 0 ? fashionStyles : fallbackStyles;
+
+    const getStyleKey = (style: FashionStyle) => {
+        const idKey = style.id != null ? String(style.id) : '';
+        const nameKey = style.name != null ? String(style.name) : '';
+        return idKey || nameKey;
+    };
+
+    const toggleStyle = (styleKey: string) => {
+        if (selectedStyles.includes(styleKey)) {
+            setSelectedStyles(selectedStyles.filter((s) => s !== styleKey));
         } else {
-            setSelectedStyles([...selectedStyles, style]);
+            setSelectedStyles([...selectedStyles, styleKey]);
         }
     };
 
-    const clearFilters = () => {
-        setMinPrice(0);
-        setMaxPrice(720);
-        setSelectedStyles([]);
+    const applyFilters = async () => {
+        await saveStylistFilters({
+            minPrice,
+            maxPrice,
+            selectedStyleIds: selectedStyles,
+        });
+        router.back();
     };
+
+    const clearFilters = async () => {
+        await clearStylistFilters();
+        setMinPrice(defaultStylistFilters.minPrice);
+        setMaxPrice(defaultStylistFilters.maxPrice);
+        setSelectedStyles([]);
+        router.back();
+    };
+
+    const sliderMin = 0;
+    const sliderMax = 720;
+    const safeMin = Math.max(sliderMin, Math.min(minPrice, maxPrice));
+    const safeMax = Math.min(sliderMax, Math.max(minPrice, maxPrice));
+    const minPercent = ((safeMin - sliderMin) / (sliderMax - sliderMin)) * 100;
+    const maxPercent = ((safeMax - sliderMin) / (sliderMax - sliderMin)) * 100;
+    const fillLeftPercent = minPercent;
+    const fillWidthPercent = maxPercent - minPercent;
+
+    const toNumber = (value: unknown): number | null => {
+        if (value == null) return null;
+        const n = Number(value);
+        return Number.isFinite(n) ? n : null;
+    };
+
+    const priceFilterActive =
+        minPrice !== defaultStylistFilters.minPrice || maxPrice !== defaultStylistFilters.maxPrice;
+    const styleFilterActive = selectedStyles.length > 0;
+
+    const getServicePrices = (s: any): number[] => {
+        const services = Array.isArray(s?.services) ? s.services : [];
+        return services
+            .map((svc: any) => toNumber(svc?.price))
+            .filter((n: number | null): n is number => n != null);
+    };
+
+    const matchesPriceRange = (s: any): boolean => {
+        const servicePrices = getServicePrices(s);
+        if (servicePrices.length > 0) {
+            return servicePrices.some((p) => p >= minPrice && p <= maxPrice);
+        }
+
+        const fallbackPrice = toNumber(s?.price);
+        if (fallbackPrice == null) return false;
+        return fallbackPrice >= minPrice && fallbackPrice <= maxPrice;
+    };
+
+    const matchingCount = baseStylists.filter((s: any) => {
+        if (priceFilterActive && !matchesPriceRange(s)) return false;
+
+        if (styleFilterActive) {
+            const styleSet = new Set(selectedStyles);
+            const hasMatch = (s.fashion_styles ?? []).some((fs: any) => {
+                const name = String(fs?.name ?? '');
+                const id = fs?.id != null ? String(fs.id) : '';
+                return styleSet.has(name) || styleSet.has(id);
+            });
+            if (!hasMatch) return false;
+        }
+
+        return true;
+    }).length;
 
     return (
         <SafeAreaView style={styles.container}>
+            {/* Handle */}
             <View style={styles.handle} />
 
+            {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>فلتر المنسقات</Text>
                 <Text style={styles.headerSubtitle}>أعرض المنسقات ضمن ميزانيتك</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                {/* Price Range Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Price Range</Text>
+                    <Text style={styles.sectionTitle}>نطاق السعر</Text>
 
                     <View style={styles.priceRow}>
+                        {/* To (visually on left in RTL due to row-reverse) */}
                         <View style={styles.priceInputWrapper}>
                             <Text style={styles.priceLabel}>إلى</Text>
                             <View style={styles.priceInput}>
@@ -71,14 +213,34 @@ export default function FilterScreen() {
                             </View>
                         </View>
 
+                        {/* Slider in middle */}
                         <View style={styles.sliderContainer}>
                             <View style={styles.sliderTrack}>
-                                <View style={[styles.sliderFill, { width: `${((maxPrice - minPrice) / 720) * 100}%` }]} />
-                                <View style={styles.sliderThumbLeft} />
-                                <View style={styles.sliderThumbRight} />
+                                <View
+                                    style={[
+                                        styles.sliderFill,
+                                        {
+                                            left: `${fillLeftPercent}%`,
+                                            width: `${fillWidthPercent}%`,
+                                        },
+                                    ]}
+                                />
+                                <View
+                                    style={[
+                                        styles.sliderThumb,
+                                        { left: `${minPercent}%` },
+                                    ]}
+                                />
+                                <View
+                                    style={[
+                                        styles.sliderThumb,
+                                        { left: `${maxPercent}%` },
+                                    ]}
+                                />
                             </View>
                         </View>
 
+                        {/* From (visually on right in RTL due to row-reverse) */}
                         <View style={styles.priceInputWrapper}>
                             <Text style={styles.priceLabel}>من</Text>
                             <View style={styles.priceInput}>
@@ -94,20 +256,27 @@ export default function FilterScreen() {
                     </View>
                 </View>
 
+                {/* Style Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>: الأستايل</Text>
 
                     <View style={styles.stylesGrid}>
-                        {stylesList.map((style) => {
-                            const isSelected = selectedStyles.includes(style);
+                        {loadingStyles ? (
+                            <View style={{ paddingVertical: 10 }}>
+                                <ActivityIndicator size="small" color="#064E3B" />
+                            </View>
+                        ) : (
+                            stylesList.map((style) => {
+                            const key = getStyleKey(style);
+                            const isSelected = selectedStyles.includes(key);
                             return (
                                 <TouchableOpacity
-                                    key={style}
+                                    key={key}
                                     style={[
                                         styles.styleChip,
                                         isSelected && styles.styleChipActive,
                                     ]}
-                                    onPress={() => toggleStyle(style)}
+                                    onPress={() => toggleStyle(key)}
                                 >
                                     <Text
                                         style={[
@@ -115,21 +284,25 @@ export default function FilterScreen() {
                                             isSelected && styles.styleTextActive,
                                         ]}
                                     >
-                                        {style}
+                                        {style.name}
                                     </Text>
                                 </TouchableOpacity>
                             );
-                        })}
+                        })
+                        )}
                     </View>
                 </View>
             </ScrollView>
 
+            {/* Footer Buttons */}
             <View style={styles.footer}>
                 <TouchableOpacity
                     style={styles.applyButton}
-                    onPress={() => router.back()}
+                    onPress={applyFilters}
                 >
-                    <Text style={styles.applyButtonText}>شاهد 156 منسقة مطابقة</Text>
+                    <Text style={styles.applyButtonText}>
+                        شاهد {loadingBaseStylists ? '...' : matchingCount} منسقة مطابقة
+                    </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -147,133 +320,122 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FFF',
-        borderTopLeftRadius: BorderRadius.xxxl,
-        borderTopRightRadius: BorderRadius.xxxl,
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
     },
     handle: {
-        width: scale(50),
-        height: scale(5),
+        width: 50,
+        height: 5,
         backgroundColor: '#E0E0E0',
-        borderRadius: BorderRadius.xs,
+        borderRadius: 2.5,
         alignSelf: 'center',
-        marginTop: Spacing.verticalSm,
-        marginBottom: Spacing.verticalXs,
+        marginTop: 12,
+        marginBottom: 10,
     },
     header: {
-        paddingHorizontal: Spacing.screenPaddingHorizontal,
-        paddingVertical: Spacing.verticalMd,
+        paddingHorizontal: 20,
+        paddingVertical: 15,
         alignItems: 'center',
     },
     headerTitle: {
-        fontSize: FontSizes.h3,
+        fontSize: 20,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
-        marginBottom: Spacing.verticalXs,
+        marginBottom: 5,
     },
     headerSubtitle: {
-        fontSize: FontSizes.bodySmall,
+        fontSize: 13,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
     },
     content: {
-        paddingHorizontal: Spacing.screenPaddingHorizontal,
-        paddingTop: Spacing.verticalXs,
-        paddingBottom: Spacing.verticalMd,
+        paddingHorizontal: 20,
+        paddingTop: 10,
+        paddingBottom: 20,
     },
     section: {
-        marginBottom: Spacing.verticalXxxl,
+        marginBottom: 30,
     },
     sectionTitle: {
-        fontSize: FontSizes.bodySmall,
+        fontSize: 13,
         fontFamily: 'Cairo_600SemiBold',
         color: '#999',
-        marginBottom: Spacing.verticalXl,
+        marginBottom: 15,
         textAlign: 'right',
     },
     priceRow: {
-        flexDirection: 'row',
+        flexDirection: 'row-reverse',
         alignItems: 'flex-end',
-        gap: Spacing.md,
+        gap: 10,
     },
     priceInputWrapper: {
         flex: 1,
     },
     priceLabel: {
-        fontSize: FontSizes.caption,
+        fontSize: 12,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
         textAlign: 'center',
-        marginBottom: Spacing.verticalXs,
+        marginBottom: 8,
     },
     priceInput: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F8F9FA',
-        borderRadius: BorderRadius.md,
-        height: InputSizes.height,
-        paddingHorizontal: Spacing.md,
+        borderRadius: 12,
+        height: 50,
+        paddingHorizontal: 12,
         justifyContent: 'center',
     },
     currency: {
-        fontSize: FontSizes.caption,
+        fontSize: 12,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
-        marginRight: Spacing.xs,
+        marginRight: 5,
     },
     textInput: {
         fontFamily: 'Cairo_700Bold',
-        fontSize: FontSizes.h4,
+        fontSize: 18,
         color: '#333',
         textAlign: 'center',
-        minWidth: scale(50),
+        minWidth: 50,
     },
     sliderContainer: {
         flex: 0.8,
-        height: InputSizes.height,
+        height: 50,
         justifyContent: 'center',
-        paddingHorizontal: Spacing.xs,
+        paddingHorizontal: 5,
     },
     sliderTrack: {
-        height: scale(4),
+        height: 4,
         backgroundColor: '#E8E8E8',
-        borderRadius: BorderRadius.xs,
+        borderRadius: 2,
         position: 'relative',
     },
     sliderFill: {
         position: 'absolute',
-        height: scale(4),
+        height: 4,
         backgroundColor: '#064E3B',
-        borderRadius: BorderRadius.xs,
-        left: '10%',
+        borderRadius: 2,
     },
-    sliderThumbLeft: {
+    sliderThumb: {
         position: 'absolute',
-        width: scale(16),
-        height: scale(16),
-        borderRadius: BorderRadius.round,
+        width: 16,
+        height: 16,
+        borderRadius: 8,
         backgroundColor: '#064E3B',
-        top: scale(-6),
-        left: '10%',
-    },
-    sliderThumbRight: {
-        position: 'absolute',
-        width: scale(16),
-        height: scale(16),
-        borderRadius: BorderRadius.round,
-        backgroundColor: '#064E3B',
-        top: scale(-6),
-        right: '10%',
+        top: -6,
     },
     stylesGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: Spacing.md,
-        justifyContent: 'flex-end',
+        gap: 10,
+        justifyContent: 'flex-start',
     },
     styleChip: {
-        paddingHorizontal: Spacing.xl,
-        paddingVertical: Spacing.verticalXs,
-        borderRadius: BorderRadius.button,
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderRadius: 25,
         borderWidth: 1,
         borderColor: '#E8E8E8',
         backgroundColor: '#FFF',
@@ -283,7 +445,7 @@ const styles = StyleSheet.create({
         borderColor: '#064E3B',
     },
     styleText: {
-        fontSize: FontSizes.bodySmall,
+        fontSize: 13,
         fontFamily: 'Cairo_600SemiBold',
         color: '#333',
     },
@@ -291,26 +453,26 @@ const styles = StyleSheet.create({
         color: '#FFF',
     },
     footer: {
-        paddingHorizontal: Spacing.screenPaddingHorizontal,
-        paddingBottom: Spacing.verticalXxxxl,
-        paddingTop: Spacing.verticalXs,
-        gap: Spacing.md,
+        paddingHorizontal: 20,
+        paddingBottom: 30,
+        paddingTop: 10,
+        gap: 12,
     },
     applyButton: {
         backgroundColor: '#064E3B',
-        height: ButtonSizes.heightMedium,
-        borderRadius: BorderRadius.button,
+        height: 55,
+        borderRadius: 28,
         justifyContent: 'center',
         alignItems: 'center',
     },
     applyButtonText: {
         color: '#FFF',
-        fontSize: FontSizes.bodyLarge,
+        fontSize: 16,
         fontFamily: 'Cairo_700Bold',
     },
     clearButton: {
-        height: ButtonSizes.heightMedium,
-        borderRadius: BorderRadius.button,
+        height: 55,
+        borderRadius: 28,
         borderWidth: 1.5,
         borderColor: '#064E3B',
         justifyContent: 'center',
@@ -319,7 +481,7 @@ const styles = StyleSheet.create({
     },
     clearButtonText: {
         color: '#064E3B',
-        fontSize: FontSizes.bodyLarge,
+        fontSize: 16,
         fontFamily: 'Cairo_700Bold',
     },
 });

@@ -9,7 +9,6 @@ import {
     Image,
     KeyboardAvoidingView,
     Platform,
-    I18nManager,
     Modal,
     ActivityIndicator,
 } from 'react-native';
@@ -21,14 +20,11 @@ import { useAuth } from '@/config/authContext';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { Audio } from 'expo-av';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
-import { FontSizes, LineHeights } from '@/utils/typography';
+import { getBackChevron } from '@/config/directionalIcons';
 
 export default function ChatScreen() {
     const router = useRouter();
     const { id: conversationId } = useLocalSearchParams<{ id: string }>();
-    const isRTL = I18nManager.isRTL;
     const { user } = useAuth();
 
     const [message, setMessage] = useState('');
@@ -37,6 +33,7 @@ export default function ChatScreen() {
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
 
+    // Recording state
     const [recording, setRecording] = useState<Audio.Recording | null>(null);
     const [isRecording, setIsRecording] = useState(false);
 
@@ -55,9 +52,13 @@ export default function ChatScreen() {
             const res = await apiService.getMessages(conversationId);
             const data = res?.data;
             if (Array.isArray(data)) {
+                // Reverse because usually APIs return newest first, but FlatList displays bottom-up
+                // Or check the order. If API returns oldest first, we might need inverted list.
+                // Assuming standard list for now.
                 setMessages(data);
             }
 
+            // Try to find stylist info from conversation if we don't have it
             if (!stylist) {
                 const convRes = await apiService.listConversations();
                 const currentConv = convRes.data.find(c => String(c.id) === conversationId);
@@ -74,6 +75,7 @@ export default function ChatScreen() {
 
     useEffect(() => {
         fetchMessages(true);
+        // Basic polling for new messages (every 5 seconds)
         const interval = setInterval(() => fetchMessages(), 5000);
         return () => clearInterval(interval);
     }, [conversationId]);
@@ -154,6 +156,7 @@ export default function ChatScreen() {
                 type: type === 'image' ? 'image/jpeg' : type === 'audio' ? 'audio/m4a' : 'application/octet-stream',
             } as any);
 
+            // Backend might expect specific field for body even with file
             formData.append('body', `Shared a ${type}`);
 
             await apiService.sendMessage(conversationId, formData);
@@ -166,6 +169,8 @@ export default function ChatScreen() {
     };
 
     const MessageItem = ({ item }: { item: Message }) => {
+        // sender_type usually comes from the backend to identify if it's the user or stylist
+        // For Venus app, assuming user is 'user' and stylist is 'stylist' or similar
         const isUser = item.sender_type === 'user' || item.user_id === user?.id;
 
         return (
@@ -205,11 +210,11 @@ export default function ChatScreen() {
 
         try {
             await apiService.sendMessage(conversationId, textToSend);
-            await fetchMessages(); 
+            await fetchMessages(); // Immediate refresh
             setTimeout(() => flatListRef.current?.scrollToEnd(), 200);
         } catch (error) {
             console.error('Send message error:', error);
-            setMessage(textToSend); 
+            setMessage(textToSend); // Restore message on failure
         } finally {
             setSending(false);
         }
@@ -218,6 +223,7 @@ export default function ChatScreen() {
     const handleRatingSubmit = async () => {
         if (rating > 0 && stylist?.id) {
             try {
+                // Assuming createReview works for stylists or we need a specific endpoint
                 await apiService.createReview({
                     stylist_id: Number(stylist.id),
                     rating: rating,
@@ -315,11 +321,13 @@ export default function ChatScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
+            {/* Rating Modal */}
             <RatingModal />
 
+            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-forward" size={24} color="#000" />
+                    <Ionicons name={getBackChevron()} size={24} color="#000" />
                 </TouchableOpacity>
                 <Text style={styles.headerName}>{stylist?.name ?? 'منسقة'}</Text>
                 <TouchableOpacity
@@ -330,6 +338,7 @@ export default function ChatScreen() {
                 </TouchableOpacity>
             </View>
 
+            {/* Messages List */}
             {loading ? (
                 <View style={styles.centerContainer}>
                     <ActivityIndicator size="large" color="#064E3B" />
@@ -351,6 +360,7 @@ export default function ChatScreen() {
                 />
             )}
 
+            {/* Attachment Menu */}
             {showAttachMenu && (
                 <View style={styles.attachMenu}>
                     <TouchableOpacity style={styles.attachOption} onPress={handlePickImage}>
@@ -372,6 +382,7 @@ export default function ChatScreen() {
                 </View>
             )}
 
+            {/* Input Area */}
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
@@ -429,29 +440,29 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: Spacing.lg,
-        paddingVertical: Spacing.verticalMd,
+        paddingHorizontal: 15,
+        paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
     },
     backButton: {
-        width: scale(40),
-        height: scale(40),
+        width: 40,
+        height: 40,
         justifyContent: 'center',
         alignItems: 'center',
     },
     headerName: {
-        fontSize: FontSizes.h4,
+        fontSize: 18,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },
     listContent: {
-        padding: Spacing.lg,
-        paddingBottom: Spacing.verticalMd,
+        padding: 15,
+        paddingBottom: 20,
     },
     messageContainer: {
         flexDirection: 'row',
-        marginBottom: scaleVertical(20),
+        marginBottom: 20,
         width: '100%',
         alignItems: 'flex-end',
     },
@@ -466,29 +477,29 @@ const styles = StyleSheet.create({
     },
     userWrapper: {
         alignItems: 'flex-end',
-        marginRight: Spacing.md,
+        marginRight: 10,
     },
     stylistWrapper: {
         alignItems: 'flex-start',
-        marginLeft: Spacing.md,
+        marginLeft: 10,
     },
     messageBubble: {
-        paddingHorizontal: Spacing.lg,
-        paddingVertical: Spacing.verticalMd,
-        borderRadius: BorderRadius.round,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 20,
     },
     userBubble: {
         backgroundColor: '#E8F5E9',
-        borderBottomRightRadius: scale(5),
+        borderBottomRightRadius: 5,
     },
     stylistBubble: {
         backgroundColor: '#064E3B',
-        borderBottomLeftRadius: scale(5),
+        borderBottomLeftRadius: 5,
     },
     messageText: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         fontFamily: 'Cairo_400Regular',
-        lineHeight: LineHeights.body,
+        lineHeight: 22,
     },
     userText: {
         color: '#333',
@@ -499,23 +510,23 @@ const styles = StyleSheet.create({
         textAlign: 'left',
     },
     messageTime: {
-        fontSize: FontSizes.bodySmall,
+        fontSize: 11,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
-        marginTop: Spacing.verticalXs,
+        marginTop: 4,
     },
     userMessageTime: {
         textAlign: 'right',
     },
     stylistAvatar: {
-        width: IconSizes.xl,
-        height: IconSizes.xl,
-        borderRadius: BorderRadius.round,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
     },
     userAvatar: {
-        width: IconSizes.xl,
-        height: IconSizes.xl,
-        borderRadius: BorderRadius.round,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
     },
     centerContainer: {
         flex: 1,
@@ -526,10 +537,10 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: scaleVertical(50),
+        marginTop: 50,
     },
     emptyText: {
-        fontSize: FontSizes.bodyLarge,
+        fontSize: 16,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
     },
@@ -541,16 +552,16 @@ const styles = StyleSheet.create({
     },
     attachMenu: {
         position: 'absolute',
-        bottom: scaleVertical(75),
-        left: Spacing.lg,
-        right: Spacing.lg,
+        bottom: 75,
+        left: 20,
+        right: 20,
         backgroundColor: '#FFF',
-        paddingHorizontal: Spacing.xxl,
-        paddingVertical: Spacing.verticalMd,
-        borderRadius: BorderRadius.lg,
+        paddingHorizontal: 20,
+        paddingVertical: 20,
+        borderRadius: 20,
         flexDirection: 'row',
         justifyContent: 'center',
-        gap: scale(30),
+        gap: 30,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -2 },
         shadowOpacity: 0.1,
@@ -562,68 +573,68 @@ const styles = StyleSheet.create({
     },
     attachIconContainer: {
         alignItems: 'center',
-        gap: Spacing.gapMd,
+        gap: 8,
     },
     attachIconPhotos: {
-        width: scale(56),
-        height: scale(56),
-        borderRadius: BorderRadius.round,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         backgroundColor: '#FF6B9D',
         justifyContent: 'center',
         alignItems: 'center',
     },
     attachIconFiles: {
-        width: scale(56),
-        height: scale(56),
-        borderRadius: BorderRadius.round,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         backgroundColor: '#4A90E2',
         justifyContent: 'center',
         alignItems: 'center',
     },
     attachOptionText: {
-        fontSize: FontSizes.label,
+        fontSize: 13,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
     },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: Spacing.lg,
-        paddingVertical: Spacing.verticalSm,
+        paddingHorizontal: 15,
+        paddingVertical: 10,
         borderTopWidth: 1,
         borderTopColor: '#F0F0F0',
         backgroundColor: '#FFF',
     },
     attachButton: {
-        width: scale(44),
-        height: scale(44),
+        width: 44,
+        height: 44,
         justifyContent: 'center',
         alignItems: 'center',
     },
     input: {
         flex: 1,
-        minHeight: scale(44),
-        maxHeight: scaleVertical(100),
+        minHeight: 44,
+        maxHeight: 100,
         backgroundColor: '#F5F5F5',
-        borderRadius: scale(22),
-        paddingHorizontal: Spacing.lg,
-        paddingVertical: Spacing.verticalSm,
+        borderRadius: 22,
+        paddingHorizontal: 18,
+        paddingVertical: 10,
         fontFamily: 'Cairo_400Regular',
-        fontSize: FontSizes.body,
+        fontSize: 14,
         color: '#333',
     },
     sendButton: {
-        marginLeft: Spacing.md,
-        width: scale(44),
-        height: scale(44),
-        borderRadius: scale(22),
+        marginLeft: 10,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         backgroundColor: '#064E3B',
         justifyContent: 'center',
         alignItems: 'center',
     },
     rateButton: {
-        width: scale(40),
-        height: scale(40),
+        width: 40,
+        height: 40,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -632,85 +643,85 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: Spacing.lg,
+        padding: 20,
     },
     modalContent: {
         backgroundColor: '#FFF',
-        borderRadius: BorderRadius.lg,
-        padding: Spacing.xxxl,
+        borderRadius: 20,
+        padding: 25,
         width: '100%',
-        maxWidth: scale(340),
+        maxWidth: 340,
         alignItems: 'center',
     },
     closeButton: {
         position: 'absolute',
-        top: Spacing.verticalSm,
-        left: Spacing.verticalSm,
-        width: scale(32),
-        height: scale(32),
+        top: 15,
+        left: 15,
+        width: 32,
+        height: 32,
         justifyContent: 'center',
         alignItems: 'center',
     },
     modalAvatar: {
-        width: scale(80),
-        height: scale(80),
-        borderRadius: BorderRadius.round,
-        marginBottom: Spacing.verticalMd,
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        marginBottom: 15,
     },
     modalTitle: {
-        fontSize: FontSizes.h4,
+        fontSize: 18,
         fontFamily: 'Cairo_700Bold',
         color: '#333',
-        marginBottom: Spacing.verticalLg,
+        marginBottom: 20,
         textAlign: 'center',
     },
     starsContainer: {
         flexDirection: 'row',
-        gap: Spacing.gapMd,
-        marginBottom: Spacing.verticalLg,
+        gap: 8,
+        marginBottom: 20,
     },
     feedbackInput: {
         width: '100%',
-        minHeight: scaleVertical(100),
+        minHeight: 100,
         backgroundColor: '#F5F5F5',
-        borderRadius: BorderRadius.md,
-        padding: Spacing.lg,
+        borderRadius: 12,
+        padding: 15,
         fontFamily: 'Cairo_400Regular',
-        fontSize: FontSizes.body,
+        fontSize: 14,
         color: '#333',
         textAlignVertical: 'top',
-        marginBottom: Spacing.verticalLg,
+        marginBottom: 20,
     },
     submitButton: {
         width: '100%',
         backgroundColor: '#064E3B',
-        borderRadius: BorderRadius.md,
-        paddingVertical: Spacing.verticalMd,
+        borderRadius: 12,
+        paddingVertical: 14,
         alignItems: 'center',
     },
     submitButtonDisabled: {
         backgroundColor: '#CCC',
     },
     submitButtonText: {
-        fontSize: FontSizes.bodyLarge,
+        fontSize: 16,
         fontFamily: 'Cairo_700Bold',
         color: '#FFF',
     },
     successContainer: {
         alignItems: 'center',
-        paddingVertical: scaleVertical(30),
+        paddingVertical: 30,
     },
     successIconContainer: {
-        width: scale(80),
-        height: scale(80),
-        borderRadius: BorderRadius.round,
+        width: 80,
+        height: 80,
+        borderRadius: 40,
         backgroundColor: '#064E3B',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: Spacing.verticalLg,
+        marginBottom: 20,
     },
     successText: {
-        fontSize: FontSizes.h4,
+        fontSize: 18,
         fontFamily: 'Cairo_700Bold',
         color: '#333',
         textAlign: 'center',

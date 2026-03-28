@@ -8,7 +8,7 @@ import { FontSizes, LineHeights } from '@/utils/typography';
 
 export default function Page1() {
   const { languageCode } = useLanguage();
-  const content = (pageData as any)[languageCode]?.page1 || (pageData as any)['en'].page1;
+  const content = (pageData as any)[languageCode]?.page1 || (pageData as any)['ar'].page1;
 
   return (
     <OnboardingScreen

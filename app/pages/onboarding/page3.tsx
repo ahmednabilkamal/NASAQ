@@ -10,7 +10,7 @@ import { FontSizes, LineHeights } from '@/utils/typography';
 export default function Page3() {
   const { languageCode } = useLanguage();
   const { isAuthenticated } = useAuth();
-  const content = (pageData as any)[languageCode]?.page3 || (pageData as any)['en'].page3;
+  const content = (pageData as any)[languageCode]?.page3 || (pageData as any)['ar'].page3;
 
   return (
     <OnboardingScreen

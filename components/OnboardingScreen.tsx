@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, ImageBackground, StyleSheet, useWindowDimensions, I18nManager } from 'react-native';
+import { View, Text, TouchableOpacity, ImageBackground, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '@/config/languageRef';
@@ -11,9 +11,8 @@ import Animated, {
     withTiming,
     Easing,
 } from 'react-native-reanimated';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius } from '@/utils/spacing';
-import { FontSizes, LineHeights } from '@/utils/typography';
+
+const { width, height } = Dimensions.get('window');
 
 interface OnboardingScreenProps {
     backgroundImage: any;
@@ -34,13 +33,12 @@ export default function OnboardingScreen({
 }: OnboardingScreenProps) {
     const router = useRouter();
     const { languageCode } = useLanguage();
-    const { width, height } = useWindowDimensions();
 
     const pageKey = `page${currentIndex + 1}`;
-    const content = (pageData as any)[languageCode]?.[pageKey] || (pageData as any)['en'][pageKey];
+    const content = (pageData as any)[languageCode]?.[pageKey] || (pageData as any)['ar'][pageKey];
 
-    const skipText = content.skipText || content.optionalChoice || "Skip";
-    const nextText = content.buttonText || "Next";
+    const skipText = content.skipText || content.optionalChoice || 'تخطي';
+    const nextText = content.buttonText || 'التالي';
 
     const slideX = useSharedValue(-50);
     const opacity = useSharedValue(0);
@@ -52,6 +50,7 @@ export default function OnboardingScreen({
         });
         opacity.value = withTiming(1, { duration: 800 });
 
+        // Save current onboarding step
         saveOnboardingStep(currentIndex + 1);
     }, [currentIndex]);
 
@@ -63,17 +62,21 @@ export default function OnboardingScreen({
     const handleNext = async () => {
         if (nextRoute === '/pages/login') {
             await setOnboardingCompleted();
+            console.log('✅ Onboarding completed, navigating to login');
             router.replace('/pages/login' as any);
         } else if (nextRoute) {
             router.push(nextRoute as any);
         } else if (currentIndex === totalIndex - 1) {
             await setOnboardingCompleted();
+            console.log('✅ Onboarding completed, navigating to login');
             router.replace('/pages/login' as any);
         }
     };
 
     const handleSkip = async () => {
+        // Skip to login after marking onboarding as complete
         await setOnboardingCompleted();
+        console.log('⏭️ Onboarding skipped, navigating to login');
         router.replace('/pages/login' as any);
     };
 
@@ -120,98 +123,98 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     background: {
-        width: '100%',
-        height: '100%',
+        width: width,
+        height: height,
     },
     overlay: {
         flex: 1,
         justifyContent: 'space-between',
     },
     topBar: {
-        paddingHorizontal: Spacing.xl,
-        paddingTop: scaleVertical(40),
+        paddingHorizontal: 20,
+        paddingTop: 40,
         flexDirection: 'row',
-        justifyContent: I18nManager.isRTL ? 'flex-end' : 'flex-start',
-        marginVertical: scaleVertical(25),
+        justifyContent: 'flex-start',
+        marginVertical: 25,
     },
     skipButton: {
         backgroundColor: '#064E3B',
-        paddingHorizontal: Spacing.lg,
-        paddingVertical: scale(5),
-        borderRadius: BorderRadius.sm,
+        paddingHorizontal: 15,
+        paddingVertical: 5,
+        borderRadius: 8,
     },
     skipText: {
         color: '#FFFFFF',
-        fontSize: FontSizes.bodySmall,
+        fontSize: 14,
         fontFamily: 'Cairo_700Bold',
-        lineHeight: LineHeights.bodySmall,
+        lineHeight: 14,
         letterSpacing: 0,
     },
     bottomContainer: {
-        paddingHorizontal: scale(25),
-        paddingBottom: scaleVertical(40),
+        paddingHorizontal: 25,
+        paddingBottom: 40,
         alignItems: 'stretch',
     },
     textContainer: {
-        marginBottom: scaleVertical(35),
+        marginBottom: 35,
         alignItems: 'flex-start',
     },
     pagination: {
         flexDirection: 'row',
-        marginBottom: scaleVertical(25),
-        gap: scale(8),
+        marginBottom: 25,
+        gap: 8,
         alignSelf: 'center',
     },
     dot: {
-        height: scale(8),
-        borderRadius: scale(4),
+        height: 8,
+        borderRadius: 4,
     },
     activeDot: {
-        width: scale(25),
+        width: 25,
         backgroundColor: '#10B981',
     },
     inactiveDot: {
-        width: scale(8),
+        width: 8,
         backgroundColor: '#FFFFFF',
         opacity: 0.5,
     },
     title: {
         width: '100%',
         color: '#FFFFFF',
-        fontSize: FontSizes.h2,
+        fontSize: 23,
         fontFamily: 'Cairo_700Bold',
-        textAlign: I18nManager.isRTL ? 'right' : 'left',
-        lineHeight: LineHeights.h2,
+        textAlign: 'right',
+        lineHeight: 32,
         letterSpacing: 0,
         textShadowColor: 'rgba(0, 0, 0, 0.75)',
-        textShadowOffset: { width: scale(-1), height: scale(1) },
-        textShadowRadius: scale(10),
+        textShadowOffset: { width: -1, height: 1 },
+        textShadowRadius: 10,
     },
     subtitle: {
         width: '100%',
         color: '#FFFFFF',
-        fontSize: FontSizes.h2,
+        fontSize: 23,
         fontFamily: 'Cairo_700Bold',
-        textAlign: I18nManager.isRTL ? 'right' : 'left',
-        marginTop: scaleVertical(5),
-        lineHeight: LineHeights.h2,
+        textAlign: 'right',
+        marginTop: 5,
+        lineHeight: 32,
         letterSpacing: 0,
         textShadowColor: 'rgba(0, 0, 0, 0.75)',
-        textShadowOffset: { width: scale(-1), height: scale(1) },
-        textShadowRadius: scale(10),
+        textShadowOffset: { width: -1, height: 1 },
+        textShadowRadius: 10,
     },
     nextButton: {
         backgroundColor: '#064E3B',
         width: '100%',
-        paddingVertical: scaleVertical(15),
-        borderRadius: BorderRadius.lg,
+        paddingVertical: 15,
+        borderRadius: 12,
         alignItems: 'center',
     },
     nextButtonText: {
         color: '#FFFFFF',
-        fontSize: FontSizes.bodySmall,
+        fontSize: 14,
         fontFamily: 'Cairo_700Bold',
-        lineHeight: LineHeights.bodySmall,
+        lineHeight: 14,
         letterSpacing: 0,
     },
 });

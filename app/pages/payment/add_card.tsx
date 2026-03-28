@@ -13,14 +13,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useLanguage } from '@/config/languageRef';
-import pageData from '@/data/content';
+import { getBackChevron } from '@/config/directionalIcons';
 import authService from '@/config/authService';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
-import { FontSizes, LineHeights } from '@/utils/typography';
-import { InputSizes, ButtonSizes } from '@/utils/spacing';
-import { showErrorToast, showSuccessToast } from '@/utils/errorHandler';
+import Toast from 'react-native-toast-message';
 
 function formatCardNumber(raw: string) {
     return raw.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
@@ -34,8 +29,6 @@ function formatExpiry(raw: string) {
 
 export default function AddCardScreen() {
     const router = useRouter();
-    const { languageCode } = useLanguage();
-    const content = (pageData as any)[languageCode]?.payment || (pageData as any)['en'].payment;
 
     const [cardNumber, setCardNumber] = useState('');
     const [expiry, setExpiry] = useState('');
@@ -50,19 +43,19 @@ export default function AddCardScreen() {
 
     const handleSave = async () => {
         if (rawNumber.length < 16) {
-            showErrorToast('', languageCode, 'رقم البطاقة يجب أن يكون 16 رقماً');
+            Toast.show({ type: 'error', text1: 'خطأ', text2: 'رقم البطاقة يجب أن يكون 16 رقماً' });
             return;
         }
         if (!expiry || expiry.length < 5) {
-            showErrorToast('', languageCode, 'أدخل تاريخ انتهاء صحيح (MM/YY)');
+            Toast.show({ type: 'error', text1: 'خطأ', text2: 'أدخل تاريخ انتهاء صحيح (MM/YY)' });
             return;
         }
         if (!cvv || cvv.length < 3) {
-            showErrorToast('', languageCode, 'أدخل رمز التحقق CVV');
+            Toast.show({ type: 'error', text1: 'خطأ', text2: 'أدخل رمز التحقق CVV' });
             return;
         }
         if (!cardName.trim()) {
-            showErrorToast('allFieldsRequired', languageCode);
+            Toast.show({ type: 'error', text1: 'خطأ', text2: 'أدخل اسم حامل البطاقة' });
             return;
         }
 
@@ -74,10 +67,12 @@ export default function AddCardScreen() {
                 last_four: rawNumber.slice(-4),
                 card_type: cardType,
             });
-            showSuccessToast('cardSaved', languageCode);
+            console.log('✅ Card saved response:', JSON.stringify(res));
+            Toast.show({ type: 'success', text1: 'نجاح', text2: 'تم حفظ البطاقة بنجاح' });
             router.back();
         } catch (error: any) {
-            showErrorToast('saveFailed', languageCode);
+            console.error('Add card error:', error);
+            Toast.show({ type: 'error', text1: 'خطأ', text2: 'فشل حفظ البطاقة، حاولي مجدداً' });
         } finally {
             setLoading(false);
         }
@@ -85,11 +80,12 @@ export default function AddCardScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
+            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
-                    <Ionicons name="chevron-forward" size={22} color="#000" />
+                    <Ionicons name={getBackChevron()} size={22} color="#000" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{content.addCard}</Text>
+                <Text style={styles.headerTitle}>إضافة بطاقة جديدة</Text>
                 <View style={{ width: 38 }} />
             </View>
 
@@ -99,8 +95,9 @@ export default function AddCardScreen() {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
+                    {/* Card Number */}
                     <View style={styles.fieldGroup}>
-                        <Text style={styles.label}>{content.cardNumber} <Text style={styles.required}>*</Text></Text>
+                        <Text style={styles.label}>رقم البطاقة <Text style={styles.required}>*</Text></Text>
                         <View style={styles.inputRow}>
                             <TextInput
                                 style={[styles.input, { flex: 1 }]}
@@ -120,9 +117,10 @@ export default function AddCardScreen() {
                         </View>
                     </View>
 
+                    {/* Expiry + CVV row */}
                     <View style={styles.rowFields}>
                         <View style={[styles.fieldGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>{content.cvv} <Text style={styles.required}>*</Text></Text>
+                            <Text style={styles.label}>الرمز الآمن (CVV) <Text style={styles.required}>*</Text></Text>
                             <TextInput
                                 style={styles.input}
                                 value={cvv}
@@ -136,7 +134,7 @@ export default function AddCardScreen() {
                             />
                         </View>
                         <View style={[styles.fieldGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>{content.expiryDate} <Text style={styles.required}>*</Text></Text>
+                            <Text style={styles.label}>تاريخ الانتهاء <Text style={styles.required}>*</Text></Text>
                             <TextInput
                                 style={styles.input}
                                 value={expiry}
@@ -150,8 +148,9 @@ export default function AddCardScreen() {
                         </View>
                     </View>
 
+                    {/* Card Name */}
                     <View style={styles.fieldGroup}>
-                        <Text style={styles.label}>{content.cardNickname}</Text>
+                        <Text style={styles.label}>اسم مستخدم البطاقة (اختياري)</Text>
                         <TextInput
                             style={styles.input}
                             value={cardName}
@@ -162,6 +161,7 @@ export default function AddCardScreen() {
                         />
                     </View>
 
+                    {/* Remember card checkbox */}
                     <TouchableOpacity
                         style={styles.checkboxRow}
                         onPress={() => setRememberCard(!rememberCard)}
@@ -170,7 +170,7 @@ export default function AddCardScreen() {
                         <View style={[styles.checkbox, rememberCard && styles.checkboxActive]}>
                             {rememberCard && <Ionicons name="checkmark" size={13} color="#FFF" />}
                         </View>
-                        <Text style={styles.checkboxLabel}>{content.saveCard}</Text>
+                        <Text style={styles.checkboxLabel}>ذكر هذه البطاقة (اختياري)</Text>
                     </TouchableOpacity>
 
                     <Text style={styles.hint}>
@@ -181,6 +181,7 @@ export default function AddCardScreen() {
                 </ScrollView>
             </KeyboardAvoidingView>
 
+            {/* Footer */}
             <View style={styles.footer}>
                 <TouchableOpacity
                     style={[styles.submitBtn, loading && { opacity: 0.7 }]}
@@ -189,7 +190,7 @@ export default function AddCardScreen() {
                 >
                     {loading
                         ? <ActivityIndicator color="#FFF" />
-                        : <Text style={styles.submitBtnText}>{content.addCard}</Text>
+                        : <Text style={styles.submitBtnText}>إضافة البطاقة</Text>
                     }
                 </TouchableOpacity>
             </View>
@@ -203,83 +204,83 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: Spacing.lg,
-        paddingVertical: Spacing.verticalSm,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
         backgroundColor: '#FFF',
     },
-    headerBtn: { width: scale(38), height: scale(38), justifyContent: 'center', alignItems: 'center' },
-    headerTitle: { fontSize: FontSizes.h4, fontFamily: 'Cairo_700Bold', color: '#000' },
-    scroll: { padding: Spacing.xxxxl, paddingTop: Spacing.xxxxl },
+    headerBtn: { width: 38, height: 38, justifyContent: 'center', alignItems: 'center' },
+    headerTitle: { fontSize: 18, fontFamily: 'Cairo_700Bold', color: '#000' },
+    scroll: { padding: 24, paddingTop: 28 },
 
-    fieldGroup: { marginBottom: Spacing.xl },
+    fieldGroup: { marginBottom: 20 },
     label: {
-        fontSize: FontSizes.bodySmall,
+        fontSize: 13,
         fontFamily: 'Cairo_600SemiBold',
         color: '#555',
         textAlign: 'right',
-        marginBottom: Spacing.verticalXs,
+        marginBottom: 8,
     },
     required: { color: '#E11D48' },
-    inputRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+    inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     input: {
         backgroundColor: '#F8F9FA',
-        borderRadius: BorderRadius.md,
-        height: InputSizes.height,
-        paddingHorizontal: InputSizes.paddingHorizontal,
-        fontSize: FontSizes.bodyLarge,
+        borderRadius: 12,
+        height: 52,
+        paddingHorizontal: 16,
+        fontSize: 15,
         fontFamily: 'Cairo_400Regular',
         color: '#111',
         borderWidth: 1,
         borderColor: '#EDEDED',
     },
     cardIconBadge: {
-        width: scale(40),
-        height: InputSizes.height,
+        width: 40,
+        height: 52,
         backgroundColor: '#F8F9FA',
-        borderRadius: BorderRadius.md,
+        borderRadius: 12,
         borderWidth: 1,
         borderColor: '#EDEDED',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    rowFields: { flexDirection: 'row-reverse', gap: Spacing.md },
+    rowFields: { flexDirection: 'row-reverse', gap: 12 },
 
     checkboxRow: {
         flexDirection: 'row-reverse',
         alignItems: 'center',
-        gap: Spacing.md,
-        marginBottom: Spacing.verticalXs,
+        gap: 10,
+        marginBottom: 8,
     },
     checkbox: {
-        width: scale(20),
-        height: scale(20),
-        borderRadius: BorderRadius.sm,
+        width: 20,
+        height: 20,
+        borderRadius: 6,
         borderWidth: 1.5,
         borderColor: '#DDD',
         justifyContent: 'center',
         alignItems: 'center',
     },
     checkboxActive: { backgroundColor: '#064E3B', borderColor: '#064E3B' },
-    checkboxLabel: { fontSize: FontSizes.body, fontFamily: 'Cairo_400Regular', color: '#555', textAlign: 'right' },
-    hint: { fontSize: FontSizes.caption, fontFamily: 'Cairo_400Regular', color: '#AAA', textAlign: 'right', marginTop: Spacing.verticalXs },
+    checkboxLabel: { fontSize: 14, fontFamily: 'Cairo_400Regular', color: '#555', textAlign: 'right' },
+    hint: { fontSize: 12, fontFamily: 'Cairo_400Regular', color: '#AAA', textAlign: 'right', marginTop: 2 },
 
     footer: {
         position: 'absolute',
         bottom: 0, left: 0, right: 0,
-        padding: Spacing.xl,
-        paddingBottom: Spacing.verticalXxxxl,
+        padding: 20,
+        paddingBottom: 30,
         backgroundColor: '#FFF',
         borderTopWidth: 1,
         borderTopColor: '#F0F0F0',
     },
     submitBtn: {
         backgroundColor: '#064E3B',
-        height: ButtonSizes.heightMedium,
-        borderRadius: BorderRadius.button,
+        height: 54,
+        borderRadius: 27,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    submitBtnText: { color: '#FFF', fontSize: FontSizes.bodyLarge, fontFamily: 'Cairo_700Bold' },
+    submitBtnText: { color: '#FFF', fontSize: 16, fontFamily: 'Cairo_700Bold' },
 });

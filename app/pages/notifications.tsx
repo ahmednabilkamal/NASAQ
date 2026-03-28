@@ -11,9 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
-import { FontSizes } from '@/utils/typography';
+import { getBackChevron } from '@/config/directionalIcons';
 
 type NotifType = 'message' | 'success' | 'offer' | 'order' | 'system';
 
@@ -26,6 +24,7 @@ interface Notification {
     read: boolean;
 }
 
+// Placeholder data – replace with API when backend has /user/notifications
 const MOCK_NOTIFICATIONS: Notification[] = [
     {
         id: '1',
@@ -87,7 +86,7 @@ export default function NotificationsScreen() {
 
     const onRefresh = () => {
         setRefreshing(true);
-        setTimeout(() => setRefreshing(false), 800);
+        setTimeout(() => setRefreshing(false), 800); // replace with real fetch
     };
 
     const renderItem = ({ item }: { item: Notification }) => {
@@ -98,12 +97,15 @@ export default function NotificationsScreen() {
                 onPress={() => markRead(item.id)}
                 activeOpacity={0.85}
             >
+                {/* Unread dot */}
                 {!item.read && <View style={styles.unreadDot} />}
 
+                {/* Icon */}
                 <View style={[styles.iconBox, { backgroundColor: cfg.bg }]}>
                     <Ionicons name={cfg.icon as any} size={22} color={cfg.color} />
                 </View>
 
+                {/* Text */}
                 <View style={styles.textBlock}>
                     <Text style={[styles.title, !item.read && styles.titleBold]} numberOfLines={2}>
                         {item.title}
@@ -119,9 +121,10 @@ export default function NotificationsScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
-                    <Ionicons name="chevron-forward" size={24} color="#000" />
+                    <Ionicons name={getBackChevron()} size={24} color="#000" />
                 </TouchableOpacity>
 
                 <Text style={styles.headerTitle}>
@@ -171,25 +174,25 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: Spacing.cardPadding,
-        paddingVertical: Spacing.verticalMd,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
         backgroundColor: '#FFF',
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
     },
-    headerBtn: { width: scale(38), height: scale(38), justifyContent: 'center', alignItems: 'center' },
-    headerTitle: { fontSize: FontSizes.h4, fontFamily: 'Cairo_700Bold', color: '#000' },
-    badge: { fontSize: scale(15), color: '#064E3B', fontFamily: 'Cairo_700Bold' },
-    list: { padding: Spacing.cardPadding, paddingBottom: scaleVertical(32) },
+    headerBtn: { width: 38, height: 38, justifyContent: 'center', alignItems: 'center' },
+    headerTitle: { fontSize: 18, fontFamily: 'Cairo_700Bold', color: '#000' },
+    badge: { fontSize: 15, color: '#064E3B', fontFamily: 'Cairo_700Bold' },
+    list: { padding: 16, paddingBottom: 32 },
 
     card: {
         flexDirection: 'row',
         alignItems: 'flex-start',
         backgroundColor: '#FFF',
-        borderRadius: BorderRadius.lg,
-        padding: Spacing.verticalMd,
-        marginBottom: Spacing.verticalMd,
-        gap: Spacing.md,
+        borderRadius: 16,
+        padding: 14,
+        marginBottom: 10,
+        gap: 12,
         position: 'relative',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
@@ -204,40 +207,40 @@ const styles = StyleSheet.create({
     },
     unreadDot: {
         position: 'absolute',
-        top: Spacing.verticalMd,
-        left: Spacing.verticalMd,
-        width: scale(8),
-        height: scale(8),
-        borderRadius: scale(4),
+        top: 12,
+        left: 12,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
         backgroundColor: '#064E3B',
     },
     iconBox: {
-        width: scale(46),
-        height: scale(46),
-        borderRadius: BorderRadius.lg,
+        width: 46,
+        height: 46,
+        borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
         flexShrink: 0,
     },
-    textBlock: { flex: 1, alignItems: 'flex-end' },
+    textBlock: { flex: 1, alignItems: 'flex-start' },
     title: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         fontFamily: 'Cairo_600SemiBold',
         color: '#374151',
         textAlign: 'right',
-        marginBottom: Spacing.verticalXs,
-        lineHeight: scale(22),
+        marginBottom: 3,
+        lineHeight: 22,
     },
     titleBold: { fontFamily: 'Cairo_700Bold', color: '#111' },
     body: {
-        fontSize: FontSizes.bodySmall,
+        fontSize: 12,
         fontFamily: 'Cairo_400Regular',
         color: '#6B7280',
         textAlign: 'right',
-        marginBottom: Spacing.verticalXs,
+        marginBottom: 5,
     },
-    time: { fontSize: FontSizes.bodySmall, fontFamily: 'Cairo_400Regular', color: '#9CA3AF' },
+    time: { fontSize: 11, fontFamily: 'Cairo_400Regular', color: '#9CA3AF' },
 
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.md },
-    emptyText: { fontSize: scale(15), fontFamily: 'Cairo_400Regular', color: '#9CA3AF' },
+    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+    emptyText: { fontSize: 15, fontFamily: 'Cairo_400Regular', color: '#9CA3AF' },
 });

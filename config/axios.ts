@@ -13,6 +13,12 @@ const api = axios.create({
 
 import Toast from 'react-native-toast-message';
 
+function buildUrl(config: { baseURL?: string; url?: string }): string {
+  const base = (config.baseURL || '').replace(/\/$/, '');
+  const path = String(config.url || '').replace(/^\//, '');
+  return path ? `${base}/${path}` : base;
+}
+
 api.interceptors.request.use(async (config) => {
   try {
     const token = await getAccessToken();
@@ -25,16 +31,38 @@ api.interceptors.request.use(async (config) => {
       config.headers.Authorization = `Bearer ${syncToken}`;
     }
   }
+  if (__DEV__) {
+    const method = (config.method || 'GET').toUpperCase();
+    const url = buildUrl(config);
+    console.log(`[API] → ${method} ${url}`, {
+      params: config.params,
+      data: config.data,
+    });
+  }
   return config;
 }, (error) => {
   return Promise.reject(error);
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (__DEV__) {
+      const cfg = response.config;
+      const method = (cfg.method || 'GET').toUpperCase();
+      console.log(`[API] ← ${response.status} ${method} ${buildUrl(cfg)}`);
+    }
+    return response;
+  },
   (error) => {
-    let message = error.response?.data?.message || error.message || 'Something went wrong';
+    if (__DEV__ && error.config) {
+      const cfg = error.config;
+      const method = (cfg.method || 'GET').toUpperCase();
+      const status = error.response?.status;
+      console.log(`[API] ✕ ${status ?? 'ERR'} ${method} ${buildUrl(cfg)}`, error.response?.data ?? error.message);
+    }
+    let message = error.response?.data?.message || error.message || 'حدث خطأ';
 
+    // Check for validation errors and format them nicely
     if (error.response?.data?.errors) {
       const errors = error.response.data.errors;
       const errorStrings = Object.keys(errors).map(key => {
@@ -48,11 +76,11 @@ api.interceptors.response.use(
 
     Toast.show({
       type: 'error',
-      text1: 'خطأ',
+      text1: 'خطأ', // Header in Arabic
       text2: message,
       position: 'bottom',
       visibilityTime: 4000,
-      bottomOffset: 60,
+      bottomOffset: 60, // A bit higher than the absolute bottom
     });
 
     return Promise.reject(error);
@@ -60,3 +88,6 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+
+

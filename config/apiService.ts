@@ -20,9 +20,11 @@ export interface ApiResponse<T> {
 export interface Banner {
     id: number | string;
     title?: string;
-    image: string;
+    image?: string; // local storage path or absolute URL
+    image_url?: string; // absolute URL for the mobile app
     link?: string;
-    order?: number;
+    status?: boolean;
+    display_order?: number;
     [key: string]: any;
 }
 
@@ -37,6 +39,21 @@ export interface Stylist {
     image?: string;
     fashion_styles?: FashionStyle[];
     services?: StylistService[];
+    images?: string[];
+    reviews?: StylistReview[];
+    [key: string]: any;
+}
+
+export interface StylistReview {
+    id: number | string;
+    rating: number;
+    review?: string;
+    comment?: string;
+    user?: {
+        id: number | string;
+        name?: string;
+        image?: string;
+    };
     [key: string]: any;
 }
 

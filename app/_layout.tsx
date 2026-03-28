@@ -2,19 +2,17 @@ import { AuthProvider } from '@/config/authContext';
 import { GenderProvider } from '@/config/genderContext';
 import LanguageProvider from '@/config/languageRef';
 import { Cairo_400Regular, Cairo_700Bold, useFonts } from '@expo-google-fonts/cairo';
-import * as Localization from 'expo-localization';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { View, I18nManager, StatusBar } from 'react-native';
+import { View } from 'react-native';
 import React, { useEffect } from 'react';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-
-
-
 
 SplashScreen.preventAutoHideAsync();
+
+/** No transition when switching main tab roots (bottom bar); other pushes keep default stack animation. */
+const tabAnimationNone = { animation: 'none' as const };
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -32,8 +30,6 @@ export default function RootLayout() {
     return null;
   }
 
-  const languageCode = Localization.getLocales()[0].languageTag.split('-')[0];
-
   const toastConfig = {
     success: (props: any) => (
       <BaseToast
@@ -50,13 +46,13 @@ export default function RootLayout() {
           fontSize: 16,
           fontFamily: 'Cairo_700Bold',
           color: '#064E3B',
-          textAlign: I18nManager.isRTL ? 'right' : 'left'
+          textAlign: 'right',
         }}
         text2Style={{
           fontSize: 14,
           fontFamily: 'Cairo_400Regular',
           color: '#374151',
-          textAlign: I18nManager.isRTL ? 'right' : 'left'
+          textAlign: 'right',
         }}
         renderLeadingIcon={() => (
           <View style={{ justifyContent: 'center', paddingHorizontal: 15 }}>
@@ -79,13 +75,13 @@ export default function RootLayout() {
           fontSize: 16,
           fontFamily: 'Cairo_700Bold',
           color: '#E11D48',
-          textAlign: I18nManager.isRTL ? 'right' : 'left'
+          textAlign: 'right',
         }}
         text2Style={{
           fontSize: 14,
           fontFamily: 'Cairo_400Regular',
           color: '#374151',
-          textAlign: I18nManager.isRTL ? 'right' : 'left'
+          textAlign: 'right',
         }}
         renderLeadingIcon={() => (
           <View style={{ justifyContent: 'center', paddingHorizontal: 15 }}>
@@ -97,11 +93,10 @@ export default function RootLayout() {
   };
 
   return (
-    <SafeAreaProvider>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFF" translucent={false} />
-      <LanguageProvider>
-        <GenderProvider>
-          <AuthProvider>
+    <LanguageProvider>
+      <GenderProvider>
+        <AuthProvider>
+          <View style={{ flex: 1, direction: 'rtl' }}>
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -121,25 +116,30 @@ export default function RootLayout() {
               <Stack.Screen name="pages/onboarding/bodyShape" />
               <Stack.Screen name="pages/onboarding/bodyMeasurement" />
               <Stack.Screen name="pages/onboarding/styleIdentity" />
-              <Stack.Screen name="pages/modal" />
-              <Stack.Screen name="pages/tabs/homescreen" />
-              <Stack.Screen name="pages/tabs/stylists" />
-              <Stack.Screen name="pages/tabs/profile" />
-              <Stack.Screen name="pages/tabs/chat" />
+              <Stack.Screen name="pages/tabs/homescreen" options={tabAnimationNone} />
+              <Stack.Screen name="pages/tabs/stylists" options={tabAnimationNone} />
+              <Stack.Screen name="pages/tabs/profile" options={tabAnimationNone} />
+              <Stack.Screen name="pages/tabs/chat" options={tabAnimationNone} />
+              <Stack.Screen name="pages/tabs/favorites" options={tabAnimationNone} />
+              <Stack.Screen name="pages/orders" options={tabAnimationNone} />
               <Stack.Screen name="pages/stylist_detail" />
+              <Stack.Screen name="pages/checkout" />
               <Stack.Screen name="pages/chat" />
+              <Stack.Screen name="pages/notifications" />
               <Stack.Screen name="pages/payment/add_card" />
+              <Stack.Screen name="pages/payment/cards" />
+              <Stack.Screen name="pages/profile/edit" />
+              <Stack.Screen name="pages/profile/change_password" />
               <Stack.Screen name="pages/contact_us" />
               <Stack.Screen name="pages/stylists/filter" options={{ presentation: 'modal' }} />
-              <Stack.Screen name="pages/orders" />
               <Stack.Screen name="pages/order_details" />
               <Stack.Screen name="pages/filter_modal_1" />
               <Stack.Screen name="pages/filter_modal_2" />
             </Stack>
-            <Toast config={toastConfig} />
-          </AuthProvider>
-        </GenderProvider>
-      </LanguageProvider>
-    </SafeAreaProvider>
+          </View>
+          <Toast config={toastConfig} />
+        </AuthProvider>
+      </GenderProvider>
+    </LanguageProvider>
   );
 }

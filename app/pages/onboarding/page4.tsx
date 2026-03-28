@@ -10,7 +10,7 @@ import { FontSizes, LineHeights } from '@/utils/typography';
 export default function Home() {
   const router = useRouter();
   const { languageCode } = useLanguage();
-  const content = (pageData as any)[languageCode]?.page4 || (pageData as any)['en'].page4;
+  const content = (pageData as any)[languageCode]?.page4 || (pageData as any)['ar'].page4;
 
   return (
     <View style={styles.container}>

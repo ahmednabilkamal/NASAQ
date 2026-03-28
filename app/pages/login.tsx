@@ -1,31 +1,24 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TextInput,
     TouchableOpacity,
+    SafeAreaView,
     KeyboardAvoidingView,
     Platform,
-    I18nManager,
     Image,
     ScrollView,
     ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { Ionicons } from '@expo/vector-icons';
+import { getBackChevron } from '@/config/directionalIcons';
 import { useAuth } from '@/config/authContext';
 import { useAuthForm } from '@/hooks/useAuthForm';
-import { useGoogleAuth } from '@/hooks/useGoogleAuth';
-import { showErrorToast } from '@/utils/errorHandler';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
-import { FontSizes, LineHeights } from '@/utils/typography';
-import { InputSizes, ButtonSizes } from '@/utils/spacing';
-import Toast from 'react-native-toast-message';
 
 export default function AuthScreen() {
     const router = useRouter();
@@ -48,39 +41,7 @@ export default function AuthScreen() {
         loading
     } = useAuthForm();
 
-    const { isAuthenticated, loading: authLoading, getOnboardingStep, user, refreshUser } = useAuth();
-    const { signInWithGoogle, loading: googleLoading, isReady: googleReady } = useGoogleAuth();
-
-    const handleGoogleSignIn = async () => {
-        try {
-            const result = await signInWithGoogle();
-            if (result?.data?.user || result?.user) {
-                await refreshUser();
-            }
-        } catch (error: any) {
-            Toast.show({
-                type: 'error',
-                text1: I18nManager.isRTL ? 'خطأ' : 'Error',
-                text2: error.message || (I18nManager.isRTL ? 'فشل تسجيل الدخول بجوجل' : 'Google sign-in failed'),
-            });
-        }
-    };
-
-    const passwordValidation = useMemo(() => {
-        const hasLatinUpper = /[A-Z]/.test(password);
-        const hasLatinLower = /[a-z]/.test(password);
-        const hasArabicLetter = /[\u0600-\u06FF]/.test(password);
-
-        const hasWesternNumber = /[0-9]/.test(password);
-        const hasArabicNumber = /[\u0660-\u0669\u06F0-\u06F9]/.test(password);
-
-        return {
-            hasMinLength: password.length >= 8,
-            hasUppercase: hasLatinUpper || hasArabicLetter,
-            hasLowercase: hasLatinLower || hasArabicLetter,
-            hasNumber: hasWesternNumber || hasArabicNumber,
-        };
-    }, [password]);
+    const { isAuthenticated, loading: authLoading, getOnboardingStep, user } = useAuth();
 
 
     React.useEffect(() => {
@@ -99,26 +60,20 @@ export default function AuthScreen() {
         );
     }
 
-    const content = (pageData as any)[languageCode];
+    const content = (pageData as any)[languageCode] || (pageData as any)['ar'];
     const loginContent = content.login;
     const registerContent = content.register;
     const currentContent = isLogin ? loginContent : registerContent;
 
-    const isRTL = I18nManager.isRTL;
-
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
             >
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons
-                            name={isRTL ? 'arrow-forward' : 'arrow-back'}
-                            size={24}
-                            color="#000"
-                        />
+                        <Ionicons name={getBackChevron()} size={24} color="#000" />
                     </TouchableOpacity>
                 </View>
 
@@ -154,7 +109,7 @@ export default function AuthScreen() {
                                         style={styles.input}
                                         placeholder="محمد علي اسامة"
                                         placeholderTextColor="#999"
-                                        textAlign={isRTL ? 'right' : 'left'}
+                                        textAlign="right"
                                         value={name}
                                         onChangeText={setName}
                                     />
@@ -170,38 +125,25 @@ export default function AuthScreen() {
                             <View style={styles.inputContainer}>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="example@mail.com"
+                                    placeholder={isLogin ? 'محمد علي اسامة' : 'name@example.com'}
                                     placeholderTextColor="#999"
-                                    textAlign={isRTL ? 'right' : 'left'}
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
+                                    textAlign="right"
                                     value={identifier}
                                     onChangeText={setIdentifier}
                                 />
                             </View>
-                            {!isLogin && (
-                                <Text style={styles.hintText}>
-                                    {isRTL ? "يجب استخدام حروف إنجليزية للبريد الإلكتروني" : "Email must use English characters"}
-                                </Text>
-                            )}
                         </View>
 
                         {!isLogin && (
                             <View style={styles.inputWrapper}>
                                 <Text style={styles.label}>{registerContent.mobilePlaceholder}<Text style={styles.required}>*</Text></Text>
-                                <View style={styles.phoneInputContainer}>
-                                    <TouchableOpacity style={styles.countryCodeButton}>
-                                        <Text style={styles.flagEmoji}>🇸🇦</Text>
-                                        <Text style={styles.countryCode}>+966</Text>
-                                        <Ionicons name="chevron-down" size={16} color="#999" />
-                                    </TouchableOpacity>
-                                    <View style={styles.phoneDivider} />
+                                <View style={styles.inputContainer}>
                                     <TextInput
-                                        style={styles.phoneInput}
-                                        placeholder="512345678"
+                                        style={styles.input}
+                                        placeholder="01222569996"
                                         placeholderTextColor="#999"
                                         keyboardType="phone-pad"
-                                        textAlign={isRTL ? 'right' : 'left'}
+                                        textAlign="right"
                                         value={mobile}
                                         onChangeText={setMobile}
                                     />
@@ -214,58 +156,14 @@ export default function AuthScreen() {
                             <View style={styles.inputContainer}>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder={isRTL ? "ادخل كلمة المرور" : "Enter password"}
+                                    placeholder="01222569996"
                                     placeholderTextColor="#999"
                                     secureTextEntry
-                                    textAlign={isRTL ? 'right' : 'left'}
+                                    textAlign="right"
                                     value={password}
                                     onChangeText={setPassword}
                                 />
                             </View>
-                            {!isLogin && password.length > 0 && (
-                                <View style={styles.passwordValidation}>
-                                    <View style={styles.validationRow}>
-                                        <Ionicons
-                                            name={passwordValidation.hasMinLength ? "checkmark-circle" : "close-circle"}
-                                            size={16}
-                                            color={passwordValidation.hasMinLength ? "#10B981" : "#EF4444"}
-                                        />
-                                        <Text style={[styles.validationText, passwordValidation.hasMinLength && styles.validationTextValid]}>
-                                            {isRTL ? "على الأقل ٨ أحرف" : "At least 8 characters"}
-                                        </Text>
-                                    </View>
-                                    <View style={styles.validationRow}>
-                                        <Ionicons
-                                            name={passwordValidation.hasUppercase ? "checkmark-circle" : "close-circle"}
-                                            size={16}
-                                            color={passwordValidation.hasUppercase ? "#10B981" : "#EF4444"}
-                                        />
-                                        <Text style={[styles.validationText, passwordValidation.hasUppercase && styles.validationTextValid]}>
-                                            {isRTL ? "حرف كبير" : "Uppercase letter"}
-                                        </Text>
-                                    </View>
-                                    <View style={styles.validationRow}>
-                                        <Ionicons
-                                            name={passwordValidation.hasLowercase ? "checkmark-circle" : "close-circle"}
-                                            size={16}
-                                            color={passwordValidation.hasLowercase ? "#10B981" : "#EF4444"}
-                                        />
-                                        <Text style={[styles.validationText, passwordValidation.hasLowercase && styles.validationTextValid]}>
-                                            {isRTL ? "حرف صغير" : "Lowercase letter"}
-                                        </Text>
-                                    </View>
-                                    <View style={styles.validationRow}>
-                                        <Ionicons
-                                            name={passwordValidation.hasNumber ? "checkmark-circle" : "close-circle"}
-                                            size={16}
-                                            color={passwordValidation.hasNumber ? "#10B981" : "#EF4444"}
-                                        />
-                                        <Text style={[styles.validationText, passwordValidation.hasNumber && styles.validationTextValid]}>
-                                            {isRTL ? "رقم" : "Number"}
-                                        </Text>
-                                    </View>
-                                </View>
-                            )}
                         </View>
 
                         {isLogin ? (
@@ -281,10 +179,10 @@ export default function AuthScreen() {
                                 <View style={styles.inputContainer}>
                                     <TextInput
                                         style={styles.input}
-                                        placeholder={isRTL ? "تأكيد كلمة المرور" : "Confirm password"}
+                                        placeholder="01222569996"
                                         placeholderTextColor="#999"
                                         secureTextEntry
-                                        textAlign={isRTL ? 'right' : 'left'}
+                                        textAlign="right"
                                         value={confirmPassword}
                                         onChangeText={setConfirmPassword}
                                     />
@@ -306,26 +204,16 @@ export default function AuthScreen() {
 
                         <View style={styles.dividerRow}>
                             <View style={styles.divider} />
-                            <Text style={styles.dividerText}>{content.common.or}</Text>
+                            <Text style={styles.dividerText}>أو</Text>
                             <View style={styles.divider} />
                         </View>
 
-                        <TouchableOpacity
-                            style={[styles.googleButton, (!googleReady || googleLoading) && styles.googleButtonDisabled]}
-                            onPress={handleGoogleSignIn}
-                            disabled={!googleReady || googleLoading}
-                        >
-                            {googleLoading ? (
-                                <ActivityIndicator color="#000" />
-                            ) : (
-                                <>
-                                    <Image
-                                        source={{ uri: 'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png' }}
-                                        style={styles.googleIcon}
-                                    />
-                                    <Text style={styles.googleButtonText}>{loginContent.googleButton}</Text>
-                                </>
-                            )}
+                        <TouchableOpacity style={styles.googleButton}>
+                            <Image
+                                source={{ uri: 'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png' }}
+                                style={styles.googleIcon}
+                            />
+                            <Text style={styles.googleButtonText}>{loginContent.googleButton}</Text>
                         </TouchableOpacity>
 
                         <View style={styles.footer}>
@@ -355,50 +243,50 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        paddingHorizontal: Spacing.screenPaddingHorizontal,
-        paddingVertical: Spacing.verticalSm,
-        alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        alignItems: 'flex-start',
     },
     backButton: {
-        padding: Spacing.sm,
+        padding: 8,
     },
     scrollContent: {
-        paddingHorizontal: Spacing.screenPaddingHorizontal,
-        paddingBottom: Spacing.verticalXxxxl,
+        paddingHorizontal: 25,
+        paddingBottom: 40,
     },
     title: {
-        fontSize: FontSizes.h1,
+        fontSize: 28,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
-        textAlign: I18nManager.isRTL ? 'right' : 'left',
-        marginBottom: Spacing.verticalXs,
+        textAlign: 'right',
+        marginBottom: 8,
     },
     subtitle: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
-        textAlign: I18nManager.isRTL ? 'right' : 'left',
-        marginBottom: Spacing.verticalXxxl,
-        lineHeight: LineHeights.body,
+        textAlign: 'right',
+        marginBottom: 30,
+        lineHeight: 20,
     },
     tabContainer: {
         flexDirection: 'row',
         backgroundColor: '#F8F9FA',
-        borderRadius: BorderRadius.xxl,
-        padding: Spacing.xs,
-        marginBottom: Spacing.verticalXxxl,
+        borderRadius: 25,
+        padding: 5,
+        marginBottom: 30,
     },
     tab: {
         flex: 1,
-        paddingVertical: Spacing.verticalMd,
+        paddingVertical: 12,
         alignItems: 'center',
-        borderRadius: BorderRadius.xxl,
+        borderRadius: 22,
     },
     activeTab: {
         backgroundColor: '#064E3B',
     },
     tabText: {
-        fontSize: FontSizes.bodyLarge,
+        fontSize: 16,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },
@@ -406,130 +294,73 @@ const styles = StyleSheet.create({
         color: '#FFF',
     },
     form: {
-        gap: Spacing.xl,
+        gap: 20,
     },
     inputWrapper: {
-        gap: Spacing.sm,
+        gap: 8,
     },
     label: {
-        fontSize: FontSizes.label,
+        fontSize: 14,
         fontFamily: 'Cairo_700Bold',
         color: '#666',
-        textAlign: I18nManager.isRTL ? 'right' : 'left',
+        textAlign: 'right',
     },
     required: {
         color: '#E11D48',
     },
     inputContainer: {
         backgroundColor: '#F8F9FA',
-        borderRadius: BorderRadius.lg,
-        height: InputSizes.height,
+        borderRadius: 15,
+        height: 55,
         justifyContent: 'center',
-        paddingHorizontal: InputSizes.paddingHorizontal,
+        paddingHorizontal: 20,
     },
     input: {
-        fontSize: FontSizes.input,
-        fontFamily: 'Cairo_400Regular',
-        color: '#000',
-    },
-    passwordValidation: {
-        marginTop: Spacing.sm,
-        gap: Spacing.xs,
-    },
-    validationRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: Spacing.xs,
-    },
-    validationText: {
-        fontSize: FontSizes.bodySmall,
-        fontFamily: 'Cairo_400Regular',
-        color: '#EF4444',
-    },
-    validationTextValid: {
-        color: '#10B981',
-    },
-    hintText: {
-        fontSize: FontSizes.caption,
-        fontFamily: 'Cairo_400Regular',
-        color: '#999',
-        marginTop: Spacing.xs,
-        textAlign: I18nManager.isRTL ? 'right' : 'left',
-    },
-    phoneInputContainer: {
-        backgroundColor: '#F8F9FA',
-        borderRadius: BorderRadius.lg,
-        height: InputSizes.height,
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: InputSizes.paddingHorizontal,
-    },
-    countryCodeButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: Spacing.xs,
-    },
-    flagEmoji: {
-        fontSize: FontSizes.bodyLarge,
-    },
-    countryCode: {
-        fontSize: FontSizes.input,
-        fontFamily: 'Cairo_400Regular',
-        color: '#000',
-    },
-    phoneDivider: {
-        width: 1,
-        height: '50%',
-        backgroundColor: '#DDD',
-        marginHorizontal: Spacing.md,
-    },
-    phoneInput: {
-        flex: 1,
-        fontSize: FontSizes.input,
+        fontSize: 16,
         fontFamily: 'Cairo_400Regular',
         color: '#000',
     },
     optionsRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: I18nManager.isRTL ? 'flex-end' : 'flex-start',
+        justifyContent: 'flex-start',
     },
     checkboxContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: Spacing.sm,
+        gap: 8,
     },
     checkbox: {
-        width: scale(20),
-        height: scale(20),
-        borderRadius: BorderRadius.sm,
+        width: 20,
+        height: 20,
+        borderRadius: 6,
         borderWidth: 1,
         borderColor: '#DDD',
         backgroundColor: '#FFF',
     },
     rememberMeText: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
     },
     nextButton: {
         backgroundColor: '#064E3B',
-        height: ButtonSizes.heightMedium,
-        borderRadius: BorderRadius.button,
+        height: 55,
+        borderRadius: 25,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: Spacing.verticalMd,
+        marginTop: 10,
     },
     nextButtonText: {
         color: '#FFF',
-        fontSize: FontSizes.button,
+        fontSize: 16,
         fontFamily: 'Cairo_700Bold',
     },
     dividerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: Spacing.xl,
-        marginVertical: Spacing.verticalMd,
+        gap: 15,
+        marginVertical: 10,
     },
     divider: {
         flex: 1,
@@ -537,37 +368,34 @@ const styles = StyleSheet.create({
         backgroundColor: '#EEE',
     },
     dividerText: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         color: '#999',
         fontFamily: 'Cairo_400Regular',
     },
     googleButton: {
         flexDirection: 'row',
         backgroundColor: '#F8F9FA',
-        height: ButtonSizes.heightMedium,
-        borderRadius: BorderRadius.button,
+        height: 55,
+        borderRadius: 25,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: Spacing.md,
-    },
-    googleButtonDisabled: {
-        opacity: 0.6,
+        gap: 12,
     },
     googleIcon: {
-        width: IconSizes.sm,
-        height: IconSizes.sm,
+        width: 20,
+        height: 20,
     },
     googleButtonText: {
-        fontSize: FontSizes.bodyLarge,
+        fontSize: 16,
         fontFamily: 'Cairo_400Regular',
         color: '#000',
     },
     footer: {
         alignItems: 'center',
-        marginTop: Spacing.verticalMd,
+        marginTop: 10,
     },
     footerText: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
     },

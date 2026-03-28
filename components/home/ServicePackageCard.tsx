@@ -1,9 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StyleProp, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { scale } from '@/utils/responsive';
-import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
-import { FontSizes } from '@/utils/typography';
 
 interface ServicePackageCardProps {
     title: string;
@@ -13,32 +10,59 @@ interface ServicePackageCardProps {
     icon?: keyof typeof Ionicons.glyphMap;
     variant?: 'light' | 'dark';
     onPress?: () => void;
+    containerStyle?: StyleProp<ViewStyle>;
 }
 
 export default function ServicePackageCard({
     title,
     subtitle,
     price,
-    currency = 'SAR',
+    currency = 'ر.س',
     icon = 'arrow-up-outline',
     variant = 'light',
-    onPress
+    onPress,
+    containerStyle,
 }: ServicePackageCardProps) {
     const isDark = variant === 'dark';
 
     return (
         <TouchableOpacity
-            style={[styles.container, isDark ? styles.darkContainer : styles.lightContainer]}
+            style={[styles.container, containerStyle, isDark ? styles.darkContainer : styles.lightContainer]}
             onPress={onPress}
             activeOpacity={0.8}
         >
+            {isDark ? (
+                <View pointerEvents="none" style={styles.darkRippleWrap}>
+                    {[0, 1, 2, 3].map((i) => (
+                        <View
+                            key={i}
+                            style={[
+                                styles.darkRippleRing,
+                                {
+                                    width: 56 + i * 36,
+                                    height: 56 + i * 36,
+                                    top: -24 + i * 10,
+                                    right: -28 - i * 6,
+                                },
+                            ]}
+                        />
+                    ))}
+                </View>
+            ) : null}
+
             <View style={styles.topRow}>
                 <View style={[styles.iconContainer, isDark ? styles.darkIcon : styles.lightIcon]}>
-                    <Ionicons name={icon} size={IconSizes.sm} color={isDark ? '#FFF' : '#064E3B'} style={{ transform: [{ rotate: '45deg' }] }} />
+                    <Ionicons
+                        name={icon}
+                        size={20}
+                        color={isDark ? '#064E3B' : '#064E3B'}
+                        style={{ transform: [{ rotate: '-45deg' }] }}
+                    />
                 </View>
                 <View style={styles.priceRow}>
-                    <Ionicons name="infinite" size={IconSizes.xs} color={isDark ? '#FFF' : '#064E3B'} style={{ marginRight: Spacing.xs }} />
-                    <Text style={[styles.priceText, isDark && styles.darkText]}>{price}</Text>
+                    <Text style={[styles.priceText, isDark && styles.darkText]}>
+                        {currency} {price}
+                    </Text>
                 </View>
             </View>
 
@@ -55,16 +79,26 @@ const styles = StyleSheet.create({
     container: {
         width: '48%',
         aspectRatio: 1,
-        borderRadius: BorderRadius.xxl,
-        padding: Spacing.lg,
+        borderRadius: 24,
+        padding: 16,
         justifyContent: 'space-between',
-        marginBottom: Spacing.lg,
+        marginBottom: 16,
     },
     lightContainer: {
         backgroundColor: '#E8F5E9',
     },
     darkContainer: {
         backgroundColor: '#064E3B',
+        overflow: 'hidden',
+    },
+    darkRippleWrap: {
+        ...StyleSheet.absoluteFillObject,
+    },
+    darkRippleRing: {
+        position: 'absolute',
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.12)',
     },
     topRow: {
         flexDirection: 'row',
@@ -72,9 +106,9 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     iconContainer: {
-        width: scale(36),
-        height: scale(36),
-        borderRadius: BorderRadius.round,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -82,14 +116,14 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(6, 78, 59, 0.1)',
     },
     darkIcon: {
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        backgroundColor: '#FFF',
     },
     priceRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     priceText: {
-        fontSize: FontSizes.h4,
+        fontSize: 18,
         fontFamily: 'Cairo_700Bold',
         color: '#064E3B',
     },
@@ -97,20 +131,22 @@ const styles = StyleSheet.create({
         color: '#FFF',
     },
     bottomContent: {
-        alignItems: 'flex-end',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        flex: 1,
     },
     title: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         fontFamily: 'Cairo_700Bold',
-        color: '#064E3B',
-        textAlign: 'right',
+        color: '#111',
+        textAlign: 'center',
     },
     subtitle: {
-        fontSize: FontSizes.caption,
+        fontSize: 10,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
-        textAlign: 'right',
-        marginTop: Spacing.xs,
+        textAlign: 'center',
+        marginTop: 4,
     },
     darkSubtitle: {
         color: 'rgba(255, 255, 255, 0.7)',

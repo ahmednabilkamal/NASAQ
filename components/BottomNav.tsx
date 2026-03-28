@@ -11,11 +11,11 @@ export default function BottomNav() {
     const insets = useSafeAreaInsets();
 
     const tabs = [
-        { id: 'profile', icon: require('../assets/icons/user.png'), label: 'Profile', route: '/pages/tabs/profile' },
-        { id: 'orders', icon: require('../assets/icons/bag.png'), label: 'Orders', route: '/pages/orders' },
-        { id: 'home', icon: require('../assets/icons/home-2.png'), label: 'Home', route: '/pages/tabs/homescreen', isCenter: true },
-        { id: 'favorites', icon: require('../assets/icons/house 2.png'), label: 'Favorites', route: '/pages/tabs/favorites' },
-        { id: 'chat', icon: require('../assets/icons/Group.png'), label: 'Chat', route: '/pages/tabs/chat' },
+        { id: 'profile', icon: require('../assets/icons/user.png'), label: 'الملف', route: '/pages/tabs/profile' },
+        { id: 'orders', icon: require('../assets/icons/bag.png'), label: 'الطلبات', route: '/pages/orders' },
+        { id: 'home', icon: require('../assets/icons/home-2.png'), label: 'الرئيسية', route: '/pages/tabs/homescreen', isCenter: true },
+        { id: 'favorites', icon: require('../assets/icons/house 2.png'), label: 'المفضلة', route: '/pages/tabs/favorites' },
+        { id: 'chat', icon: require('../assets/icons/Group.png'), label: 'المحادثات', route: '/pages/tabs/chat' },
     ];
 
     return (
@@ -29,6 +29,7 @@ export default function BottomNav() {
                             <TouchableOpacity
                                 key={tab.id}
                                 style={styles.centerButtonContainer}
+                                activeOpacity={1}
                                 onPress={() => tab.route && router.push(tab.route as any)}
                             >
                                 <View style={styles.centerButton}>
@@ -42,6 +43,7 @@ export default function BottomNav() {
                         <TouchableOpacity
                             key={tab.id}
                             style={styles.tabItem}
+                            activeOpacity={1}
                             onPress={() => tab.route && router.push(tab.route as any)}
                         >
                             <Image

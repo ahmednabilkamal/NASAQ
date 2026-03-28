@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, I18nManager } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { FontSizes } from '@/utils/typography';
 
 interface HomeHeaderProps {
     userName: string;
@@ -29,12 +28,12 @@ export default function HomeHeader({ userName, greeting, avatarUri, onSearchPres
                 <Text style={styles.userName}>{userName}</Text>
             </View>
 
-            <View style={styles.rightButtons}>
-                <TouchableOpacity style={styles.iconButton} onPress={onNotificationPress}>
-                    <Ionicons name="notifications-outline" size={24} color="#064E3B" />
-                </TouchableOpacity>
+            <View style={styles.leftButtons}>
                 <TouchableOpacity style={styles.iconButton} onPress={onSearchPress}>
                     <Ionicons name="search-outline" size={24} color="#064E3B" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconButton} onPress={onNotificationPress}>
+                    <Ionicons name="notifications-outline" size={24} color="#064E3B" />
                 </TouchableOpacity>
             </View>
         </View>
@@ -43,15 +42,15 @@ export default function HomeHeader({ userName, greeting, avatarUri, onSearchPres
 
 const styles = StyleSheet.create({
     container: {
-        flexDirection: I18nManager.isRTL ? 'row' : 'row-reverse',
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingVertical: 20,
         backgroundColor: '#fff',
     },
-    rightButtons: {
-        flexDirection: I18nManager.isRTL ? 'row' : 'row-reverse',
+    leftButtons: {
+        flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
     },
@@ -67,17 +66,17 @@ const styles = StyleSheet.create({
     },
     userInfo: {
         flex: 1,
-        alignItems: I18nManager.isRTL ? 'flex-end' : 'flex-start',
-        marginHorizontal: 12,
+        alignItems: 'flex-start',
+        marginRight: 12,
     },
     greeting: {
-        fontSize: FontSizes.bodySmall,
+        fontSize: 11,
         fontFamily: 'Cairo_400Regular',
         color: '#888',
         marginBottom: -2,
     },
     userName: {
-        fontSize: FontSizes.bodyLarge,
+        fontSize: 16,
         fontFamily: 'Cairo_700Bold',
         color: '#111',
     },

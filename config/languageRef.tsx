@@ -1,12 +1,18 @@
-import React, { useEffect, createContext, useContext } from 'react';
-import { I18nManager, DevSettings, Platform } from 'react-native';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { I18nManager } from 'react-native';
 import * as Updates from 'expo-updates';
-import * as Localization from 'expo-localization';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
+/** App is Arabic-only; UI copy and layout always use RTL Arabic. */
+export const APP_LANGUAGE = 'ar' as const;
+
+// Force RTL at module load - this is the key for React Native RTL support
+if (!I18nManager.isRTL) {
+    I18nManager.allowRTL(true);
+    I18nManager.forceRTL(true);
+}
 
 interface LanguageContextType {
-    languageCode: string;
-    setLanguage: (code: string) => Promise<void>;
+    languageCode: typeof APP_LANGUAGE;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -24,72 +30,29 @@ interface LanguageProviderProps {
 }
 
 const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
-    const [languageCode, setLanguageCode] = React.useState<string>(I18nManager.isRTL ? 'ar' : 'en');
-    const [isLoaded, setIsLoaded] = React.useState(false);
+    const [ready, setReady] = useState(I18nManager.isRTL);
 
     useEffect(() => {
-        const loadLanguage = async () => {
-            try {
-                const saved = await AsyncStorage.getItem('user-language');
-                if (saved) {
-                    setLanguageCode(saved);
-                } else {
-                    const systemLang = Localization.getLocales()[0].languageTag.split('-')[0];
-                    const targetLang = systemLang === 'ar' ? 'ar' : 'en';
-                    setLanguageCode(targetLang);
-                }
-            } catch (e) {
-                console.error('Failed to load language:', e);
-            } finally {
-                setIsLoaded(true);
-            }
-        };
-        loadLanguage();
+        // If RTL wasn't applied yet, force it and reload
+        if (!I18nManager.isRTL) {
+            I18nManager.allowRTL(true);
+            I18nManager.forceRTL(true);
+            // Need to reload for RTL to take effect
+            Updates.reloadAsync().catch(() => {
+                // Fallback - just continue, user might need to restart app
+                setReady(true);
+            });
+        } else {
+            setReady(true);
+        }
     }, []);
 
-    useEffect(() => {
-        if (!isLoaded) return;
-
-        const updateLanguage = async () => {
-            const isRTL = languageCode === 'ar';
-
-            if (I18nManager.isRTL !== isRTL) {
-                I18nManager.allowRTL(isRTL);
-                I18nManager.forceRTL(isRTL);
-
-                setTimeout(() => {
-                    if (Platform.OS === 'web') {
-                        window.location.reload();
-                        return;
-                    }
-
-                    if (__DEV__) {
-                        if (DevSettings && typeof DevSettings.reload === 'function') {
-                            DevSettings.reload();
-                        } else {
-                            Updates.reloadAsync().catch(() => {});
-                        }
-                    } else {
-                        Updates.reloadAsync().catch(() => {
-                            if (DevSettings && typeof DevSettings.reload === 'function') {
-                                DevSettings.reload();
-                            }
-                        });
-                    }
-                }, 100);
-            }
-        };
-
-        updateLanguage();
-    }, [languageCode]);
-
-    const setLanguage = async (code: string) => {
-        await AsyncStorage.setItem('user-language', code);
-        setLanguageCode(code);
-    };
+    if (!ready) {
+        return null; // Wait for RTL to be ready
+    }
 
     return (
-        <LanguageContext.Provider value={{ languageCode, setLanguage }}>
+        <LanguageContext.Provider value={{ languageCode: APP_LANGUAGE }}>
             {children}
         </LanguageContext.Provider>
     );

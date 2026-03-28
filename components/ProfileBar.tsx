@@ -1,26 +1,21 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, I18nManager } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
-import { FontSizes } from '@/utils/typography';
-
+import { getBackChevron } from '@/config/directionalIcons';
 
 const ProfileBar = () => {
     const router = useRouter();
     const { languageCode } = useLanguage();
-    const content = (pageData as any)[languageCode]?.stylistsList || (pageData as any)['en'].stylistsList;
-    const isRTL = I18nManager.isRTL;
-
+    const content = (pageData as any)[languageCode]?.stylistsList || (pageData as any)['ar'].stylistsList;
     return (
         <View style={styles.container}>
+
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                                        <Ionicons name={isRTL ? "chevron-forward" : "chevron-back"} size={24} color="#000" />
+                                        <Ionicons name={getBackChevron()} size={24} color="#000" />
                                     </TouchableOpacity>
                                     <TouchableOpacity style={styles.favoriteButton}>
                                         <Ionicons name="heart-outline" size={24} color="#000" />
@@ -33,57 +28,55 @@ const ProfileBar = () => {
 
 export default ProfileBar;
 
+
 const styles = StyleSheet.create({
     container: {
         backgroundColor: '#FFF',
-        borderTopLeftRadius: BorderRadius.xxxl,
-        borderTopRightRadius: BorderRadius.xxxl,
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
     },
      backButton: {
         position: 'absolute',
-        top: Spacing.xl,
-        left: Spacing.xl,
-        width: IconSizes.xxl,
-        height: IconSizes.xxl,
-        borderRadius: BorderRadius.xxxl,
+        top: 20,
+        left: 20,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: '#FFF',
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: scale(1) },
-        shadowOpacity: 0.1,
-        shadowRadius: scale(5),
+        boxShadow: '0 0 5px rgba(0,0,0,0.1)',
         elevation: 5,
     },
      favoriteButton: {
         position: 'absolute',
-        top: Spacing.xl,
-        right: Spacing.xl,
-        width: IconSizes.xxl,
-        height: IconSizes.xxl,
-        borderRadius: BorderRadius.xxxl,
+        top: 20,
+        right: 20,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: '#FFF',
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: '#000',
         shadowOpacity: 0.1,
-        shadowRadius: scale(5),
+        shadowRadius: 5,
         elevation: 5,
     },
     handle: {
-        width: scale(40),
-        height: scale(5),
+        width: 40,
+        height: 5,
         backgroundColor: '#EEE',
-        borderRadius: scale(2.5),
+        borderRadius: 2.5,
         alignSelf: 'center',
-        marginTop: scaleVertical(10),
+        marginTop: 10,
     },
     header: {
-        padding: Spacing.xl,
+        padding: 20,
         alignItems: 'center',
     },
     headerTitle: {
-        fontSize: FontSizes.h4,
+        fontSize: 18,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },

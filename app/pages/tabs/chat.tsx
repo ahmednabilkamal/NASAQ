@@ -1,9 +1,6 @@
 import BottomNav from '@/components/BottomNav';
 import apiService, { Conversation } from '@/config/apiService';
 import { useAuth } from '@/config/authContext';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
-import { FontSizes, LineHeights } from '@/utils/typography';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -96,6 +93,7 @@ export default function ChatListScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            {/* Search Bar */}
             <View style={styles.searchContainer}>
                 <View style={styles.searchBar}>
                     <Ionicons name="search" size={20} color="#999" />
@@ -110,6 +108,7 @@ export default function ChatListScreen() {
                 </View>
             </View>
 
+            {/* Conversations List */}
             {loading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#064E3B" />
@@ -140,21 +139,21 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFF',
     },
     searchContainer: {
-        paddingHorizontal: Spacing.screenPaddingHorizontal,
-        paddingVertical: scaleVertical(15),
+        paddingHorizontal: 20,
+        paddingVertical: 15,
     },
     searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F5F5F5',
-        borderRadius: BorderRadius.md,
-        paddingHorizontal: Spacing.lg,
-        height: scaleVertical(45),
-        gap: Spacing.md,
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        height: 45,
+        gap: 10,
     },
     searchInput: {
         flex: 1,
-        fontSize: FontSizes.body,
+        fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
     },
@@ -164,13 +163,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     listContent: {
-        paddingBottom: scaleVertical(100),
+        paddingBottom: 100,
     },
     conversationItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: Spacing.screenPaddingHorizontal,
-        paddingVertical: scaleVertical(15),
+        paddingHorizontal: 20,
+        paddingVertical: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#F5F5F5',
     },
@@ -178,57 +177,57 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     avatar: {
-        width: scale(55),
-        height: scale(55),
-        borderRadius: scale(27.5),
+        width: 55,
+        height: 55,
+        borderRadius: 27.5,
     },
     conversationInfo: {
         flex: 1,
-        marginRight: Spacing.md,
-        alignItems: 'flex-end',
+        marginRight: 12,
+        alignItems: 'flex-start',
     },
     conversationName: {
-        fontSize: FontSizes.bodyLarge,
+        fontSize: 15,
         fontFamily: 'Cairo_700Bold',
         color: '#333',
-        marginBottom: Spacing.verticalXs,
+        marginBottom: 3,
     },
     lastMessage: {
-        fontSize: FontSizes.label,
+        fontSize: 13,
         fontFamily: 'Cairo_400Regular',
         color: '#064E3B',
     },
     timeContainer: {
         alignItems: 'flex-start',
-        gap: Spacing.verticalSm,
+        gap: 8,
     },
     timeText: {
-        fontSize: FontSizes.bodySmall,
+        fontSize: 12,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
     },
     unreadBadge: {
         backgroundColor: '#064E3B',
-        borderRadius: BorderRadius.round,
-        minWidth: scale(20),
-        height: scale(20),
+        borderRadius: 10,
+        minWidth: 20,
+        height: 20,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: Spacing.sm,
+        paddingHorizontal: 6,
     },
     unreadText: {
-        fontSize: FontSizes.caption,
+        fontSize: 11,
         fontFamily: 'Cairo_700Bold',
         color: '#FFF',
     },
     emptyContainer: {
         flex: 1,
         alignItems: 'center',
-        paddingTop: scaleVertical(60),
+        paddingTop: 60,
     },
     emptyText: {
         fontFamily: 'Cairo_400Regular',
-        fontSize: FontSizes.bodyLarge,
+        fontSize: 16,
         color: '#999',
     },
 });

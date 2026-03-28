@@ -37,7 +37,7 @@ const INPUT_X_RATIO = 0.35;
 export default function MeasurementsPage() {
     const router = useRouter();
     const { languageCode } = useLanguage();
-    const content = (pageData as any)[languageCode]?.personalMeasurements || (pageData as any)['en'].personalMeasurements;
+    const content = (pageData as any)[languageCode]?.personalMeasurements || (pageData as any)['ar'].personalMeasurements;
     const { gender } = useGender();
     const { measurements, updateMeasurement } = useMeasurements();
     const { updateProfile } = useAuth();

@@ -45,9 +45,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const data = await authService.getProfile();
             const profile: User = data?.data ?? data?.user ?? data;
             setUser(profile);
-        } catch (error) {
-            console.error('❌ Failed to refresh user profile:', error);
+        } catch (error: any) {
+            const status = error?.response?.status;
+            if (status === 401 || status === 403) {
+                await clearAuthData();
+            }
             setUser(null);
+            if (status !== 401 && status !== 403) {
+                console.error('❌ Failed to refresh user profile:', error);
+            }
         }
     };
 

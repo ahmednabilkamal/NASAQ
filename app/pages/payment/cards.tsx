@@ -13,20 +13,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { getBackChevron } from '@/config/directionalIcons';
 import authService from '@/config/authService';
 import apiService from '@/config/apiService';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect } from '@react-navigation/native';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
-import { FontSizes, LineHeights } from '@/utils/typography';
-import { InputSizes, ButtonSizes } from '@/utils/spacing';
 
 export default function PaymentCardsScreen() {
     const router = useRouter();
-    const { order_id, price } = useLocalSearchParams<{ order_id?: string; price?: string }>();
+    const { order_id, service_id, price } = useLocalSearchParams<{ order_id?: string; service_id?: string; price?: string }>();
 
-    const isCheckout = Boolean(order_id);
+    // isCheckout = true when navigated from Book & Pay flow
+    const isCheckout = Boolean(order_id || service_id);
 
     const [cards, setCards] = useState<any[]>([]);
     const [selectedCardId, setSelectedCardId] = useState<string | number | null>(null);
@@ -40,10 +38,16 @@ export default function PaymentCardsScreen() {
             const res = await authService.getCards();
             console.log('💳 Raw Cards Response:', JSON.stringify(res));
 
+            /**
+             * Handle Laravel ApiResponse structure:
+             * Expected res format: { status: 'success', data: [ { id, last_four... } ] }
+             * Falling back to res if it's already an array.
+             */
             let fetched: any[] = [];
             if (Array.isArray(res)) {
                 fetched = res;
             } else if (res && typeof res === 'object') {
+                // Try .data first, then .cards, then look for any array value
                 fetched = res.data ?? res.cards ?? Object.values(res).find(v => Array.isArray(v)) ?? [];
             }
 
@@ -94,10 +98,25 @@ export default function PaymentCardsScreen() {
     };
 
     const handlePay = async () => {
-        if (!order_id) return;
+        if (!order_id && !service_id) return;
         setPaying(true);
         try {
-            const res = await apiService.initiatePayment(Number(order_id));
+            let payableOrderId = Number(order_id);
+
+            // Create order only at final payment action.
+            if (!payableOrderId && service_id) {
+                const orderRes = await apiService.createOrder({
+                    stylist_service_id: Number(service_id),
+                });
+                const order = (orderRes?.data as any) ?? orderRes;
+                payableOrderId = Number(order?.id);
+            }
+
+            if (!payableOrderId) {
+                throw new Error('تعذر إنشاء الطلب');
+            }
+
+            const res = await apiService.initiatePayment(payableOrderId);
             const paymentUrl = (res?.data as any)?.payment_url;
             if (!paymentUrl) throw new Error('payment_url missing');
             const supported = await Linking.canOpenURL(paymentUrl);
@@ -107,7 +126,17 @@ export default function PaymentCardsScreen() {
                 Alert.alert('خطأ', 'تعذّر فتح صفحة الدفع.');
             }
         } catch (error: any) {
-            Toast.show({ type: 'error', text1: 'خطأ', text2: error?.message || 'فشلت عملية الدفع' });
+            const status = error?.response?.status;
+            const apiMessage = error?.response?.data?.message;
+            if (status === 502) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'بوابة الدفع غير متاحة',
+                    text2: apiMessage || 'تم إنشاء الطلب بنجاح، حاولي الدفع مرة أخرى لاحقاً.',
+                });
+                return;
+            }
+            Toast.show({ type: 'error', text1: 'خطأ', text2: apiMessage || error?.message || 'فشلت عملية الدفع' });
         } finally {
             setPaying(false);
         }
@@ -117,9 +146,10 @@ export default function PaymentCardsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
+            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
-                    <Ionicons name="chevron-forward" size={22} color="#000" />
+                    <Ionicons name={getBackChevron()} size={22} color="#000" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>
                     {isCheckout ? 'الدفع باستخدام' : 'بطاقاتي'}
@@ -135,6 +165,7 @@ export default function PaymentCardsScreen() {
                 }
             >
 
+                {/* Apple Pay */}
                 <TouchableOpacity
                     style={[styles.methodRow, selectedMethod === 'apple' && styles.methodRowSelected]}
                     onPress={() => setSelectedMethod('apple')}
@@ -150,6 +181,7 @@ export default function PaymentCardsScreen() {
                     </View>
                 </TouchableOpacity>
 
+                {/* Debit / Credit Card toggle */}
                 <TouchableOpacity
                     style={[styles.methodRow, selectedMethod === 'card' && styles.methodRowSelected]}
                     onPress={() => setSelectedMethod('card')}
@@ -162,11 +194,13 @@ export default function PaymentCardsScreen() {
                     <Ionicons name="card" size={22} color="#064E3B" />
                 </TouchableOpacity>
 
+                {/* ── Saved cards (visible when card method selected) ── */}
                 {selectedMethod === 'card' && (
                     <View style={styles.savedCardBlock}>
                         {fetchingCards ? (
                             <ActivityIndicator color="#064E3B" style={{ margin: 20 }} />
                         ) : cards.length === 0 ? (
+                            /* No cards yet */
                             <View style={styles.emptyCards}>
                                 <Ionicons name="card-outline" size={36} color="#DDD" />
                                 <Text style={styles.emptyCardsText}>لا توجد بطاقات محفوظة</Text>
@@ -182,21 +216,25 @@ export default function PaymentCardsScreen() {
                                     onPress={() => setSelectedCardId(card.id)}
                                     activeOpacity={0.85}
                                 >
+                                    {/* Left: radio */}
                                     <View style={[styles.radioSm, selectedCardId === card.id && styles.radioSmActive]}>
                                         {selectedCardId === card.id && <View style={styles.radioDotSm} />}
                                     </View>
 
+                                    {/* Card info */}
                                     <View style={styles.cardInfo}>
                                         <Text style={styles.cardDigits}>•••• {card.last_four}</Text>
                                         <Text style={styles.cardHolder}>{card.card_name}</Text>
                                     </View>
 
+                                    {/* Card type icon */}
                                     <Ionicons
                                         name={card.card_type === 'visa' ? 'card' : 'card-outline'}
                                         size={22}
                                         color="#1A1F71"
                                     />
 
+                                    {/* Delete */}
                                     <TouchableOpacity
                                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                         onPress={() => handleDeleteCard(card.id)}
@@ -207,6 +245,7 @@ export default function PaymentCardsScreen() {
                             ))
                         )}
 
+                        {/* Add new card row */}
                         <TouchableOpacity
                             style={styles.addCardRow}
                             onPress={() => router.push('/pages/payment/add_card' as any)}
@@ -217,6 +256,7 @@ export default function PaymentCardsScreen() {
                     </View>
                 )}
 
+                {/* ── Payment Summary (only in checkout mode) ── */}
                 {isCheckout && displayPrice && (
                     <View style={styles.summaryBox}>
                         <Text style={styles.summaryTitle}>ملخص الدفع</Text>
@@ -231,6 +271,7 @@ export default function PaymentCardsScreen() {
                 <View style={{ height: 100 }} />
             </ScrollView>
 
+            {/* ── Footer: Pay (checkout) or Manage (card-only) ── */}
             <View style={styles.footer}>
                 {isCheckout ? (
                     <TouchableOpacity
@@ -263,119 +304,119 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: Spacing.lg,
-        paddingVertical: Spacing.verticalSm,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
         backgroundColor: '#FFF',
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
     },
-    headerBtn: { width: scale(38), height: scale(38), justifyContent: 'center', alignItems: 'center' },
-    headerTitle: { fontSize: FontSizes.h4, fontFamily: 'Cairo_700Bold', color: '#000' },
-    scroll: { padding: Spacing.xl },
+    headerBtn: { width: 38, height: 38, justifyContent: 'center', alignItems: 'center' },
+    headerTitle: { fontSize: 18, fontFamily: 'Cairo_700Bold', color: '#000' },
+    scroll: { padding: 20 },
 
     methodRow: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#FFF',
-        borderRadius: BorderRadius.lg,
-        padding: Spacing.lg,
-        marginBottom: Spacing.md,
-        gap: Spacing.md,
+        borderRadius: 14,
+        padding: 16,
+        marginBottom: 10,
+        gap: 12,
         borderWidth: 1.5,
         borderColor: 'transparent',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: scale(2) },
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.04,
-        shadowRadius: scale(6),
+        shadowRadius: 6,
         elevation: 2,
     },
     methodRowSelected: { borderColor: '#064E3B', backgroundColor: '#F7FAF9' },
     radio: {
-        width: scale(20), height: scale(20), borderRadius: BorderRadius.round,
+        width: 20, height: 20, borderRadius: 10,
         borderWidth: 2, borderColor: '#DDD',
         justifyContent: 'center', alignItems: 'center',
     },
     radioActive: { borderColor: '#064E3B' },
-    radioDot: { width: scale(10), height: scale(10), borderRadius: BorderRadius.round, backgroundColor: '#064E3B' },
-    methodLabel: { flex: 1, fontSize: FontSizes.body, fontFamily: 'Cairo_700Bold', color: '#111', textAlign: 'right' },
+    radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#064E3B' },
+    methodLabel: { flex: 1, fontSize: 14, fontFamily: 'Cairo_700Bold', color: '#111', textAlign: 'right' },
     applePayBadge: {
         flexDirection: 'row', alignItems: 'center',
-        backgroundColor: '#F3F4F6', paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: BorderRadius.sm,
+        backgroundColor: '#F3F4F6', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8,
     },
-    applePayText: { fontSize: FontSizes.bodySmall, fontFamily: 'Cairo_700Bold', color: '#000' },
+    applePayText: { fontSize: 13, fontFamily: 'Cairo_700Bold', color: '#000' },
 
     savedCardBlock: {
         backgroundColor: '#FFF',
-        borderRadius: BorderRadius.lg,
-        marginBottom: Spacing.xl,
+        borderRadius: 14,
+        marginBottom: 16,
         overflow: 'hidden',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: scale(2) },
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.04,
-        shadowRadius: scale(6),
+        shadowRadius: 6,
         elevation: 2,
     },
-    emptyCards: { alignItems: 'center', paddingVertical: Spacing.verticalXxxxl, gap: Spacing.sm },
-    emptyCardsText: { fontSize: FontSizes.body, fontFamily: 'Cairo_400Regular', color: '#AAA' },
+    emptyCards: { alignItems: 'center', paddingVertical: 24, gap: 8 },
+    emptyCardsText: { fontSize: 14, fontFamily: 'Cairo_400Regular', color: '#AAA' },
 
     savedCardRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: Spacing.md,
-        gap: Spacing.md,
+        padding: 14,
+        gap: 10,
         borderBottomWidth: 1,
         borderBottomColor: '#F3F4F6',
     },
     savedCardRowSelected: { backgroundColor: '#F7FAF9' },
     radioSm: {
-        width: scale(18), height: scale(18), borderRadius: scale(9),
+        width: 18, height: 18, borderRadius: 9,
         borderWidth: 2, borderColor: '#DDD',
         justifyContent: 'center', alignItems: 'center',
     },
     radioSmActive: { borderColor: '#064E3B' },
-    radioDotSm: { width: scale(8), height: scale(8), borderRadius: scale(4), backgroundColor: '#064E3B' },
-    cardInfo: { flex: 1, alignItems: 'flex-end' },
-    cardDigits: { fontSize: FontSizes.bodyLarge, fontFamily: 'Cairo_700Bold', color: '#1F2937', letterSpacing: 1 },
-    cardHolder: { fontSize: FontSizes.caption, fontFamily: 'Cairo_400Regular', color: '#9CA3AF', marginTop: Spacing.verticalXs },
+    radioDotSm: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#064E3B' },
+    cardInfo: { flex: 1, alignItems: 'flex-start' },
+    cardDigits: { fontSize: 15, fontFamily: 'Cairo_700Bold', color: '#1F2937', letterSpacing: 1 },
+    cardHolder: { fontSize: 11, fontFamily: 'Cairo_400Regular', color: '#9CA3AF', marginTop: 2 },
 
     addCardRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-end',
-        gap: Spacing.sm,
-        padding: Spacing.md,
-        paddingHorizontal: Spacing.lg,
+        justifyContent: 'flex-start',
+        gap: 8,
+        padding: 14,
+        paddingHorizontal: 16,
     },
-    addCardText: { fontSize: FontSizes.body, fontFamily: 'Cairo_700Bold', color: '#064E3B' },
+    addCardText: { fontSize: 14, fontFamily: 'Cairo_700Bold', color: '#064E3B' },
 
     summaryBox: {
         backgroundColor: '#FFF',
-        borderRadius: BorderRadius.lg,
-        padding: Spacing.xl,
-        marginTop: Spacing.xs,
+        borderRadius: 16,
+        padding: 20,
+        marginTop: 4,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: scale(4) },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.06,
-        shadowRadius: scale(12),
+        shadowRadius: 12,
         elevation: 3,
     },
-    summaryTitle: { fontSize: FontSizes.bodyLarge, fontFamily: 'Cairo_700Bold', color: '#000', textAlign: 'center', marginBottom: Spacing.verticalXl },
-    summaryDivider: { height: 1, backgroundColor: '#F3F4F6', marginBottom: Spacing.verticalMd },
+    summaryTitle: { fontSize: 16, fontFamily: 'Cairo_700Bold', color: '#000', textAlign: 'center', marginBottom: 16 },
+    summaryDivider: { height: 1, backgroundColor: '#F3F4F6', marginBottom: 14 },
     summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    summaryLabel: { fontSize: FontSizes.bodySmall, fontFamily: 'Cairo_600SemiBold', color: '#6B7280' },
-    summaryTotal: { fontSize: FontSizes.h2, fontFamily: 'Cairo_700Bold', color: '#000' },
+    summaryLabel: { fontSize: 13, fontFamily: 'Cairo_600SemiBold', color: '#6B7280' },
+    summaryTotal: { fontSize: 20, fontFamily: 'Cairo_700Bold', color: '#000' },
 
-    footer: { padding: Spacing.xl, paddingBottom: Spacing.verticalXxxxl, backgroundColor: '#F8F9FA' },
+    footer: { padding: 20, paddingBottom: 28, backgroundColor: '#F8F9FA' },
     payBtn: {
         backgroundColor: '#064E3B',
-        height: ButtonSizes.heightLarge, borderRadius: BorderRadius.button,
+        height: 56, borderRadius: 28,
         justifyContent: 'center', alignItems: 'center',
         flexDirection: 'row',
         shadowColor: '#064E3B',
-        shadowOffset: { width: 0, height: scale(6) },
+        shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.3,
-        shadowRadius: scale(10),
+        shadowRadius: 10,
         elevation: 6,
     },
-    payBtnText: { color: '#FFF', fontSize: FontSizes.h4, fontFamily: 'Cairo_700Bold' },
+    payBtnText: { color: '#FFF', fontSize: 18, fontFamily: 'Cairo_700Bold' },
 });

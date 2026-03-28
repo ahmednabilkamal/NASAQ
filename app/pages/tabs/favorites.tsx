@@ -13,18 +13,12 @@ import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '@/components/BottomNav';
 import StylistCard from '@/components/home/StylistCard';
 import { useAuth } from '@/config/authContext';
-import { useLanguage } from '@/config/languageRef';
-import pageData from '@/data/content';
 import apiService, { Stylist } from '@/config/apiService';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
-import { FontSizes, LineHeights } from '@/utils/typography';
+import { getBackChevron } from '@/config/directionalIcons';
 
 export default function FavoritesScreen() {
     const { isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
-    const { languageCode } = useLanguage();
-    const content = (pageData as any)[languageCode] || (pageData as any)['en'];
 
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
@@ -75,7 +69,6 @@ export default function FavoritesScreen() {
                     imageUri={item.image ? { uri: item.image } : null}
                     rating={typeof item.rating === 'number' ? item.rating : parseFloat(String(item.rating ?? '0'))}
                     clientCount={Number(item.clients_count ?? 0)}
-                    price={item.price}
                     tags={tags}
                     onPress={() => handleStylistPress(item.id)}
                     isFavorite={true}
@@ -87,16 +80,19 @@ export default function FavoritesScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity
                     style={styles.backButton}
                     onPress={() => router.back()}
                 >
-                    <Ionicons name="chevron-forward" size={24} color="#000" />
+                    <Ionicons name={getBackChevron()} size={24} color="#000" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{content.favorites?.title || 'المفضلة'}</Text>
+                <Text style={styles.headerTitle}>المفضلة</Text>
                 <View style={styles.placeholder} />
             </View>
+
+            {/* Favorites Grid */}
             {loading ? (
                 <View style={styles.emptyContainer}>
                     <ActivityIndicator size="large" color="#064E3B" />
@@ -114,9 +110,9 @@ export default function FavoritesScreen() {
             ) : (
                 <View style={styles.emptyContainer}>
                     <Ionicons name="heart-outline" size={80} color="#DDD" />
-                    <Text style={styles.emptyText}>{content.favorites?.empty || 'لا توجد مفضلة حتى الآن'}</Text>
+                    <Text style={styles.emptyText}>لا توجد مفضلة حتى الآن</Text>
                     <Text style={styles.emptySubtext}>
-                        {content.favorites?.emptySubtitle || 'ابدأ بإضافة منسقات إلى قائمة المفضلة'}
+                        ابدأ بإضافة منسقات إلى قائمة المفضلة
                     </Text>
                 </View>
             )}
@@ -135,33 +131,33 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: Spacing.screenPaddingHorizontal,
-        paddingVertical: scaleVertical(15),
+        paddingHorizontal: 20,
+        paddingVertical: 15,
         backgroundColor: '#FFF',
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
     },
     backButton: {
-        width: scale(40),
-        height: scale(40),
+        width: 40,
+        height: 40,
         justifyContent: 'center',
         alignItems: 'center',
     },
     headerTitle: {
-        fontSize: FontSizes.h1,
+        fontSize: 20,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
     },
     placeholder: {
-        width: scale(40),
+        width: 40,
     },
     listContent: {
-        padding: Spacing.screenPaddingHorizontal,
-        paddingBottom: scaleVertical(100),
+        padding: 20,
+        paddingBottom: 100,
     },
     columnWrapper: {
         justifyContent: 'space-between',
-        marginBottom: Spacing.verticalLg,
+        marginBottom: 16,
     },
     cardWrapper: {
         width: '48%',
@@ -170,20 +166,20 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: Spacing.xxxxl,
+        paddingHorizontal: 40,
     },
     emptyText: {
-        fontSize: FontSizes.h4,
+        fontSize: 18,
         fontFamily: 'Cairo_700Bold',
         color: '#333',
-        marginTop: Spacing.verticalXl,
+        marginTop: 20,
         textAlign: 'center',
     },
     emptySubtext: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
-        marginTop: Spacing.verticalSm,
+        marginTop: 8,
         textAlign: 'center',
     },
 });

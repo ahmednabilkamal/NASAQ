@@ -1,24 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import EvaluationLayout from '../../../components/EvaluationLayout';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGender } from '@/config/genderContext';
 import { bodyTypeData } from '@/constants/theme';
 import { useAuth } from '@/config/authContext';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius } from '@/utils/spacing';
-import { FontSizes, LineHeights } from '@/utils/typography';
 
 export default function BodyShapePage() {
     const router = useRouter();
     const { languageCode } = useLanguage();
-    const content = (pageData as any)[languageCode]?.bodyShape || (pageData as any)['en'].bodyShape;
+    const content = (pageData as any)[languageCode]?.bodyShape || (pageData as any)['ar'].bodyShape;
     const { gender } = useGender();
 
-    const currentListData = gender === "male" ? bodyTypeData.male : bodyTypeData.female;
+    const currentListData = gender === 'male' ? bodyTypeData.male : bodyTypeData.female;
     const [selected, setSelected] = useState<number | null>(null);
     const { updateProfile } = useAuth();
     const [saving, setSaving] = useState(false);
@@ -27,7 +23,7 @@ export default function BodyShapePage() {
         if (selected === null) return;
         setSaving(true);
         try {
-            const shapeObj = currentListData.find(item => item.key === selected);
+            const shapeObj = currentListData.find((item) => item.key === selected);
             const shapeValue = shapeObj ? shapeObj.value : selected.toString();
             await updateProfile({ body_shape: shapeValue });
             router.push('/pages/onboarding/bodyMeasurement' as any);
@@ -39,94 +35,87 @@ export default function BodyShapePage() {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.screen}>
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
                 currentStep={5}
                 totalSteps={7}
-
                 onNext={handleNext}
+                isNextDisabled={selected === null}
                 nextButtonText={saving ? '...' : content.nextButton}
             >
-                <View style={styles.container}>
-                    <FlatList
-                        data={currentListData}
-                        numColumns={3}
-                        keyExtractor={(item) => item.key.toString()}
-                        contentContainerStyle={styles.listContent}
-                        columnWrapperStyle={styles.columnWrapper}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={[styles.card, selected === item.key && styles.cardSelected]}
-                                onPress={() => setSelected(item.key)}
-                            >
-                                <View style={styles.imageContainer}>
-                                    <Image
-                                        source={item.source}
-                                        style={styles.shapeImage}
-                                        resizeMode="contain"
-                                    />
-                                </View>
-                                <Text style={styles.shapeName}>Shape {item.key}</Text>
-                            </TouchableOpacity>
-                        )}
-                    />
+                <View style={styles.grid}>
+                    {currentListData.map((item) => (
+                        <TouchableOpacity
+                            key={item.key}
+                            style={[styles.card, selected === item.key && styles.cardSelected]}
+                            onPress={() => setSelected(item.key)}
+                            activeOpacity={0.85}
+                        >
+                            <View style={styles.imageContainer}>
+                                <Image source={item.source} style={styles.shapeImage} resizeMode="contain" />
+                            </View>
+                            <Text style={styles.shapeName} numberOfLines={1}>
+                                Shape {item.key}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
                 </View>
             </EvaluationLayout>
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    safeArea: {
+    screen: {
         flex: 1,
     },
-    container: {
+    grid: {
         flex: 1,
-    },
-    listContent: {
-        paddingBottom: scaleVertical(20),
-    },
-    columnWrapper: {
-        justifyContent: 'flex-start',
-        gap: scale(15),
-        marginBottom: scaleVertical(15),
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        alignContent: 'flex-start',
     },
     card: {
-        width: '30%',
-        aspectRatio: 0.8,
+        width: '31%',
+        aspectRatio: 0.82,
         backgroundColor: '#FFF',
-        borderRadius: BorderRadius.cardSmall,
-        borderWidth: scale(2),
+        borderRadius: 12,
+        borderWidth: 2,
         borderColor: 'transparent',
-        padding: scale(8),
+        padding: 6,
         alignItems: 'center',
         justifyContent: 'center',
+        marginBottom: 10,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: scale(2) },
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
-        shadowRadius: scale(4),
+        shadowRadius: 4,
         elevation: 2,
     },
     cardSelected: {
-        borderColor: '#000',
+        borderColor: '#064E3B',
+        backgroundColor: '#F0FDF4',
+        elevation: 4,
     },
     imageContainer: {
         flex: 1,
         width: '100%',
+        minHeight: 64,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: scale(4),
     },
     shapeImage: {
         width: '100%',
         height: '100%',
     },
     shapeName: {
-        fontSize: FontSizes.caption,
+        fontSize: 11,
         color: '#666',
         textAlign: 'center',
         fontFamily: 'Cairo_400Regular',
-    }
+        marginTop: 4,
+    },
 });

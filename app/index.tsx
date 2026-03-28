@@ -1,7 +1,7 @@
 import { useAuth } from '@/config/authContext';
 import { getInitialRoute } from '@/config/navigationFlow';
 import { useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Dimensions, Image, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -14,6 +14,7 @@ const { width } = Dimensions.get('window');
 export default function Home() {
   const router = useRouter();
   const { isAuthenticated, user, loading } = useAuth();
+  const hasNavigatedRef = useRef(false);
   const imageOpacity = useSharedValue(0);
   const imageScale = useSharedValue(0.8);
 
@@ -22,6 +23,7 @@ export default function Home() {
     imageScale.value = withTiming(1, { duration: 2000 });
 
     const navigateToNextScreen = async () => {
+      if (loading || hasNavigatedRef.current) return;
 
       console.log('🚀 Determining initial route...');
       console.log('Is Authenticated:', isAuthenticated);
@@ -29,12 +31,13 @@ export default function Home() {
       const route = await getInitialRoute(isAuthenticated, user);
       console.log('📍 Navigating to:', route);
 
+      hasNavigatedRef.current = true;
       router.replace(route as any);
     };
 
     const timer = setTimeout(() => {
       navigateToNextScreen();
-    }, 2500); 
+    }, 2500); // Slightly longer to show the splash animation
 
     return () => clearTimeout(timer);
   }, [loading, isAuthenticated]);

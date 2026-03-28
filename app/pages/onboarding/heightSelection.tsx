@@ -1,39 +1,55 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, Image, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import EvaluationLayout from '../../../components/EvaluationLayout';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { UnitToggle } from '@/components/onboarding/UnitToggle';
-import { HeightSlider } from '@/components/onboarding/HeightSlider';
+import { HeightSlider, HEIGHT_SLIDER_TRACK_HEIGHT } from '@/components/onboarding/HeightSlider';
 import { useHeightSelection } from '@/hooks/onboarding/useHeightSelection';
 import { useAuth } from '@/config/authContext';
 import { useGender } from '@/config/genderContext';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { FontSizes } from '@/utils/typography';
+
+function formatHeightForUnit(cm: number, unit: 'cm' | 'ft'): string {
+    if (unit === 'cm') {
+        return String(cm);
+    }
+    const totalIn = cm / 2.54;
+    const ft = Math.floor(totalIn / 12);
+    const inch = Math.round(totalIn - ft * 12);
+    return `${ft}'${inch}"`;
+}
 
 export default function HeightPage() {
     const router = useRouter();
+    const { width: windowWidth, height: windowHeight } = useWindowDimensions();
     const { languageCode } = useLanguage();
-    const content = (pageData as any)[languageCode]?.heightSelection || (pageData as any)['en'].heightSelection;
+    const content = (pageData as any)[languageCode]?.heightSelection || (pageData as any)['ar'].heightSelection;
 
     const { unit, setUnit, height, panHandlers } = useHeightSelection();
     const { updateProfile } = useAuth();
     const { gender } = useGender();
     const [saving, setSaving] = useState(false);
 
-    const characterImage = gender === 'male'
-        ? require('../../../assets/maleheightcheck.png')
-        : require('../../../assets/Frame 94.png');
+    const characterImage =
+        gender === 'male'
+            ? require('../../../assets/maleheightcheck.png')
+            : require('../../../assets/Frame 94.png');
+
+    const displayValue = useMemo(() => formatHeightForUnit(height, unit), [height, unit]);
+    const imageScale = useMemo(
+        () => Math.min(1.05, Math.max(0.72, (height / 170) * 0.88)),
+        [height]
+    );
+
+    const maxImageHeight = Math.min(200, Math.round(windowHeight * 0.22));
+    const imageWidth = Math.min(190, Math.max(120, windowWidth * 0.4));
 
     const handleNext = async () => {
         setSaving(true);
         try {
             await updateProfile({ height: Number(height) });
             router.push('/pages/onboarding/weightSelection' as any);
-
-
         } catch (error) {
             console.error('Failed to save height:', error);
         } finally {
@@ -47,27 +63,22 @@ export default function HeightPage() {
     ];
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.screen}>
             <EvaluationLayout
+                variant="measurement"
                 title={content.title}
                 subtitle={content.subtitle}
                 currentStep={2}
                 totalSteps={7}
-
-
                 onNext={handleNext}
                 nextButtonText={saving ? '...' : content.nextButton}
             >
-                <View style={styles.mainContent}>
-                    <UnitToggle
-                        unit={unit}
-                        options={unitOptions}
-                        onSelect={setUnit}
-                    />
+                <View style={styles.fill}>
+                    <UnitToggle compact unit={unit} options={unitOptions} onSelect={setUnit} />
 
                     <View style={styles.heightDisplay}>
-                        <Text style={styles.heightText}>{height}</Text>
-                        <Text style={styles.heightUnit}>{unit}</Text>
+                        <Text style={styles.heightText}>{displayValue}</Text>
+                        <Text style={styles.heightUnit}>{unit === 'cm' ? content.unitCm : content.unitFt}</Text>
                     </View>
 
                     <View style={styles.contentRow}>
@@ -76,56 +87,76 @@ export default function HeightPage() {
                                 source={characterImage}
                                 style={[
                                     styles.characterImage,
-                                    { transform: [{ scale: (height / 170) * 0.85 }] }
+                                    {
+                                        width: imageWidth,
+                                        maxHeight: maxImageHeight,
+                                        transform: [{ scale: imageScale }],
+                                    },
                                 ]}
                                 resizeMode="contain"
                             />
                         </View>
 
-                        <HeightSlider height={height} panHandlers={panHandlers} />
+                        <View style={styles.sliderColumn}>
+                            <HeightSlider height={height} panHandlers={panHandlers} />
+                        </View>
                     </View>
                 </View>
             </EvaluationLayout>
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    screen: {
         flex: 1,
     },
-    mainContent: {
+    fill: {
         flex: 1,
-        alignItems: 'center',
+        minHeight: 0,
+        width: '100%',
     },
     heightDisplay: {
         flexDirection: 'row',
         alignItems: 'baseline',
-        marginTop: scaleVertical(10),
+        justifyContent: 'center',
+        marginBottom: 4,
     },
     heightText: {
-        fontSize: FontSizes.displayMedium,
+        fontSize: 30,
         fontFamily: 'Cairo_700Bold',
+        color: '#111',
     },
     heightUnit: {
-        fontSize: FontSizes.bodyLarge,
-        fontFamily: 'Cairo_400Regular',
-        marginLeft: scale(5),
+        fontSize: 14,
+        fontFamily: 'Cairo_600SemiBold',
+        color: '#666',
+        marginStart: 6,
     },
     contentRow: {
-        flexDirection: 'row',
         flex: 1,
-        alignItems: 'flex-start',
-        justifyContent: 'flex-end',
-        paddingRight: scale(5),
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        minHeight: 0,
+        marginTop: 4,
+        gap: 4,
     },
     characterContainer: {
-        alignItems: 'flex-end',
-        justifyContent: 'flex-start',
-        marginRight: scale(-0),
+        flex: 1,
+        minHeight: 0,
+        minWidth: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     characterImage: {
-        width: scale(160),
-        height: scaleVertical(280),
+        height: undefined,
+    },
+    sliderColumn: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexShrink: 0,
+        width: 80,
+        minHeight: HEIGHT_SLIDER_TRACK_HEIGHT,
     },
 });

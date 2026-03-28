@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { getBackChevron } from '@/config/directionalIcons';
 import authService from '@/config/authService';
 import Toast from 'react-native-toast-message';
 import { scale, scaleVertical } from '@/utils/responsive';
@@ -86,7 +87,7 @@ export default function ChangePasswordScreen() {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-forward" size={24} color="#000" />
+                    <Ionicons name={getBackChevron()} size={24} color="#000" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>تعديل كلمة المرور</Text>
                 <View style={{ width: 40 }} />

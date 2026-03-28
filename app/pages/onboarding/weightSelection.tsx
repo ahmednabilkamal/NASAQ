@@ -1,34 +1,43 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import EvaluationLayout from '../../../components/EvaluationLayout';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { UnitToggle } from '@/components/onboarding/UnitToggle';
 import { BMISection } from '@/components/onboarding/BMISection';
 import { WeightSlider } from '@/components/onboarding/WeightSlider';
 import { useWeightSelection } from '@/hooks/onboarding/useWeightSelection';
 import { useAuth } from '@/config/authContext';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius } from '@/utils/spacing';
-import { FontSizes, LineHeights } from '@/utils/typography';
 
 export default function WeightPage() {
     const router = useRouter();
     const { languageCode } = useLanguage();
-    const content = (pageData as any)[languageCode]?.weightSelection || (pageData as any)['en'].weightSelection;
+    const content = (pageData as any)[languageCode]?.weightSelection || (pageData as any)['ar'].weightSelection;
 
-    const { unit, setUnit, weight, panHandlers } = useWeightSelection();
-    const { updateProfile } = useAuth();
+    const { unit, setUnit, weight, weightKg, panHandlers, sliderWidth } = useWeightSelection();
+    const { user, updateProfile, refreshUser } = useAuth();
     const [saving, setSaving] = useState(false);
+
+    const heightCm = useMemo(() => {
+        const h = Number((user as any)?.height);
+        return Number.isFinite(h) && h > 0 ? h : 170;
+    }, [user]);
+
+    useEffect(() => {
+        // Ensure height is loaded before BMI calculation.
+        if (user?.height == null || Number.isNaN(Number(user?.height))) {
+            refreshUser();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleNext = async () => {
         setSaving(true);
         try {
-            await updateProfile({ weight: Number(weight) });
+            // Always persist weight in KG (canonical) for correct BMI + backend.
+            await updateProfile({ weight: Number(weightKg) });
             router.push('/pages/onboarding/colorSelection' as any);
-
         } catch (error) {
             console.error('Failed to save weight:', error);
         } finally {
@@ -36,64 +45,87 @@ export default function WeightPage() {
         }
     };
 
-    return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+    const unitOptions = [
+        { label: 'lbs', value: 'lbs' },
+        { label: 'kg', value: 'kg' },
+    ];
 
+    return (
+        <View style={styles.screen}>
             <EvaluationLayout
+                variant="measurement"
                 title={content.title}
                 subtitle={content.subtitle}
                 currentStep={3}
                 totalSteps={7}
-
-
                 onNext={handleNext}
                 nextButtonText={saving ? '...' : content.nextButton}
             >
-                <View style={{ flex: 1 }}>
-                    <UnitToggle
-                        unit={unit}
-                        options={[{ label: 'lbs', value: 'lbs' }, { label: 'kg', value: 'kg' }]}
-                        onSelect={setUnit}
-                    />
+                <View style={styles.fill}>
+                    <UnitToggle compact unit={unit} options={unitOptions} onSelect={setUnit} />
 
                     <BMISection
+                        compact
                         title={content.bmiText}
                         categories={content.bmiCategories}
                         weight={weight}
                         unit={unit}
+                        heightCm={heightCm}
                     />
 
-                    <View style={styles.weightDisplay}>
-                        <Text style={styles.weightText}>{weight}</Text>
-                        <Text style={styles.weightUnit}>{unit.toUpperCase()}</Text>
-                    </View>
+                    <View style={styles.centerBlock}>
+                        <View style={styles.weightDisplay}>
+                            <Text style={styles.weightText}>{weight}</Text>
+                            <Text style={styles.weightUnit}>{unit}</Text>
+                        </View>
 
-                    <WeightSlider weight={weight} panHandlers={panHandlers} />
+                        <View style={styles.sliderWrap}>
+                            <WeightSlider weightKg={weightKg} unit={unit} panHandlers={panHandlers} trackWidth={sliderWidth} />
+                        </View>
+                    </View>
                 </View>
             </EvaluationLayout>
-        </SafeAreaView>
-
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    screen: {
         flex: 1,
+    },
+    fill: {
+        flex: 1,
+        minHeight: 0,
+        width: '100%',
+        justifyContent: 'flex-start',
+    },
+    centerBlock: {
+        flex: 0,
+        minHeight: 0,
+        justifyContent: 'center',
         alignItems: 'center',
+        marginTop: 6,
     },
     weightDisplay: {
         flexDirection: 'row',
         alignItems: 'baseline',
-        marginBottom: scaleVertical(15),
         justifyContent: 'center',
+        marginBottom: 8,
     },
     weightText: {
-        fontSize: FontSizes.displayMedium,
+        fontSize: 36,
         fontFamily: 'Cairo_700Bold',
+        color: '#111',
     },
     weightUnit: {
-        fontSize: FontSizes.h4,
-        fontFamily: 'Cairo_700Bold',
-        marginLeft: scale(10),
+        fontSize: 16,
+        fontFamily: 'Cairo_600SemiBold',
+        color: '#666',
+        marginStart: 8,
+    },
+    sliderWrap: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 2,
     },
 });

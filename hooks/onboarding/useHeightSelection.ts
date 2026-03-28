@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from 'react';
 import { PanResponder } from 'react-native';
+import { HEIGHT_SLIDER_TRACK_HEIGHT } from '@/constants/onboardingSliders';
 
 interface UseHeightSelectionProps {
     minHeight?: number;
@@ -12,7 +13,7 @@ export const useHeightSelection = ({
     minHeight = 140,
     maxHeight = 190,
     initialHeight = 170,
-    sliderHeight = 240,
+    sliderHeight = HEIGHT_SLIDER_TRACK_HEIGHT,
 }: UseHeightSelectionProps = {}) => {
     const [unit, setUnit] = useState<'cm' | 'ft'>('cm');
     const [height, setHeight] = useState(initialHeight);

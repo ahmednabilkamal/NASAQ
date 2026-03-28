@@ -1,46 +1,76 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
-import { scale } from '@/utils/responsive';
-import { FontSizes } from '@/utils/typography';
+import React from 'react';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { HEIGHT_SLIDER_TRACK_HEIGHT } from '@/constants/onboardingSliders';
+
+export { HEIGHT_SLIDER_TRACK_HEIGHT };
 
 interface HeightSliderProps {
     height: number;
-    panHandlers: any;
+    panHandlers: object;
+    minCm?: number;
+    maxCm?: number;
 }
 
-export const HeightSlider: React.FC<HeightSliderProps> = ({ height, panHandlers }) => {
-    const [sliderHeight, setSliderHeight] = useState(0);
+export const HeightSlider: React.FC<HeightSliderProps> = ({
+    height,
+    panHandlers,
+    minCm = 140,
+    maxCm = 190,
+}) => {
+    const { width: windowWidth } = useWindowDimensions();
+    const lineSpan = Math.min(200, Math.max(120, windowWidth * 0.42));
 
-    const handleLayout = (event: LayoutChangeEvent) => {
-        setSliderHeight(event.nativeEvent.layout.height);
-    };
+    const marks = [190, 180, 170, 160, 150, 140];
+    const range = maxCm - minCm;
+    const yFromTop = range > 0 ? ((maxCm - height) / range) * HEIGHT_SLIDER_TRACK_HEIGHT : HEIGHT_SLIDER_TRACK_HEIGHT / 2;
 
     return (
-        <View style={styles.scaleContainer} onLayout={handleLayout} {...panHandlers}>
-            <View style={styles.scaleRuler} pointerEvents="none">
-                {[190, 180, 170, 160, 150, 140].map((val) => (
-                    <View key={val} style={styles.scaleMark}>
-                        <Text style={styles.scaleLabel}>{val}</Text>
-                        <View style={styles.scaleLine} />
-                    </View>
-                ))}
-            </View>
+        <View style={styles.ltrWrap}>
+            <View style={styles.scaleContainer} {...panHandlers}>
+                <View style={styles.scaleRuler} pointerEvents="none">
+                    {marks.map((val) => (
+                        <View key={val} style={styles.scaleMark}>
+                            <Text style={styles.scaleLabel}>{val}</Text>
+                            <View style={styles.scaleLine} />
+                        </View>
+                    ))}
+                </View>
 
-            {sliderHeight > 0 && (
-                <>
-                    <View style={[styles.activeLine, { top: ((190 - height) / (190 - 140)) * sliderHeight }]} pointerEvents="none" />
-                    <View style={[styles.activeCircle, { top: ((190 - height) / (190 - 140)) * sliderHeight - 4 }]} pointerEvents="none" />
-                </>
-            )}
+                <View
+                    style={[
+                        styles.activeLine,
+                        {
+                            top: yFromTop,
+                            width: lineSpan,
+                            left: -lineSpan + 28,
+                        },
+                    ]}
+                    pointerEvents="none"
+                />
+                <View
+                    style={[
+                        styles.activeCircle,
+                        {
+                            top: yFromTop - 5,
+                        },
+                    ]}
+                    pointerEvents="none"
+                />
+            </View>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
+    ltrWrap: {
+        direction: 'ltr',
+    },
     scaleContainer: {
-        width: scale(80),
-        flex: 1,
+        width: 80,
+        height: HEIGHT_SLIDER_TRACK_HEIGHT,
+        marginTop: 0,
         position: 'relative',
+        justifyContent: 'center',
     },
     scaleRuler: {
         height: '100%',
@@ -52,29 +82,31 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     scaleLabel: {
-        fontSize: FontSizes.body,
+        fontSize: 13,
         color: '#999',
-        marginRight: scale(10),
+        fontFamily: 'Cairo_400Regular',
+        marginRight: 10,
+        minWidth: 28,
+        textAlign: 'right',
     },
     scaleLine: {
-        width: scale(20),
+        width: 22,
         height: 1,
         backgroundColor: '#E0E0E0',
     },
     activeLine: {
         position: 'absolute',
-        left: scale(-180),
-        right: 0,
         height: 2,
-        backgroundColor: '#DDA0DD',
+        backgroundColor: '#064E3B',
+        borderRadius: 1,
     },
     activeCircle: {
         position: 'absolute',
-        right: scale(-4),
-        width: scale(12),
-        height: scale(12),
-        borderRadius: scale(6),
-        backgroundColor: '#DDA0DD',
+        right: -5,
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: '#064E3B',
         borderWidth: 2,
         borderColor: '#FFF',
         shadowColor: '#000',
@@ -82,5 +114,5 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 2,
         elevation: 3,
-    }
+    },
 });

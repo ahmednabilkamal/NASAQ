@@ -9,13 +9,13 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
-    I18nManager,
     ActivityIndicator,
     ActionSheetIOS,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { getBackChevron } from '@/config/directionalIcons';
 import { useAuth } from '@/config/authContext';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
@@ -132,7 +132,7 @@ export default function EditProfileScreen() {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name={I18nManager.isRTL ? "chevron-back" : "chevron-forward"} size={24} color="#000" />
+                    <Ionicons name={getBackChevron()} size={24} color="#000" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{content.editProfile}</Text>
                 <View style={{ width: 40 }} />

@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     },
     orderContent: {
         flex: 1,
-        alignItems: 'flex-end',
+        alignItems: 'flex-start',
     },
     orderTitle: {
         fontSize: scale(15),

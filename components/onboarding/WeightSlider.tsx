@@ -1,116 +1,89 @@
 import React from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { FontSizes } from '@/utils/typography';
+import { View, Text, StyleSheet } from 'react-native';
 
 interface WeightSliderProps {
-    weight: number;
-    panHandlers: any;
+    weightKg: number;
+    unit: 'kg' | 'lbs';
+    panHandlers: object;
+    trackWidth: number;
 }
 
-export const WeightSlider: React.FC<WeightSliderProps> = ({ weight, panHandlers }) => {
-    const { width: screenWidth } = useWindowDimensions();
-    const sliderWidth = screenWidth;
+export const WeightSlider: React.FC<WeightSliderProps> = ({ weightKg, unit, panHandlers, trackWidth }) => {
+    const minWeightKg = 40;
+    const maxWeightKg = 120;
+    const pointerHalf = 2;
 
-    const minWeight = 40;
-    const maxWeight = 120;
-    const totalRange = maxWeight - minWeight;
+    const ratio = (weightKg - minWeightKg) / (maxWeightKg - minWeightKg);
+    const clampedRatio = Math.max(0, Math.min(1, ratio));
+    const position = clampedRatio * trackWidth - pointerHalf;
 
-    const fixedMarks = [40, 60, 80, 100, 120];
-
-    const tickCount = totalRange;
-    const ticks = Array.from({ length: tickCount + 1 }, (_, i) => i);
-
-    const pointerPosition = ((weight - minWeight) / totalRange) * sliderWidth;
+    const marksKg = [40, 60, 80, 100, 120];
+    const toDisplay = (kg: number) => (unit === 'lbs' ? kg * 2.20462262 : kg);
+    const marks = marksKg.map((kg) => {
+        const v = toDisplay(kg);
+        return Math.abs(v - Math.round(v)) < 0.01 ? String(Math.round(v)) : v.toFixed(1);
+    });
 
     return (
-        <View style={[styles.rulerContainer, { width: sliderWidth }]} {...panHandlers}>
-            <View style={styles.ticksContainer} pointerEvents="none">
-                {ticks.map((i) => {
-                    const tickPosition = (i / tickCount) * sliderWidth;
-                    const weightAtTick = minWeight + i;
-                    const isLargeTick = weightAtTick % 20 === 0;
-                    const isMediumTick = weightAtTick % 10 === 0 && !isLargeTick;
-                    const isSmallMedium = weightAtTick % 5 === 0 && !isLargeTick && !isMediumTick;
-                    const tickHeight = isLargeTick ? 25 : isMediumTick ? 18 : isSmallMedium ? 12 : 8;
-
-                    return (
-                        <View
-                            key={i}
-                            style={[
-                                styles.tick,
-                                {
-                                    left: tickPosition,
-                                    height: scaleVertical(tickHeight),
-                                    backgroundColor: isLargeTick ? '#666' : isMediumTick ? '#999' : '#D0D0D0',
-                                }
-                            ]}
-                        />
-                    );
-                })}
+        <View style={[styles.outer, { width: trackWidth }]}>
+            <View style={styles.ltrTrack}>
+                <View style={[styles.rulerContainer, { width: trackWidth }]} {...panHandlers}>
+                    <View style={styles.rulerLine} pointerEvents="none" />
+                    <View style={styles.rulerNumbers} pointerEvents="none">
+                        {marks.map((n) => (
+                            <Text key={n} style={styles.rulerNumber}>
+                                {n}
+                            </Text>
+                        ))}
+                    </View>
+                    <View style={[styles.activePointer, { left: position }]} pointerEvents="none" />
+                </View>
             </View>
-
-            <View style={styles.rulerLine} pointerEvents="none" />
-
-            <View style={styles.rulerNumbers} pointerEvents="none">
-                {fixedMarks.map((n) => (
-                    <Text key={n} style={styles.rulerNumber}>{n}</Text>
-                ))}
-            </View>
-
-            <View style={[styles.activePointer, { left: pointerPosition }]} pointerEvents="none" />
         </View>
     );
 };
 
 const styles = StyleSheet.create({
+    outer: {
+        alignSelf: 'center',
+    },
+    ltrTrack: {
+        direction: 'ltr',
+    },
     rulerContainer: {
-        height: scaleVertical(100),
+        height: 72,
         justifyContent: 'flex-end',
+        paddingBottom: 4,
+        paddingTop: 6,
         position: 'relative',
-        marginHorizontal: -20,
-    },
-    ticksContainer: {
-        position: 'absolute',
-        bottom: scaleVertical(35),
-        left: 0,
-        right: 0,
-        height: scaleVertical(30),
-    },
-    tick: {
-        position: 'absolute',
-        bottom: 0,
-        width: 1,
-        borderRadius: 0.5,
     },
     rulerLine: {
         position: 'absolute',
-        bottom: scaleVertical(35),
+        bottom: 26,
         left: 0,
         right: 0,
-        height: 1,
+        height: 2,
         backgroundColor: '#E0E0E0',
+        borderRadius: 1,
     },
     rulerNumbers: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
+        justifyContent: 'space-between',
         width: '100%',
         position: 'absolute',
-        bottom: scaleVertical(8),
-        paddingHorizontal: scale(20),
+        bottom: 4,
     },
     rulerNumber: {
-        fontSize: FontSizes.body,
+        fontSize: 13,
         color: '#999',
         fontFamily: 'Cairo_400Regular',
     },
     activePointer: {
         position: 'absolute',
-        bottom: scaleVertical(30),
-        width: scale(3),
-        height: scaleVertical(40),
-        backgroundColor: '#7C3AED',
+        bottom: 14,
+        width: 4,
+        height: 28,
+        backgroundColor: '#064E3B',
         borderRadius: 2,
-        marginLeft: -scale(1.5),
-    }
+    },
 });

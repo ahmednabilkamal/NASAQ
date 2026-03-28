@@ -10,9 +10,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { scale, scaleVertical, wp } from '@/utils/responsive';
-import { Spacing, BorderRadius } from '@/utils/spacing';
-import { FontSizes } from '@/utils/typography';
+import { Ionicons } from '@expo/vector-icons';
+import { getBackChevron } from '@/config/directionalIcons';
 
 const { width } = Dimensions.get('window');
 
@@ -40,6 +39,7 @@ const OrderDetailsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.timeText}>9:41</Text>
         <View style={styles.statusBar}>
@@ -49,11 +49,13 @@ const OrderDetailsScreen = () => {
         </View>
       </View>
 
+      {/* Back Arrow */}
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Text style={styles.backArrow}>→</Text>
+        <Ionicons name={getBackChevron()} size={24} color="#1B5E20" />
       </TouchableOpacity>
 
       <ScrollView style={styles.content}>
+        {/* Green Header Section */}
         <View style={styles.greenHeader}>
           <View style={styles.orderInfo}>
             <View style={styles.orderLabel}>
@@ -71,6 +73,7 @@ const OrderDetailsScreen = () => {
           />
         </View>
 
+        {/* Size Guide Section */}
         <View style={styles.sizeGuideSection}>
           <View style={styles.sizeGuideHeader}>
             <Image
@@ -80,6 +83,7 @@ const OrderDetailsScreen = () => {
             <Text style={styles.sizeGuideTitle}>دليل المقاسات</Text>
           </View>
 
+          {/* Measurements Grid */}
           <View style={styles.measurementsContainer}>
             {measurements.map((item, index) => (
               <View key={index} style={styles.measurementItem}>
@@ -91,6 +95,7 @@ const OrderDetailsScreen = () => {
         </View>
       </ScrollView>
 
+      {/* Bottom Action Buttons */}
       <View style={styles.bottomSection}>
         {showError ? (
           <View style={styles.errorMessage}>
@@ -123,101 +128,97 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.verticalXs,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
     backgroundColor: '#1B5E20',
   },
   timeText: {
-    fontSize: FontSizes.bodySmall,
+    fontSize: 12,
     color: '#FFF',
     fontWeight: '600',
   },
   statusBar: {
     flexDirection: 'row',
-    gap: Spacing.gapXs,
+    gap: 4,
   },
   backButton: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.verticalMd,
-  },
-  backArrow: {
-    fontSize: scale(20),
-    color: '#1B5E20',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
   },
   content: {
     flex: 1,
-    marginBottom: scaleVertical(140),
+    marginBottom: 140,
   },
   greenHeader: {
     backgroundColor: '#1B5E20',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    padding: Spacing.cardPadding,
-    borderRadius: BorderRadius.sm,
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.verticalMd,
+    padding: 16,
+    borderRadius: 8,
+    marginHorizontal: 15,
+    marginTop: 10,
   },
   orderInfo: {
     flex: 1,
   },
   orderLabel: {
     backgroundColor: 'rgba(255,255,255,0.3)',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.verticalXs,
-    borderRadius: BorderRadius.xs,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
     alignSelf: 'flex-start',
-    marginBottom: Spacing.verticalSm,
+    marginBottom: 8,
   },
   labelText: {
     color: '#FFF',
-    fontSize: FontSizes.bodySmall,
+    fontSize: 11,
     fontWeight: '600',
   },
   orderDetails: {
-    marginBottom: Spacing.verticalSm,
+    marginBottom: 8,
   },
   orderTitle: {
     color: '#FFF',
-    fontSize: FontSizes.body,
+    fontSize: 14,
     fontWeight: '600',
-    marginBottom: Spacing.verticalXs,
+    marginBottom: 4,
   },
   orderSubtitle: {
     color: 'rgba(255,255,255,0.8)',
-    fontSize: FontSizes.bodySmall,
+    fontSize: 12,
   },
   orderPrice: {
     color: '#FFF',
-    fontSize: FontSizes.bodySmall,
+    fontSize: 12,
     fontWeight: '600',
   },
   headerImage: {
-    width: scale(60),
-    height: scale(60),
-    borderRadius: BorderRadius.round,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
   },
   sizeGuideSection: {
     backgroundColor: '#FFF',
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.verticalMd,
-    borderRadius: BorderRadius.sm,
-    padding: Spacing.cardPadding,
-    paddingBottom: scaleVertical(20),
+    marginHorizontal: 15,
+    marginTop: 15,
+    borderRadius: 8,
+    padding: 16,
+    paddingBottom: 20,
   },
   sizeGuideHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.verticalMd,
+    marginBottom: 16,
   },
   measurementImage: {
-    width: scale(40),
-    height: scale(40),
-    marginRight: Spacing.md,
-    borderRadius: BorderRadius.round,
+    width: 40,
+    height: 40,
+    marginRight: 10,
+    borderRadius: 20,
   },
   sizeGuideTitle: {
-    fontSize: FontSizes.body,
+    fontSize: 14,
     fontWeight: '600',
     color: '#333',
   },
@@ -227,17 +228,17 @@ const styles = StyleSheet.create({
   measurementItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: Spacing.verticalMd,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
   measurementLabel: {
-    fontSize: FontSizes.label,
+    fontSize: 13,
     color: '#666',
     fontWeight: '500',
   },
   measurementValue: {
-    fontSize: FontSizes.label,
+    fontSize: 13,
     color: '#333',
     fontWeight: '600',
   },
@@ -247,44 +248,44 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#F5F5F5',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.verticalMd,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
   },
   errorMessage: {
     backgroundColor: '#FFE0E0',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.verticalMd,
-    borderRadius: BorderRadius.xs,
-    marginBottom: Spacing.verticalMd,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 6,
+    marginBottom: 12,
   },
   errorText: {
     color: '#D32F2F',
-    fontSize: FontSizes.label,
+    fontSize: 13,
     fontWeight: '500',
     textAlign: 'center',
   },
   buttonContainer: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    gap: 12,
   },
   primaryButton: {
     flex: 1,
     backgroundColor: '#1B5E20',
-    paddingVertical: Spacing.verticalMd,
-    borderRadius: BorderRadius.sm,
+    paddingVertical: 14,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   primaryButtonText: {
     color: '#FFF',
-    fontSize: FontSizes.body,
+    fontSize: 14,
     fontWeight: '600',
   },
   secondaryButton: {
     flex: 1,
     backgroundColor: '#FFF',
-    paddingVertical: Spacing.verticalMd,
-    borderRadius: BorderRadius.sm,
+    paddingVertical: 14,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -292,7 +293,7 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: '#333',
-    fontSize: FontSizes.body,
+    fontSize: 14,
     fontWeight: '600',
   },
 });

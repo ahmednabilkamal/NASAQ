@@ -10,10 +10,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
-import { FontSizes, LineHeights } from '@/utils/typography';
-import { InputSizes, ButtonSizes } from '@/utils/spacing';
+import { Ionicons } from '@expo/vector-icons';
+import { getForwardChevron } from '@/config/directionalIcons';
 
 const { width } = Dimensions.get('window');
 
@@ -58,17 +56,19 @@ const FilterModalScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.closeIcon}>✕</Text>
         </TouchableOpacity>
         <Text style={styles.headerDots}>━ ━</Text>
         <TouchableOpacity onPress={() => router.push('/pages/filter_modal_2')}>
-          <Text style={styles.nextIcon}>›</Text>
+          <Ionicons name={getForwardChevron()} size={28} color="#000" />
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
+        {/* Title Section */}
         <View style={styles.titleSection}>
           <Text style={styles.mainTitle}>
             {expandedSections.section1 ? 'طقم ملابس وإكسسوارات' : 'صغيرة ومتنوعة'}
@@ -80,6 +80,7 @@ const FilterModalScreen = () => {
           </Text>
         </View>
 
+        {/* Image Gallery */}
         <View style={styles.imageGallery}>
           {images.map((image, index) => (
             <Image
@@ -90,6 +91,7 @@ const FilterModalScreen = () => {
           ))}
         </View>
 
+        {/* Filter Sections */}
         <View style={styles.sectionsContainer}>
           {filterSections.map((section) => (
             <View key={section.id} style={styles.filterSection}>
@@ -118,6 +120,7 @@ const FilterModalScreen = () => {
         </View>
       </ScrollView>
 
+      {/* Bottom Button */}
       <View style={styles.bottomSection}>
         <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/pages/filter_modal_2')}>
           <Text style={styles.actionButtonText}>اضف واحد منهم</Text>
@@ -136,66 +139,61 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.verticalSm,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
     backgroundColor: '#FFF',
     borderBottomWidth: 1,
     borderBottomColor: '#EEE',
   },
   closeIcon: {
-    fontSize: FontSizes.h4,
+    fontSize: 20,
     color: '#333',
     fontWeight: '600',
   },
   headerDots: {
-    fontSize: FontSizes.body,
+    fontSize: 14,
     color: '#999',
     letterSpacing: 2,
   },
-  nextIcon: {
-    fontSize: FontSizes.h4,
-    color: '#333',
-    fontWeight: '600',
-  },
   content: {
     flex: 1,
-    paddingBottom: scaleVertical(100),
+    paddingBottom: 100,
   },
   titleSection: {
     backgroundColor: '#FFF',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.verticalMd,
+    paddingHorizontal: 15,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#EEE',
   },
   mainTitle: {
-    fontSize: FontSizes.h4,
+    fontSize: 18,
     fontWeight: '600',
     color: '#333',
-    marginBottom: Spacing.verticalXs,
+    marginBottom: 8,
   },
   description: {
-    fontSize: FontSizes.bodySmall,
+    fontSize: 13,
     color: '#666',
-    lineHeight: LineHeights.bodySmall,
+    lineHeight: 20,
   },
   imageGallery: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.verticalSm,
+    gap: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
     backgroundColor: '#FFF',
   },
   galleryImage: {
-    width: (width - scale(60)) / 3,
-    height: (width - scale(60)) / 3,
-    borderRadius: BorderRadius.sm,
+    width: (width - 60) / 3,
+    height: (width - 60) / 3,
+    borderRadius: 8,
   },
   sectionsContainer: {
     backgroundColor: '#FFF',
-    marginTop: Spacing.md,
-    paddingHorizontal: Spacing.lg,
+    marginTop: 10,
+    paddingHorizontal: 15,
   },
   filterSection: {
     borderBottomWidth: 1,
@@ -205,40 +203,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: Spacing.verticalMd,
+    paddingVertical: 14,
   },
   sectionTitle: {
-    fontSize: FontSizes.body,
+    fontSize: 14,
     fontWeight: '600',
     color: '#333',
   },
   expandIcon: {
-    fontSize: FontSizes.caption,
+    fontSize: 12,
     color: '#999',
   },
   sectionContent: {
-    paddingBottom: Spacing.verticalSm,
+    paddingBottom: 12,
   },
   itemRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: Spacing.verticalXs,
-    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     backgroundColor: '#F9F9F9',
-    marginBottom: Spacing.xs,
-    borderRadius: BorderRadius.xs,
+    marginBottom: 6,
+    borderRadius: 4,
   },
   itemText: {
-    fontSize: FontSizes.bodySmall,
+    fontSize: 13,
     color: '#333',
   },
   checkbox: {
-    width: scale(18),
-    height: scale(18),
+    width: 18,
+    height: 18,
     borderWidth: 2,
     borderColor: '#DDD',
-    borderRadius: BorderRadius.xs,
+    borderRadius: 4,
   },
   bottomSection: {
     position: 'absolute',
@@ -246,21 +244,21 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#FFF',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.verticalSm,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: '#EEE',
   },
   actionButton: {
     backgroundColor: '#1B5E20',
-    paddingVertical: Spacing.verticalMd,
-    borderRadius: BorderRadius.sm,
+    paddingVertical: 14,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   actionButtonText: {
     color: '#FFF',
-    fontSize: FontSizes.body,
+    fontSize: 14,
     fontWeight: '600',
   },
 });

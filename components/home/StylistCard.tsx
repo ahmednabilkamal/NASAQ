@@ -1,9 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
-import { FontSizes } from '@/utils/typography';
 
 interface StylistCardProps {
     name: string;
@@ -11,14 +8,19 @@ interface StylistCardProps {
     imageUri?: any;
     rating: number;
     clientCount: number;
-    price?: number | string;
     tags: string[];
     onPress?: () => void;
     isFavorite?: boolean;
     onFavoriteToggle?: () => void;
 }
 
-export default function StylistCard({ name, subtitle, imageUri, rating, clientCount, price, tags, onPress, isFavorite = false, onFavoriteToggle }: StylistCardProps) {
+export default function StylistCard({ name, subtitle, imageUri, rating, clientCount, tags, onPress, isFavorite = false, onFavoriteToggle }: StylistCardProps) {
+    const subtitleText =
+        subtitle != null && String(subtitle).trim() !== ''
+            ? String(subtitle)
+            : tags.length > 0 && tags[0] != null && String(tags[0]).trim() !== ''
+              ? String(tags[0])
+              : 'منسقة أزياء';
 
     const handleFavoritePress = (e: any) => {
         e.stopPropagation();
@@ -32,11 +34,11 @@ export default function StylistCard({ name, subtitle, imageUri, rating, clientCo
                     <Image source={imageUri} style={styles.image} resizeMode="cover" />
                 ) : (
                     <View style={styles.imagePlaceholder}>
-                        <Ionicons name="person" size={IconSizes.xl} color="#ccc" />
+                        <Ionicons name="person" size={40} color="#ccc" />
                     </View>
                 )}
                 <View style={styles.ratingBadge}>
-                    <Ionicons name="star" size={scale(10)} color="#FFB800" />
+                    <Ionicons name="star" size={10} color="#FFB800" />
                     <Text style={styles.ratingText}>{rating}</Text>
                 </View>
                 <TouchableOpacity
@@ -46,27 +48,27 @@ export default function StylistCard({ name, subtitle, imageUri, rating, clientCo
                 >
                     <Ionicons
                         name={isFavorite ? "heart" : "heart-outline"}
-                        size={IconSizes.sm}
+                        size={20}
                         color={isFavorite ? "#FF4458" : "#999"}
                     />
                 </TouchableOpacity>
             </View>
 
             <View style={styles.infoContainer}>
-                <Text style={styles.name} numberOfLines={1}>{name}</Text>
-                <Text style={styles.tags} numberOfLines={1}>
-                    {subtitle || (tags.length > 0 ? tags[0] : 'Expert Stylist')}
-                </Text>
-
-                <View style={styles.statsRow}>
-                    <View style={styles.clientCount}>
-                        <Text style={styles.totalLabel}>Total </Text>
-                        <Text style={styles.clientCountText}>{clientCount}</Text>
-                    </View>
-                    {price && (
-                        <Text style={styles.clientCountText}>SAR {price}</Text>
-                    )}
-                </View>
+                {[
+                    <Text key="name" style={styles.name} numberOfLines={1}>
+                        {name}
+                    </Text>,
+                    <Text key="tags" style={styles.tags} numberOfLines={1}>
+                        {subtitleText}
+                    </Text>,
+                    <View key="stats" style={styles.statsRow}>
+                        <View style={styles.clientCount}>
+                            <Text style={styles.totalLabel}>عملاء </Text>
+                            <Text style={styles.clientCountText}>{clientCount}</Text>
+                        </View>
+                    </View>,
+                ]}
             </View>
         </TouchableOpacity>
     );
@@ -75,10 +77,10 @@ export default function StylistCard({ name, subtitle, imageUri, rating, clientCo
 
 const styles = StyleSheet.create({
     container: {
-        width: scale(170),
+        width: 170,
         backgroundColor: '#fff',
-        borderRadius: BorderRadius.xl,
-        marginRight: Spacing.lg,
+        borderRadius: 20,
+        marginStart: 16,
         overflow: 'hidden',
         elevation: 2,
         shadowColor: '#000',
@@ -88,7 +90,7 @@ const styles = StyleSheet.create({
     },
     imageContainer: {
         width: '100%',
-        height: scaleVertical(160),
+        height: 160,
         position: 'relative',
     },
     image: {
@@ -104,56 +106,54 @@ const styles = StyleSheet.create({
     },
     ratingBadge: {
         position: 'absolute',
-        bottom: scale(10),
-        left: scale(10),
+        bottom: 10,
+        right: 10,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(0,0,0,0.5)',
-        paddingHorizontal: Spacing.sm,
-        paddingVertical: scale(4),
-        borderRadius: BorderRadius.md,
-        gap: scale(4),
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        gap: 4,
     },
     ratingText: {
-        fontSize: FontSizes.bodySmall,
+        fontSize: 11,
         fontFamily: 'Cairo_600SemiBold',
         color: '#FFF',
     },
     favoriteButton: {
         position: 'absolute',
-        top: scale(10),
-        right: scale(10),
-        width: scale(32),
-        height: scale(32),
-        borderRadius: BorderRadius.lg,
+        top: 10,
+        left: 10,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         backgroundColor: 'rgba(255,255,255,0.8)',
         justifyContent: 'center',
         alignItems: 'center',
     },
     infoContainer: {
-        padding: Spacing.md,
+        padding: 12,
     },
     name: {
-        fontSize: FontSizes.body,
+        fontSize: 14,
         fontFamily: 'Cairo_700Bold',
         color: '#111',
-        textAlign: 'right',
     },
     tags: {
-        fontSize: FontSizes.bodySmall,
+        fontSize: 11,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
-        textAlign: 'right',
-        marginTop: scale(2),
+        marginTop: 2,
     },
     statsRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start',
         alignItems: 'center',
-        marginTop: scale(10),
+        marginTop: 10,
         borderTopWidth: 1,
         borderTopColor: '#F0F0F0',
-        paddingTop: Spacing.sm,
+        paddingTop: 8,
     },
     clientCount: {
         flexDirection: 'row',
@@ -161,12 +161,12 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     clientCountText: {
-        fontSize: FontSizes.bodySmall,
+        fontSize: 11,
         fontFamily: 'Cairo_600SemiBold',
         color: '#888',
     },
     totalLabel: {
-        fontSize: FontSizes.bodySmall,
+        fontSize: 11,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
     }
