@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View,
     Text,
@@ -11,48 +11,79 @@ import {
     Platform,
     ActivityIndicator,
     ActionSheetIOS,
+    Alert,
+    Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
+import { userScreenDirection } from '@/config/rtlLayout';
+import { rtlInput, rtlText } from '@/config/rtlText';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getBackChevron } from '@/config/directionalIcons';
 import { useAuth } from '@/config/authContext';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
+import { resolveMediaUrl } from '@/utils/resolveMediaUrl';
 import * as ImagePicker from 'expo-image-picker';
-import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius, IconSizes } from '@/utils/spacing';
-import { FontSizes, LineHeights } from '@/utils/typography';
-import { InputSizes, ButtonSizes } from '@/utils/spacing';
-import { showErrorToast, showSuccessToast, showAlert } from '@/utils/errorHandler';
+import { scale } from '@/utils/responsive';
+import { Spacing, BorderRadius, InputSizes, ButtonSizes } from '@/utils/spacing';
+import { FontSizes } from '@/utils/typography';
+import { showErrorToast, showSuccessToast } from '@/utils/errorHandler';
 
 export default function EditProfileScreen() {
     const router = useRouter();
-    const { mode } = useLocalSearchParams<{ mode?: string }>();
-    const isSocialMode = mode === 'social';
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.profile || (pageData as any)['en'].profile;
 
-    const { user, refreshUser, updateProfile } = useAuth();
+    const { user, updateProfile } = useAuth();
     const [name, setName] = useState(user?.name || '');
     const [email, setEmail] = useState(user?.email || '');
     const [phone, setPhone] = useState(user?.phone || '');
     const [image, setImage] = useState<string | null>(user?.image || null);
-    const [countryCode, setCountryCode] = useState('+966');
+    const countryCode = '+966';
     const [loading, setLoading] = useState(false);
-    const [instagram, setInstagram] = useState(user?.instagram || '');
-    const [twitter, setTwitter] = useState(user?.twitter || '');
-    const [facebook, setFacebook] = useState(user?.facebook || '');
+
+    useFocusEffect(
+        useCallback(() => {
+            if (!user) return;
+            setName(user.name || '');
+            setEmail(user.email || '');
+            setPhone(user.phone || '');
+            // Keep API value so `image !== user.image` still detects new picks only (not origin-rewritten URLs).
+            const raw = user.image;
+            setImage(raw != null && raw !== '' ? String(raw) : null);
+        }, [user])
+    );
+
+    const showPermissionSettingsAlert = () => {
+        const c = (pageData as any)[languageCode] || (pageData as any)['ar'];
+        const err = c.errors || {};
+        Alert.alert(err.permissionDenied || 'تم رفض الإذن', err.permissionSettingsHint || '', [
+            {
+                text: (pageData as any)[languageCode]?.imageAction?.cancel || 'إلغاء',
+                style: 'cancel',
+            },
+            { text: err.openSettings || 'فتح الإعدادات', onPress: () => void Linking.openSettings() },
+        ]);
+    };
+
+    const mediaLibraryAccessOk = (r: ImagePicker.MediaLibraryPermissionResponse) =>
+        r.granted || r.accessPrivileges === 'limited' || r.accessPrivileges === 'all';
 
     const pickImage = async (useCamera: boolean) => {
         try {
-            const permissionResult = useCamera
-                ? await ImagePicker.requestCameraPermissionsAsync()
-                : await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-            if (permissionResult.granted === false) {
-                showErrorToast('permissionDenied', languageCode);
-                return;
+            if (useCamera) {
+                const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+                if (!permissionResult.granted) {
+                    showPermissionSettingsAlert();
+                    return;
+                }
+            } else {
+                const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (!mediaLibraryAccessOk(permissionResult)) {
+                    showPermissionSettingsAlert();
+                    return;
+                }
             }
 
             const result = useCamera
@@ -90,10 +121,23 @@ export default function EditProfileScreen() {
                 }
             );
         } else {
-            showAlert(
+            Alert.alert(
                 imageActionContent.title || 'تغيير الصورة',
                 imageActionContent.message || 'اختر طريقة التحميل',
-                languageCode
+                [
+                    {
+                        text: imageActionContent.takePhoto || 'التقاط صورة',
+                        onPress: () => void pickImage(true),
+                    },
+                    {
+                        text: imageActionContent.chooseFromGallery || 'اختيار من المعرض',
+                        onPress: () => void pickImage(false),
+                    },
+                    {
+                        text: imageActionContent.cancel || 'إلغاء',
+                        style: 'cancel',
+                    },
+                ]
             );
         }
     };
@@ -106,20 +150,17 @@ export default function EditProfileScreen() {
 
         setLoading(true);
         try {
-            const updateData: any = {
+            const updateData: Record<string, unknown> = {
                 name,
                 email,
                 phone,
-                instagram,
-                twitter,
-                facebook
             };
 
             if (image && image !== user?.image) {
                 updateData.image = image;
             }
 
-            await updateProfile(updateData);
+            await updateProfile(updateData as any);
             showSuccessToast('profileUpdated', languageCode);
             router.back();
         } catch (error: any) {
@@ -129,13 +170,13 @@ export default function EditProfileScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, userScreenDirection]} edges={['top']}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name={getBackChevron()} size={24} color="#000" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{content.editProfile}</Text>
-                <View style={{ width: 40 }} />
+                <View style={styles.headerSpacer} />
             </View>
 
             <KeyboardAvoidingView
@@ -143,11 +184,11 @@ export default function EditProfileScreen() {
                 style={styles.keyboardView}
             >
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                    {!isSocialMode && (
-                        <View style={styles.avatarContainer}>
+                    <View style={styles.avatarBlock}>
+                        <View style={styles.avatarCircleWrap}>
                             {image ? (
                                 <Image
-                                    source={{ uri: image }}
+                                    source={{ uri: resolveMediaUrl(image) ?? image }}
                                     style={styles.avatar}
                                 />
                             ) : (
@@ -159,104 +200,48 @@ export default function EditProfileScreen() {
                                 <Ionicons name="camera" size={16} color="#064E3B" />
                             </TouchableOpacity>
                         </View>
-                    )}
+                    </View>
 
                     <View style={styles.formContainer}>
-                        {!isSocialMode && (
-                            <>
-                                <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>الاسم</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={name}
-                                        onChangeText={setName}
-                                        textAlign="right"
-                                        placeholder="أدخل اسمك"
-                                        placeholderTextColor="#999"
-                                    />
-                                </View>
-
-                                <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>البريد الإلكتروني</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={email}
-                                        onChangeText={setEmail}
-                                        textAlign="right"
-                                        placeholder="أدخل بريدك الإلكتروني"
-                                        placeholderTextColor="#999"
-                                        keyboardType="email-address"
-                                    />
-                                </View>
-
-                                <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>رقم الجوال</Text>
-                                    <View style={styles.phoneInputContainer}>
-                                        <TextInput
-                                            style={styles.phoneInput}
-                                            value={phone}
-                                            onChangeText={setPhone}
-                                            textAlign="right"
-                                            placeholder="أدخل رقم الجوال"
-                                            placeholderTextColor="#999"
-                                            keyboardType="phone-pad"
-                                        />
-                                        <View style={styles.countryCodeContainer}>
-                                            <Text style={styles.countryCode}>{countryCode}</Text>
-                                            <Ionicons name="chevron-down" size={16} color="#666" />
-                                        </View>
-                                    </View>
-                                </View>
-                            </>
-                        )}
-
-                        <Text style={[styles.label, { marginTop: 10 }]}>وسائل التواصل الإجتماعي</Text>
-
                         <View style={styles.inputGroup}>
-                            <View style={styles.socialInputContainer}>
-                                <TextInput
-                                    style={styles.socialInput}
-                                    value={instagram}
-                                    onChangeText={setInstagram}
-                                    textAlign="right"
-                                    placeholder="رابط إنستجرام"
-                                    placeholderTextColor="#999"
-                                />
-                                <View style={styles.socialIconContainer}>
-                                    <Ionicons name="logo-instagram" size={20} color="#E1306C" />
-                                </View>
-                            </View>
+                            <Text style={styles.label}>الاسم</Text>
+                            <TextInput
+                                style={[styles.input, rtlInput]}
+                                value={name}
+                                onChangeText={setName}
+                                placeholder="أدخل اسمك"
+                                placeholderTextColor="#999"
+                            />
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <View style={styles.socialInputContainer}>
-                                <TextInput
-                                    style={styles.socialInput}
-                                    value={twitter}
-                                    onChangeText={setTwitter}
-                                    textAlign="right"
-                                    placeholder="رابط تويتر"
-                                    placeholderTextColor="#999"
-                                />
-                                <View style={styles.socialIconContainer}>
-                                    <Ionicons name="logo-twitter" size={20} color="#1DA1F2" />
-                                </View>
-                            </View>
+                            <Text style={styles.label}>البريد الإلكتروني</Text>
+                            <TextInput
+                                style={[styles.input, rtlInput]}
+                                value={email}
+                                onChangeText={setEmail}
+                                placeholder="أدخل بريدك الإلكتروني"
+                                placeholderTextColor="#999"
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                            />
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <View style={styles.socialInputContainer}>
-                                <TextInput
-                                    style={styles.socialInput}
-                                    value={facebook}
-                                    onChangeText={setFacebook}
-                                    textAlign="right"
-                                    placeholder="رابط فيس بوك"
-                                    placeholderTextColor="#999"
-                                />
-                                <View style={styles.socialIconContainer}>
-                                    <Ionicons name="logo-facebook" size={20} color="#4267B2" />
+                            <Text style={styles.label}>رقم الجوال</Text>
+                            <View style={styles.phoneInputContainer}>
+                                <View style={styles.countryCodeContainer}>
+                                    <Text style={styles.countryCode}>{countryCode}</Text>
+                                    <Ionicons name="chevron-down" size={16} color="#666" />
                                 </View>
+                                <TextInput
+                                    style={[styles.phoneInput, rtlInput]}
+                                    value={phone}
+                                    onChangeText={setPhone}
+                                    placeholder="أدخل رقم الجوال"
+                                    placeholderTextColor="#999"
+                                    keyboardType="phone-pad"
+                                />
                             </View>
                         </View>
                     </View>
@@ -289,6 +274,7 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.verticalSm,
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
+        gap: 8,
     },
     backButton: {
         width: scale(40),
@@ -296,20 +282,32 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    headerSpacer: {
+        width: scale(40),
+        height: scale(40),
+    },
     headerTitle: {
+        flex: 1,
         fontSize: FontSizes.h4,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
+        ...rtlText.alignCenter,
     },
     keyboardView: {
         flex: 1,
     },
     scrollContent: {
         padding: Spacing.xl,
+        paddingBottom: Spacing.verticalXxxl,
     },
-    avatarContainer: {
+    avatarBlock: {
         alignItems: 'center',
         marginBottom: Spacing.verticalXxxl,
+    },
+    avatarCircleWrap: {
+        position: 'relative',
+        width: scale(100),
+        height: scale(100),
     },
     avatar: {
         width: scale(100),
@@ -319,7 +317,7 @@ const styles = StyleSheet.create({
     editAvatarButton: {
         position: 'absolute',
         bottom: 0,
-        right: '35%',
+        end: 0,
         width: scale(32),
         height: scale(32),
         borderRadius: BorderRadius.round,
@@ -349,7 +347,7 @@ const styles = StyleSheet.create({
         fontSize: FontSizes.body,
         fontFamily: 'Cairo_600SemiBold',
         color: '#333',
-        textAlign: 'right',
+        ...rtlText.alignStart,
     },
     input: {
         backgroundColor: '#F8F9FA',
@@ -364,6 +362,7 @@ const styles = StyleSheet.create({
     },
     phoneInputContainer: {
         flexDirection: 'row',
+        alignItems: 'stretch',
         backgroundColor: '#F8F9FA',
         borderRadius: BorderRadius.md,
         borderWidth: 1,
@@ -382,14 +381,15 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: InputSizes.paddingHorizontal,
-        borderLeftWidth: 1,
-        borderLeftColor: '#E5E5E5',
+        borderEndWidth: 1,
+        borderEndColor: '#E5E5E5',
         gap: Spacing.xs,
     },
     countryCode: {
         fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
+        writingDirection: 'ltr',
     },
     footer: {
         padding: Spacing.xl,
@@ -407,29 +407,6 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: FontSizes.bodyLarge,
         fontFamily: 'Cairo_700Bold',
-    },
-    socialInputContainer: {
-        flexDirection: 'row',
-        backgroundColor: '#F8F9FA',
-        borderRadius: BorderRadius.md,
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-        overflow: 'hidden',
-    },
-    socialInput: {
-        flex: 1,
-        paddingHorizontal: InputSizes.paddingHorizontal,
-        paddingVertical: InputSizes.paddingVertical,
-        fontSize: FontSizes.body,
-        fontFamily: 'Cairo_400Regular',
-        color: '#333',
-    },
-    socialIconContainer: {
-        width: scale(48),
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderLeftWidth: 1,
-        borderLeftColor: '#E5E5E5',
-        backgroundColor: '#F0F0F0',
+        textAlign: 'center',
     },
 });

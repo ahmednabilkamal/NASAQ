@@ -1,40 +1,101 @@
 import { usePathname, useRouter } from 'expo-router';
-import React from 'react';
-import { StyleSheet, TouchableOpacity, View, Image } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useCallback, useRef } from 'react';
+import { StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { userScreenDirection } from '@/config/rtlLayout';
 import { scale, scaleVertical } from '@/utils/responsive';
-import { IconSizes, ComponentSizes } from '@/utils/spacing';
+import { ComponentSizes } from '@/utils/spacing';
+
+const ACTIVE_COLOR = '#064E3B';
+const INACTIVE_COLOR = '#999';
+
+const TAB_NAV_DEBOUNCE_MS = 450;
 
 export default function BottomNav() {
     const router = useRouter();
     const pathname = usePathname();
     const insets = useSafeAreaInsets();
+    const lastTabNavAt = useRef(0);
 
     const tabs = [
-        { id: 'profile', icon: require('../assets/icons/user.png'), label: 'الملف', route: '/pages/tabs/profile' },
-        { id: 'orders', icon: require('../assets/icons/bag.png'), label: 'الطلبات', route: '/pages/orders' },
-        { id: 'home', icon: require('../assets/icons/home-2.png'), label: 'الرئيسية', route: '/pages/tabs/homescreen', isCenter: true },
-        { id: 'favorites', icon: require('../assets/icons/house 2.png'), label: 'المفضلة', route: '/pages/tabs/favorites' },
-        { id: 'chat', icon: require('../assets/icons/Group.png'), label: 'المحادثات', route: '/pages/tabs/chat' },
+        { id: 'profile', icon: 'person-outline' as const, label: 'الملف', route: '/pages/tabs/profile' },
+        { id: 'orders', icon: 'receipt-outline' as const, label: 'الطلبات', route: '/pages/orders' },
+        { id: 'home', icon: 'home' as const, label: 'الرئيسية', route: '/pages/tabs/homescreen', isCenter: true },
+        { id: 'favorites', icon: 'heart-outline' as const, label: 'المفضلة', route: '/pages/tabs/favorites' },
+        { id: 'chat', icon: 'chatbubble-ellipses-outline' as const, label: 'المحادثات', route: '/pages/tabs/chat' },
     ];
 
+    const tabIsActive = (tab: (typeof tabs)[number]): boolean => {
+        if (pathname === tab.route) return true;
+        if (tab.id === 'home') return pathname.includes('/tabs/homescreen');
+        if (tab.id === 'profile') {
+            return (
+                pathname.includes('/tabs/profile') ||
+                pathname.includes('/pages/profile/') ||
+                pathname.includes('/pages/payment/') ||
+                pathname.includes('/pages/settings/') ||
+                pathname.includes('/pages/notifications') ||
+                pathname.includes('/pages/tickets') ||
+                pathname.includes('/pages/contact_us')
+            );
+        }
+        if (tab.id === 'orders') {
+            return (
+                pathname.includes('/pages/orders') ||
+                pathname.includes('/pages/order_details') ||
+                pathname.includes('/pages/checkout')
+            );
+        }
+        if (tab.id === 'favorites') return pathname.includes('/tabs/favorites');
+        if (tab.id === 'chat') return pathname.includes('/tabs/chat') || pathname.includes('/pages/chat');
+        return false;
+    };
+
+    /** Avoid stacking duplicate routes when already on this tab’s root; debounce rapid taps. */
+    const isTabRootActive = (tab: (typeof tabs)[number]): boolean => {
+        if (tab.id === 'home') return pathname.includes('/tabs/homescreen');
+        if (tab.id === 'profile') return pathname === '/pages/tabs/profile';
+        if (tab.id === 'orders') return pathname === '/pages/orders';
+        if (tab.id === 'favorites') return pathname === '/pages/tabs/favorites';
+        if (tab.id === 'chat') return pathname === '/pages/tabs/chat';
+        return false;
+    };
+
+    const navigateToTab = useCallback(
+        (tab: (typeof tabs)[number]) => {
+            if (isTabRootActive(tab)) return;
+            const now = Date.now();
+            if (now - lastTabNavAt.current < TAB_NAV_DEBOUNCE_MS) return;
+            lastTabNavAt.current = now;
+            router.push(tab.route as any);
+        },
+        [pathname, router]
+    );
+
     return (
-        <SafeAreaView style={styles.container} edges={['bottom']}>
-            <View style={[styles.navBar, { paddingBottom: insets.bottom }]}>
-                {tabs.map((tab, index) => {
-                    const isActive = pathname === tab.route;
+        <View style={[styles.container, userScreenDirection]}>
+            <View
+                style={[
+                    styles.navBar,
+                    { paddingBottom: Math.max(insets.bottom, scaleVertical(8)) },
+                ]}
+            >
+                {tabs.map((tab) => {
+                    const isActive = tabIsActive(tab);
 
                     if (tab.isCenter) {
                         return (
                             <TouchableOpacity
                                 key={tab.id}
                                 style={styles.centerButtonContainer}
-                                activeOpacity={1}
-                                onPress={() => tab.route && router.push(tab.route as any)}
+                                activeOpacity={0.8}
+                                onPress={() => navigateToTab(tab)}
                             >
-                                <View style={styles.centerButton}>
-                                    <Image source={tab.icon} style={{ width: IconSizes.lg, height: IconSizes.lg, tintColor: '#FFF' }} resizeMode="contain" />
+                                <View style={[styles.centerButton, isActive && styles.centerButtonActive]}>
+                                    <Ionicons name={tab.icon} size={26} color="#FFF" />
                                 </View>
+                                <Text style={[styles.tabLabel, styles.tabLabelActive]}>{tab.label}</Text>
                             </TouchableOpacity>
                         );
                     }
@@ -43,69 +104,84 @@ export default function BottomNav() {
                         <TouchableOpacity
                             key={tab.id}
                             style={styles.tabItem}
-                            activeOpacity={1}
-                            onPress={() => tab.route && router.push(tab.route as any)}
+                            activeOpacity={0.7}
+                            onPress={() => navigateToTab(tab)}
                         >
-                            <Image
-                                source={tab.icon}
-                                style={{
-                                    width: IconSizes.md,
-                                    height: IconSizes.md,
-                                    tintColor: isActive ? '#064E3B' : '#666'
-                                }}
-                                resizeMode="contain"
+                            <Ionicons
+                                name={isActive ? (tab.icon.replace('-outline', '') as any) : tab.icon}
+                                size={22}
+                                color={isActive ? ACTIVE_COLOR : INACTIVE_COLOR}
                             />
+                            <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{tab.label}</Text>
                         </TouchableOpacity>
                     );
                 })}
             </View>
-        </SafeAreaView>
+        </View>
     );
-
 }
 
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
         bottom: 0,
-        backgroundColor: 'transparent',
         left: 0,
         right: 0,
+        backgroundColor: 'transparent',
     },
     navBar: {
         flexDirection: 'row',
-        height: ComponentSizes.bottomNavHeight,
+        minHeight: ComponentSizes.bottomNavHeight,
         backgroundColor: '#FFF',
-        borderTopLeftRadius: scale(30),
-        borderTopRightRadius: scale(30),
+        borderTopLeftRadius: scale(24),
+        borderTopRightRadius: scale(24),
         alignItems: 'center',
         justifyContent: 'space-around',
-        boxShadow: '0 -10px 10px rgba(0,0,0,0.05)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
         elevation: 15,
-        paddingHorizontal: scale(10),
+        paddingHorizontal: scale(8),
     },
     tabItem: {
         alignItems: 'center',
         justifyContent: 'center',
         flex: 1,
+        gap: 2,
+    },
+    tabLabel: {
+        fontSize: 10,
+        fontFamily: 'Cairo_400Regular',
+        color: INACTIVE_COLOR,
+        textAlign: 'center',
+        marginTop: 2,
+    },
+    tabLabelActive: {
+        color: ACTIVE_COLOR,
+        fontFamily: 'Cairo_700Bold',
     },
     centerButtonContainer: {
-        marginTop: ComponentSizes.bottomNavCenterMarginTop,
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: scale(100),
-        backgroundColor: "transparent",
+        marginTop: -20,
     },
     centerButton: {
         width: ComponentSizes.bottomNavCenterButton,
         height: ComponentSizes.bottomNavCenterButton,
         borderRadius: ComponentSizes.bottomNavCenterButton / 2,
-        backgroundColor: '#064E3B',
+        backgroundColor: ACTIVE_COLOR,
         justifyContent: 'center',
         alignItems: 'center',
-        boxShadow: '0 8px 10px rgba(6,78,59,0.3)',
+        shadowColor: '#064E3B',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
         elevation: 8,
-        borderWidth: scale(6),
+        borderWidth: scale(4),
         borderColor: '#FFF',
+    },
+    centerButtonActive: {
+        backgroundColor: '#043927',
     },
 });

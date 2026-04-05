@@ -1,7 +1,10 @@
 import BottomNav from '@/components/BottomNav';
-import { HeroBanner, HomeHeader, ServicePackageCard, StylistCard } from '@/components/home';
+import HomeScreenSkeleton from '@/components/home/HomeSkeleton';
+import { HeroBanner, HomeHeader, StylistCard } from '@/components/home';
 import { useAuth } from '@/config/authContext';
-import apiService, { Banner, Stylist, RecommendedService } from '@/config/apiService';
+import { isStylistUser, isStylistVerified } from '@/config/navigationFlow';
+import { ROUTES } from '@/constants/routes';
+import apiService, { Banner, Stylist } from '@/config/apiService';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -13,7 +16,10 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
+import { userScreenDirection } from '@/config/rtlLayout';
+import { rtlText } from '@/config/rtlText';
+import { pickResolvedEntityImageUrl, resolveMediaUrl, toResolvedImageSource } from '@/utils/resolveMediaUrl';
 
 const HomeScreen = () => {
     const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -22,7 +28,6 @@ const HomeScreen = () => {
     const [banners, setBanners] = useState<Banner[]>([]);
     const [bannerError, setBannerError] = useState<string | null>(null);
     const [stylists, setStylists] = useState<Stylist[]>([]);
-    const [packages, setPackages] = useState<RecommendedService[]>([]);
     const [loading, setLoading] = useState(true);
     // Set of stylist IDs the user has favorited
     const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -30,8 +35,12 @@ const HomeScreen = () => {
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
             router.replace('/pages/login');
+        } else if (!authLoading && isAuthenticated && isStylistUser(user)) {
+            router.replace(
+                (isStylistVerified(user) ? ROUTES.stylist.home : ROUTES.stylist.pendingVerification) as any
+            );
         }
-    }, [isAuthenticated, authLoading, router]);
+    }, [isAuthenticated, authLoading, user, router]);
 
     useEffect(() => {
         const fetchHomeData = async () => {
@@ -39,10 +48,9 @@ const HomeScreen = () => {
             setLoading(true);
             setBannerError(null);
             try {
-                const [bannersRes, stylistsRes, packagesRes, favoritesRes] = await Promise.allSettled([
+                const [bannersRes, stylistsRes, favoritesRes] = await Promise.allSettled([
                     apiService.getBanners(),
                     apiService.getTrustedStylists(),
-                    apiService.getRecommendedServices({ per_page: 6 }),
                     apiService.getFavorites(),
                 ]);
 
@@ -59,10 +67,6 @@ const HomeScreen = () => {
                 if (stylistsRes.status === 'fulfilled') {
                     const data = stylistsRes.value?.data;
                     setStylists(Array.isArray(data) ? data : []);
-                }
-                if (packagesRes.status === 'fulfilled') {
-                    const data = packagesRes.value?.data;
-                    setPackages(Array.isArray(data) ? data : []);
                 }
                 if (favoritesRes.status === 'fulfilled') {
                     const data = favoritesRes.value?.data;
@@ -113,28 +117,24 @@ const HomeScreen = () => {
         }
     };
 
-    const handlePackagePress = (packageId: number | string) => {
-        console.log('Package pressed:', packageId);
-    };
-
-    const fallbackHeroImage = require('@/assets/mirroimagewomen.png');
     const heroSlides = banners
         .filter((b) => b && b.status !== false)
+        .map((b) => {
+            const src = resolveMediaUrl(b.image_url || b.image);
+            return { b, src };
+        })
+        .filter(({ src }) => src != null && String(src).trim() !== '')
         .slice(0, 5)
-        .map((b) => ({
+        .map(({ b, src }) => ({
             id: String(b.id),
             title: b.title ?? '',
-            imageUri: b.image_url
-                ? { uri: b.image_url }
-                : b.image
-                    ? { uri: b.image }
-                    : fallbackHeroImage,
+            imageUri: { uri: src! },
             link: b.link,
         }));
 
     if (authLoading) {
         return (
-            <View style={styles.loadingContainer}>
+            <View style={[styles.loadingContainer, userScreenDirection]}>
                 <ActivityIndicator size="large" color="#064E3B" />
             </View>
         );
@@ -148,11 +148,12 @@ const HomeScreen = () => {
         .slice(0, 10);
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={[styles.container, userScreenDirection]} edges={['top']}>
             {/* Header */}
             <HomeHeader
                 userName={user?.name || 'نور حسن'}
                 greeting="صباح الخير"
+                avatarUri={user?.image || undefined}
                 onSearchPress={() =>
                     router.push({ pathname: '/pages/tabs/stylists', params: { focusSearch: '1' } } as any)
                 }
@@ -160,9 +161,7 @@ const HomeScreen = () => {
             />
 
             {loading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#064E3B" />
-                </View>
+                <HomeScreenSkeleton />
             ) : (
                 <ScrollView
                     style={styles.scrollView}
@@ -208,7 +207,7 @@ const HomeScreen = () => {
                                     <StylistCard
                                         name={item.name}
                                         subtitle={item.bio}
-                                        imageUri={item.image ? { uri: item.image } : null}
+                                        imageUri={toResolvedImageSource(pickResolvedEntityImageUrl(item as any)) ?? null}
                                         rating={
                                             typeof item.rating === 'number'
                                                 ? item.rating
@@ -244,7 +243,7 @@ const HomeScreen = () => {
                                     <StylistCard
                                         name={item.name}
                                         subtitle={item.bio}
-                                        imageUri={item.image ? { uri: item.image } : null}
+                                        imageUri={toResolvedImageSource(pickResolvedEntityImageUrl(item as any)) ?? null}
                                         rating={
                                             typeof item.rating === 'number'
                                                 ? item.rating
@@ -261,38 +260,7 @@ const HomeScreen = () => {
                         </View>
                     )}
 
-                    {/* Service Packages Section */}
-                    {packages.length > 0 && (
-                        <View style={styles.section}>
-                            <View style={styles.sectionHeader}>
-                                <Text style={styles.sectionTitle}>باقات تناسب احتياجك</Text>
-                            </View>
-
-                            <FlatList
-                                data={packages}
-                                keyExtractor={(item) => String(item.id)}
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={styles.packagesSlider}
-                                renderItem={({ item, index }) => (
-                                    <ServicePackageCard
-                                        title={item.title}
-                                        subtitle="متاح خلال ٢٤ ساعة"
-                                        price={
-                                            typeof item.price === 'number'
-                                                ? item.price
-                                                : parseFloat(String(item.price ?? '0'))
-                                        }
-                                        variant={index % 3 === 1 ? 'dark' : 'light'}
-                                        onPress={() => handlePackagePress(item.id)}
-                                        containerStyle={styles.packagesSliderCard}
-                                    />
-                                )}
-                            />
-                        </View>
-                    )}
-
-                    {/* Bottom spacing for BottomNav */}
+                    {/* Bottom spacing for BottomNav (service packages strip removed) */}
                     <View style={styles.bottomSpacer} />
                 </ScrollView>
             )}
@@ -334,23 +302,17 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontFamily: 'Cairo_700Bold',
         color: '#333',
+        ...rtlText.alignStart,
     },
     sectionLink: {
         fontSize: 13,
         fontFamily: 'Cairo_400Regular',
         color: '#064E3B',
+        ...rtlText.alignEnd,
     },
     stylistsList: {
         paddingHorizontal: 20,
-    },
-    packagesSlider: {
-        paddingHorizontal: 20,
         gap: 12,
-    },
-    packagesSliderCard: {
-        width: 180,
-        marginStart: 10,
-        marginEnd: 10,
     },
 
     heroEmptyContainer: {
@@ -365,7 +327,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#6B7280',
-        textAlign: 'center',
+        ...rtlText.alignStart,
     },
 
     bottomSpacer: {

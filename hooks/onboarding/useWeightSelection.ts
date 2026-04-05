@@ -1,6 +1,8 @@
 import { useState, useMemo, useRef } from 'react';
 import { PanResponder, useWindowDimensions } from 'react-native';
 
+/** Keep PanResponder instance stable; read width from a ref so window resizes don’t recreate handlers. */
+
 interface UseWeightSelectionProps {
     minWeight?: number;
     maxWeight?: number;
@@ -17,6 +19,8 @@ export const useWeightSelection = ({
 }: UseWeightSelectionProps = {}) => {
     const { width: windowWidth } = useWindowDimensions();
     const sliderWidth = sliderWidthOverride ?? Math.min(320, Math.max(220, windowWidth - 56));
+    const sliderWidthRef = useRef(sliderWidth);
+    sliderWidthRef.current = sliderWidth;
 
     const [unit, setUnit] = useState<'lbs' | 'kg'>('kg');
     const [weightKg, setWeightKg] = useState(initialWeight);
@@ -31,18 +35,20 @@ export const useWeightSelection = ({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: (evt) => {
-            const relativeX = Math.max(0, Math.min(sliderWidth, evt.nativeEvent.locationX));
-            const newWeightKg = Math.round((minWeight + (relativeX / sliderWidth) * (maxWeight - minWeight)) * 10) / 10;
+            const w = sliderWidthRef.current;
+            const relativeX = Math.max(0, Math.min(w, evt.nativeEvent.locationX));
+            const newWeightKg = Math.round((minWeight + (relativeX / w) * (maxWeight - minWeight)) * 10) / 10;
             setWeightKg(newWeightKg);
             startWeightKgRef.current = newWeightKg;
         },
         onPanResponderMove: (_evt, gestureState) => {
-            const weightChangeKg = (gestureState.dx / sliderWidth) * (maxWeight - minWeight);
+            const w = sliderWidthRef.current;
+            const weightChangeKg = (gestureState.dx / w) * (maxWeight - minWeight);
             const newWeightKg = Math.round((startWeightKgRef.current + weightChangeKg) * 10) / 10;
             const clampedWeightKg = Math.round(Math.max(minWeight, Math.min(maxWeight, newWeightKg)) * 10) / 10;
             setWeightKg(clampedWeightKg);
         },
-    }), [sliderWidth, minWeight, maxWeight]);
+    }), [minWeight, maxWeight]);
 
     return {
         unit,

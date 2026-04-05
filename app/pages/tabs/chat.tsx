@@ -1,11 +1,13 @@
 import BottomNav from '@/components/BottomNav';
+import ChatListSkeleton from '@/components/chat/ChatListSkeleton';
+import StylistBottomNav from '@/components/StylistBottomNav';
 import apiService, { Conversation } from '@/config/apiService';
 import { useAuth } from '@/config/authContext';
+import { isStylistUser, isStylistVerified } from '@/config/navigationFlow';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
     FlatList,
     Image,
     StyleSheet,
@@ -14,10 +16,13 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
+import { userScreenDirection } from '@/config/rtlLayout';
+import { rtlInput, rtlText } from '@/config/rtlText';
+import { pickResolvedEntityImageUrl, resolveMediaUrl } from '@/utils/resolveMediaUrl';
 
 export default function ChatListScreen() {
-    const { isAuthenticated, loading: authLoading } = useAuth();
+    const { user, isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
@@ -29,11 +34,15 @@ export default function ChatListScreen() {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const stylistChatActive = isStylistUser(user) && isStylistVerified(user);
+
     useEffect(() => {
         const fetchConversations = async () => {
             setLoading(true);
             try {
-                const res = await apiService.listConversations();
+                const res = stylistChatActive
+                    ? await apiService.listStylistConversations()
+                    : await apiService.listConversations();
                 const data = res?.data;
                 setConversations(Array.isArray(data) ? data : []);
             } catch (error) {
@@ -43,23 +52,85 @@ export default function ChatListScreen() {
                 setLoading(false);
             }
         };
-        fetchConversations();
-    }, []);
+        if (isAuthenticated) fetchConversations();
+    }, [isAuthenticated, stylistChatActive, user]);
 
-    const filteredConversations = conversations.filter(c =>
-        !searchQuery || (c.stylist?.name ?? '').includes(searchQuery)
-    );
+    // Get the other party's name depending on role (API may nest or flatten stylist fields)
+    const getContactName = (c: Conversation) => {
+        if (stylistChatActive) {
+            return c.user?.name ?? c.client?.name ?? (c as any).client_name ?? 'عميل';
+        }
+        const anyC = c as any;
+        return (
+            c.stylist?.name ??
+            anyC.stylist_name ??
+            anyC.other_user?.name ??
+            anyC.participant_name ??
+            anyC.title ??
+            'منسّق'
+        );
+    };
 
-    const handleChatPress = (conversationId: number | string) => {
-        router.push(`/pages/chat?id=${conversationId}` as any);
+    const getContactImage = (c: Conversation): string | undefined => {
+        if (stylistChatActive) {
+            return pickResolvedEntityImageUrl((c.user || c.client || { image: (c as any).client_image }) as any);
+        }
+        const anyC = c as any;
+        return pickResolvedEntityImageUrl(anyC.stylist) ?? pickResolvedEntityImageUrl({ image: anyC.stylist_image });
+    };
+
+    const getLastMessagePreviewImage = (c: Conversation): string | undefined =>
+        resolveMediaUrl(c.last_message_image_url);
+
+    const filteredConversations = conversations.filter(c => {
+        if (!searchQuery) return true;
+        const name = getContactName(c);
+        return name.includes(searchQuery);
+    });
+
+    const handleChatPress = (item: Conversation) => {
+        const id = item.id;
+        const closedAt = (item as { closed_at?: string | null }).closed_at;
+        const isClosed = closedAt != null && String(closedAt) !== '';
+        const qs = [`id=${id}`];
+        if (isClosed) qs.push('readonly=1');
+        router.push(`/pages/chat?${qs.join('&')}` as any);
     };
 
     const renderConversation = ({ item }: { item: Conversation }) => (
         <TouchableOpacity
             style={styles.conversationItem}
-            onPress={() => handleChatPress(item.id)}
+            onPress={() => handleChatPress(item)}
             activeOpacity={0.7}
         >
+            <View style={styles.avatarContainer}>
+                {getContactImage(item) ? (
+                    <Image source={{ uri: getContactImage(item)! }} style={styles.avatar} />
+                ) : (
+                    <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                        <Ionicons name="person" size={26} color="#999" />
+                    </View>
+                )}
+            </View>
+
+            <View style={styles.conversationInfo}>
+                <Text style={styles.conversationName} numberOfLines={1}>
+                    {getContactName(item)}
+                </Text>
+                {getLastMessagePreviewImage(item) ? (
+                    <Image
+                        source={{ uri: getLastMessagePreviewImage(item)! }}
+                        style={styles.lastMessageThumb}
+                        resizeMode="cover"
+                    />
+                ) : null}
+                {item.last_message ? (
+                    <Text style={styles.lastMessage} numberOfLines={1}>
+                        {item.last_message}
+                    </Text>
+                ) : null}
+            </View>
+
             <View style={styles.timeContainer}>
                 {item.created_at ? (
                     <Text style={styles.timeText}>
@@ -72,47 +143,28 @@ export default function ChatListScreen() {
                     </View>
                 )}
             </View>
-
-            <View style={styles.conversationInfo}>
-                <Text style={styles.conversationName}>{item.stylist?.name ?? 'منسقة'}</Text>
-                {item.last_message ? (
-                    <Text style={styles.lastMessage} numberOfLines={1}>
-                        {item.last_message}
-                    </Text>
-                ) : null}
-            </View>
-
-            <View style={styles.avatarContainer}>
-                <Image
-                    source={item.stylist?.image ? { uri: item.stylist.image } : require('@/assets/stylewomen1.png')}
-                    style={styles.avatar}
-                />
-            </View>
         </TouchableOpacity>
     );
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={[styles.container, userScreenDirection]} edges={['top']}>
             {/* Search Bar */}
             <View style={styles.searchContainer}>
                 <View style={styles.searchBar}>
-                    <Ionicons name="search" size={20} color="#999" />
+                    <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
                     <TextInput
                         style={styles.searchInput}
                         placeholder="بحث"
                         placeholderTextColor="#999"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
-                        textAlign="right"
                     />
                 </View>
             </View>
 
             {/* Conversations List */}
             {loading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#064E3B" />
-                </View>
+                <ChatListSkeleton />
             ) : (
                 <FlatList
                     data={filteredConversations}
@@ -128,7 +180,7 @@ export default function ChatListScreen() {
                 />
             )}
 
-            <BottomNav />
+            {stylistChatActive ? <StylistBottomNav /> : <BottomNav />}
         </SafeAreaView>
     );
 }
@@ -149,25 +201,24 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingHorizontal: 15,
         height: 45,
-        gap: 10,
+    },
+    searchIcon: {
+        marginEnd: 10,
     },
     searchInput: {
         flex: 1,
         fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+        paddingVertical: 0,
+        ...rtlInput,
     },
     listContent: {
         paddingBottom: 100,
     },
     conversationItem: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         paddingHorizontal: 20,
         paddingVertical: 15,
         borderBottomWidth: 1,
@@ -175,36 +226,57 @@ const styles = StyleSheet.create({
     },
     avatarContainer: {
         position: 'relative',
+        marginTop: 2,
     },
     avatar: {
         width: 55,
         height: 55,
         borderRadius: 27.5,
     },
+    avatarPlaceholder: {
+        backgroundColor: '#F3F4F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+    },
     conversationInfo: {
         flex: 1,
-        marginRight: 12,
-        alignItems: 'flex-start',
+        minWidth: 0,
+        marginStart: 12,
+        alignItems: 'stretch',
     },
     conversationName: {
         fontSize: 15,
         fontFamily: 'Cairo_700Bold',
         color: '#333',
-        marginBottom: 3,
+        marginBottom: 4,
+        width: '100%',
+        ...rtlText.alignStart,
+    },
+    lastMessageThumb: {
+        width: 52,
+        height: 52,
+        borderRadius: 8,
+        marginBottom: 4,
+        backgroundColor: '#F3F4F6',
     },
     lastMessage: {
         fontSize: 13,
         fontFamily: 'Cairo_400Regular',
         color: '#064E3B',
+        width: '100%',
+        ...rtlText.alignStart,
     },
     timeContainer: {
-        alignItems: 'flex-start',
-        gap: 8,
+        alignItems: 'center',
+        marginStart: 8,
+        marginTop: 2,
     },
     timeText: {
         fontSize: 12,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
+        writingDirection: 'ltr',
     },
     unreadBadge: {
         backgroundColor: '#064E3B',
@@ -214,11 +286,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 6,
+        marginTop: 8,
     },
     unreadText: {
         fontSize: 11,
         fontFamily: 'Cairo_700Bold',
         color: '#FFF',
+        writingDirection: 'ltr',
     },
     emptyContainer: {
         flex: 1,
@@ -229,5 +303,6 @@ const styles = StyleSheet.create({
         fontFamily: 'Cairo_400Regular',
         fontSize: 16,
         color: '#999',
+        ...rtlText.alignStart,
     },
 });

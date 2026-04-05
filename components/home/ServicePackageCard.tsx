@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, StyleProp, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { rtlText } from '@/config/rtlText';
+import SarPriceText from '@/components/SarPriceText';
 
 interface ServicePackageCardProps {
     title: string;
     subtitle: string;
     price: number;
-    currency?: string;
     icon?: keyof typeof Ionicons.glyphMap;
     variant?: 'light' | 'dark';
     onPress?: () => void;
@@ -17,7 +18,6 @@ export default function ServicePackageCard({
     title,
     subtitle,
     price,
-    currency = 'ر.س',
     icon = 'arrow-up-outline',
     variant = 'light',
     onPress,
@@ -42,7 +42,7 @@ export default function ServicePackageCard({
                                     width: 56 + i * 36,
                                     height: 56 + i * 36,
                                     top: -24 + i * 10,
-                                    right: -28 - i * 6,
+                                    end: -28 - i * 6,
                                 },
                             ]}
                         />
@@ -60,9 +60,10 @@ export default function ServicePackageCard({
                     />
                 </View>
                 <View style={styles.priceRow}>
-                    <Text style={[styles.priceText, isDark && styles.darkText]}>
-                        {currency} {price}
-                    </Text>
+                    <SarPriceText
+                        value={price}
+                        textStyle={[styles.priceText, isDark && styles.darkText]}
+                    />
                 </View>
             </View>
 
@@ -126,27 +127,29 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontFamily: 'Cairo_700Bold',
         color: '#064E3B',
+        writingDirection: 'ltr',
     },
     darkText: {
         color: '#FFF',
     },
     bottomContent: {
-        alignItems: 'center',
+        alignItems: 'stretch',
         justifyContent: 'flex-end',
         flex: 1,
+        width: '100%',
     },
     title: {
         fontSize: 14,
         fontFamily: 'Cairo_700Bold',
         color: '#111',
-        textAlign: 'center',
+        ...rtlText.alignStart,
     },
     subtitle: {
         fontSize: 10,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
-        textAlign: 'center',
         marginTop: 4,
+        ...rtlText.alignStart,
     },
     darkSubtitle: {
         color: 'rgba(255, 255, 255, 0.7)',

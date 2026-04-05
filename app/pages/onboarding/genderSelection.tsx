@@ -6,6 +6,7 @@ import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { useGenderSelection } from '@/hooks/onboarding/useGenderSelection';
 import { useAuth } from '@/config/authContext';
+import { onboardingScreenDirection } from '@/config/rtlLayout';
 
 export default function GenderPage() {
     const router = useRouter();
@@ -31,12 +32,12 @@ export default function GenderPage() {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, onboardingScreenDirection]}>
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
                 currentStep={1}
-                totalSteps={7}
+                totalSteps={selected === 'male' ? 7 : 6}
                 onNext={handleNext}
                 isNextDisabled={!selected}
                 nextButtonText={saving ? '...' : content.nextButton}

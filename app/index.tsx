@@ -1,6 +1,8 @@
 import { useAuth } from '@/config/authContext';
 import { getInitialRoute } from '@/config/navigationFlow';
+import { href } from '@/constants/routes';
 import { useRouter } from 'expo-router';
+import { colors } from '@/theme/colors';
 import React, { useEffect, useRef } from 'react';
 import { Dimensions, Image, StyleSheet, View } from 'react-native';
 import Animated, {
@@ -32,7 +34,7 @@ export default function Home() {
       console.log('📍 Navigating to:', route);
 
       hasNavigatedRef.current = true;
-      router.replace(route as any);
+      router.replace(href(route));
     };
 
     const timer = setTimeout(() => {
@@ -40,7 +42,7 @@ export default function Home() {
     }, 2500); // Slightly longer to show the splash animation
 
     return () => clearTimeout(timer);
-  }, [loading, isAuthenticated]);
+  }, [loading, isAuthenticated, user]);
 
   const imageStyle = useAnimatedStyle(() => ({
     opacity: imageOpacity.value,
@@ -62,7 +64,7 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#00503C',
+    backgroundColor: colors.brand.primaryDark,
     justifyContent: 'center',
     alignItems: 'center',
   },

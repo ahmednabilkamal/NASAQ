@@ -17,7 +17,7 @@ export default function Page3() {
       backgroundImage={require('../../../assets/page3bg.png')}
       title={content.title}
       subtitle={content.subtitle}
-      nextRoute={isAuthenticated ? "/pages/onboarding/genderSelection" : "/pages/login"}
+      nextRoute={isAuthenticated ? "/pages/onboarding/roleSelection" : "/pages/login"}
 
       currentIndex={2}
       totalIndex={3}

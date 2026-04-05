@@ -1,5 +1,8 @@
+import AnimatedFavoriteButton from '@/components/AnimatedFavoriteButton';
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/config/authContext';
+import { isStylistUser, isStylistVerified } from '@/config/navigationFlow';
+import { ROUTES } from '@/constants/routes';
 import apiServiceDefault, { Stylist } from '@/config/apiService';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
@@ -17,12 +20,14 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
+import { userScreenDirection } from '@/config/rtlLayout';
 import { defaultStylistFilters, loadStylistFilters } from '@/config/stylistFilters';
 import { getBackChevron } from '@/config/directionalIcons';
+import { pickResolvedEntityImageUrl } from '@/utils/resolveMediaUrl';
 
 export default function StylistsScreen() {
-    const { isAuthenticated, loading: authLoading } = useAuth();
+    const { user, isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
     const navigation = useNavigation<any>();
     const { focusSearch } = useLocalSearchParams<{ focusSearch?: string }>();
@@ -33,8 +38,12 @@ export default function StylistsScreen() {
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
             router.replace('/pages/login');
+        } else if (!authLoading && isAuthenticated && isStylistUser(user)) {
+            router.replace(
+                (isStylistVerified(user) ? ROUTES.stylist.home : ROUTES.stylist.pendingVerification) as any
+            );
         }
-    }, [isAuthenticated, authLoading, router]);
+    }, [isAuthenticated, authLoading, user, router]);
 
     const [search, setSearch] = useState('');
     const [stylists, setStylists] = useState<Stylist[]>([]);
@@ -42,10 +51,20 @@ export default function StylistsScreen() {
     const [favorites, setFavorites] = useState<string[]>([]);
     const [filters, setFilters] = useState(defaultStylistFilters);
 
-    const fetchStylists = useCallback(async (searchQuery?: string) => {
+    const fetchStylists = useCallback(async () => {
+        const searchQuery = search.trim() || undefined;
+        const categoryIds = filters.selectedCategoryIds;
+        const params: { per_page: number; search?: string; category_ids?: string } = {
+            per_page: 20,
+            search: searchQuery,
+        };
+        if (categoryIds.length > 0) {
+            params.category_ids = categoryIds.join(',');
+        }
+
         setLoading(true);
         try {
-            const res = await apiServiceDefault.getStylists({ per_page: 20, search: searchQuery });
+            const res = await apiServiceDefault.getStylists(params);
             const data = res?.data;
             setStylists(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -54,11 +73,7 @@ export default function StylistsScreen() {
         } finally {
             setLoading(false);
         }
-    }, []);
-
-    useEffect(() => {
-        fetchStylists();
-    }, [fetchStylists]);
+    }, [search, filters.selectedCategoryIds]);
 
     useFocusEffect(
         useCallback(() => {
@@ -84,17 +99,24 @@ export default function StylistsScreen() {
         }, [focusSearch])
     );
 
-    // Debounced search
     useEffect(() => {
         const timer = setTimeout(() => {
-            fetchStylists(search.trim() || undefined);
-        }, 500);
+            fetchStylists();
+        }, 400);
         return () => clearTimeout(timer);
-    }, [search, fetchStylists]);
+    }, [fetchStylists]);
+
+    const filtersActive = useMemo(() => {
+        return (
+            filters.selectedCategoryIds.length > 0 ||
+            filters.minPrice !== defaultStylistFilters.minPrice ||
+            filters.maxPrice !== defaultStylistFilters.maxPrice
+        );
+    }, [filters]);
 
     const filteredStylists = useMemo(() => {
-        const styleSet = new Set(filters.selectedStyleIds);
-        const styleFilterActive = styleSet.size > 0;
+        const categorySet = new Set(filters.selectedCategoryIds);
+        const categoryFilterActive = categorySet.size > 0;
         const priceFilterActive =
             filters.minPrice !== defaultStylistFilters.minPrice ||
             filters.maxPrice !== defaultStylistFilters.maxPrice;
@@ -115,31 +137,27 @@ export default function StylistsScreen() {
         const matchesPriceRange = (s: any): boolean => {
             const servicePrices = getServicePrices(s);
 
-            // Primary: filter by stylist services prices.
             if (servicePrices.length > 0) {
                 return servicePrices.some((p) => p >= filters.minPrice && p <= filters.maxPrice);
             }
 
-            // Fallback: if API doesn't return service prices, try stylist.price.
             const fallbackPrice = toNumber(s?.price);
             if (fallbackPrice == null) return false;
             return fallbackPrice >= filters.minPrice && fallbackPrice <= filters.maxPrice;
         };
 
+        const matchesCategory = (s: any): boolean => {
+            const services = Array.isArray(s?.services) ? s.services : [];
+            return services.some((svc: any) => {
+                const cid = svc?.category_id != null ? String(svc.category_id) : '';
+                const nested = svc?.category?.id != null ? String(svc.category.id) : '';
+                return categorySet.has(cid) || categorySet.has(nested);
+            });
+        };
+
         return stylists.filter((s: any) => {
-            if (priceFilterActive) {
-                if (!matchesPriceRange(s)) return false;
-            }
-
-            if (styleFilterActive) {
-                const hasMatch = (s.fashion_styles ?? []).some((fs: any) => {
-                    const name = String(fs?.name ?? '');
-                    const id = fs?.id != null ? String(fs.id) : '';
-                    return styleSet.has(name) || styleSet.has(id);
-                });
-                if (!hasMatch) return false;
-            }
-
+            if (priceFilterActive && !matchesPriceRange(s)) return false;
+            if (categoryFilterActive && !matchesCategory(s)) return false;
             return true;
         });
     }, [stylists, filters]);
@@ -165,11 +183,11 @@ export default function StylistsScreen() {
         const height = item?.height != null && item?.height !== '' ? `${item.height} cm` : null;
         const weight = item?.weight != null && item?.weight !== '' ? `${item.weight} kg` : null;
 
-        const handleFavoritePress = (e: any) => {
-            // Prevent card press when toggling favorite
-            e?.stopPropagation?.();
+        const handleFavoritePress = () => {
             toggleFavorite(id);
         };
+
+        const listImageUri = pickResolvedEntityImageUrl(item as any);
 
         return (
             <TouchableOpacity
@@ -177,21 +195,21 @@ export default function StylistsScreen() {
                 onPress={() => router.push({ pathname: '/pages/stylist_detail', params: { id } } as any)}
             >
                 <View style={styles.imageWrap}>
-                    <Image
-                        source={item.image ? { uri: item.image } : require('@/assets/mirroimagewomen.png')}
-                        style={styles.stylistImage}
-                    />
-                    <TouchableOpacity
-                        style={styles.favoriteButton}
+                    {listImageUri ? (
+                        <Image source={{ uri: listImageUri }} style={styles.stylistImage} />
+                    ) : (
+                        <View style={[styles.stylistImage, styles.stylistImagePlaceholder]}>
+                            <Ionicons name="person" size={40} color="#CCC" />
+                        </View>
+                    )}
+                    <AnimatedFavoriteButton
+                        isFavorite={isFav}
                         onPress={handleFavoritePress}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons
-                            name={isFav ? 'heart' : 'heart-outline'}
-                            size={20}
-                            color={isFav ? '#E11D48' : '#999'}
-                        />
-                    </TouchableOpacity>
+                        size={20}
+                        activeColor="#E11D48"
+                        inactiveColor="#999"
+                        style={styles.favoriteButton}
+                    />
                 </View>
 
                 <View style={styles.cardContent}>
@@ -221,7 +239,7 @@ export default function StylistsScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={[styles.container, userScreenDirection]} edges={['top']}>
             {/* Top Header */}
             <View style={styles.topHeader}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton} activeOpacity={0.7}>
@@ -247,13 +265,15 @@ export default function StylistsScreen() {
                 </View>
                 <TouchableOpacity
                     style={styles.filterButton}
-                    onPress={async () => {
-                        const q = search.trim() || undefined;
-                        fetchStylists(q);
-                        router.push({ pathname: '/pages/stylists/filter', params: { q: q ?? '' } } as any);
+                    onPress={() => {
+                        router.push({
+                            pathname: '/pages/stylists/filter',
+                            params: { q: search.trim() },
+                        } as any);
                     }}
                 >
                     <Ionicons name="options-outline" size={22} color="#333" />
+                    {filtersActive ? <View style={styles.filterActiveDot} /> : null}
                 </TouchableOpacity>
             </View>
 
@@ -344,6 +364,16 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
+        position: 'relative',
+    },
+    filterActiveDot: {
+        position: 'absolute',
+        top: 8,
+        end: 8,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#064E3B',
     },
     loadingContainer: {
         flex: 1,
@@ -374,6 +404,11 @@ const styles = StyleSheet.create({
         height: 120,
         resizeMode: 'cover',
     },
+    stylistImagePlaceholder: {
+        backgroundColor: '#F3F4F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     cardContent: {
         flex: 1,
         padding: 12,
@@ -388,7 +423,7 @@ const styles = StyleSheet.create({
     favoriteButton: {
         position: 'absolute',
         top: 10,
-        right: 10,
+        start: 10,
         width: 32,
         height: 32,
         borderRadius: 16,

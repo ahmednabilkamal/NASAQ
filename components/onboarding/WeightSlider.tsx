@@ -8,10 +8,10 @@ interface WeightSliderProps {
     trackWidth: number;
 }
 
-export const WeightSlider: React.FC<WeightSliderProps> = ({ weightKg, unit, panHandlers, trackWidth }) => {
+function WeightSliderInner({ weightKg, unit, panHandlers, trackWidth }: WeightSliderProps) {
     const minWeightKg = 40;
     const maxWeightKg = 120;
-    const pointerHalf = 2;
+    const pointerHalf = 10;
 
     const ratio = (weightKg - minWeightKg) / (maxWeightKg - minWeightKg);
     const clampedRatio = Math.max(0, Math.min(1, ratio));
@@ -28,7 +28,8 @@ export const WeightSlider: React.FC<WeightSliderProps> = ({ weightKg, unit, panH
         <View style={[styles.outer, { width: trackWidth }]}>
             <View style={styles.ltrTrack}>
                 <View style={[styles.rulerContainer, { width: trackWidth }]} {...panHandlers}>
-                    <View style={styles.rulerLine} pointerEvents="none" />
+                    <View style={styles.trackBg} pointerEvents="none" />
+                    <View style={[styles.trackFill, { width: Math.max(0, clampedRatio * trackWidth) }]} pointerEvents="none" />
                     <View style={styles.rulerNumbers} pointerEvents="none">
                         {marks.map((n) => (
                             <Text key={n} style={styles.rulerNumber}>
@@ -36,12 +37,14 @@ export const WeightSlider: React.FC<WeightSliderProps> = ({ weightKg, unit, panH
                             </Text>
                         ))}
                     </View>
-                    <View style={[styles.activePointer, { left: position }]} pointerEvents="none" />
+                    <View style={[styles.thumb, { left: position }]} pointerEvents="none" />
                 </View>
             </View>
         </View>
     );
-};
+}
+
+export const WeightSlider = React.memo(WeightSliderInner);
 
 const styles = StyleSheet.create({
     outer: {
@@ -51,39 +54,56 @@ const styles = StyleSheet.create({
         direction: 'ltr',
     },
     rulerContainer: {
-        height: 72,
+        height: 88,
         justifyContent: 'flex-end',
-        paddingBottom: 4,
-        paddingTop: 6,
+        paddingBottom: 8,
+        paddingTop: 10,
         position: 'relative',
     },
-    rulerLine: {
+    trackBg: {
         position: 'absolute',
-        bottom: 26,
+        bottom: 34,
         left: 0,
         right: 0,
-        height: 2,
-        backgroundColor: '#E0E0E0',
-        borderRadius: 1,
+        height: 6,
+        backgroundColor: '#E5E7EB',
+        borderRadius: 3,
+    },
+    trackFill: {
+        position: 'absolute',
+        bottom: 34,
+        left: 0,
+        height: 6,
+        backgroundColor: '#064E3B',
+        borderRadius: 3,
+        maxWidth: '100%',
     },
     rulerNumbers: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         width: '100%',
         position: 'absolute',
-        bottom: 4,
+        bottom: 2,
+        paddingHorizontal: 2,
     },
     rulerNumber: {
-        fontSize: 13,
-        color: '#999',
+        fontSize: 12,
+        color: '#6b7280',
         fontFamily: 'Cairo_400Regular',
     },
-    activePointer: {
+    thumb: {
         position: 'absolute',
-        bottom: 14,
-        width: 4,
-        height: 28,
+        bottom: 26,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
         backgroundColor: '#064E3B',
-        borderRadius: 2,
+        borderWidth: 3,
+        borderColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 4,
     },
 });

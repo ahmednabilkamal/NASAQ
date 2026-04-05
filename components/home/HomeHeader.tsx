@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { resolveMediaUrl } from '@/utils/resolveMediaUrl';
 import { Ionicons } from '@expo/vector-icons';
+import { rtlText } from '@/config/rtlText';
 
 interface HomeHeaderProps {
     userName: string;
@@ -11,11 +13,13 @@ interface HomeHeaderProps {
 }
 
 export default function HomeHeader({ userName, greeting, avatarUri, onSearchPress, onNotificationPress }: HomeHeaderProps) {
+    const avatarResolved = resolveMediaUrl(avatarUri);
     return (
         <View style={styles.container}>
+            {/* JSX order matches stylist home: avatar + name block first, actions last; forceRTL mirrors row. */}
             <View style={styles.avatarContainer}>
-                {avatarUri ? (
-                    <Image source={{ uri: avatarUri }} style={styles.avatar} />
+                {avatarResolved ? (
+                    <Image source={{ uri: avatarResolved }} style={styles.avatar} />
                 ) : (
                     <View style={styles.avatarPlaceholder}>
                         <Ionicons name="person" size={20} color="#064E3B" />
@@ -48,6 +52,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 20,
         backgroundColor: '#fff',
+        gap: 12,
     },
     leftButtons: {
         flexDirection: 'row',
@@ -67,18 +72,19 @@ const styles = StyleSheet.create({
     userInfo: {
         flex: 1,
         alignItems: 'flex-start',
-        marginRight: 12,
     },
     greeting: {
         fontSize: 11,
         fontFamily: 'Cairo_400Regular',
         color: '#888',
         marginBottom: -2,
+        ...rtlText.alignStart,
     },
     userName: {
         fontSize: 16,
         fontFamily: 'Cairo_700Bold',
         color: '#111',
+        ...rtlText.alignStart,
     },
     avatarContainer: {
         width: 50,

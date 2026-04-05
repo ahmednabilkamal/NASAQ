@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 interface BMISectionProps {
-    title: string;
+    /** Short neutral intro (not a fixed category sentence). */
+    intro: string;
     categories: {
         obese: string;
         overweight: string;
@@ -19,38 +20,67 @@ interface BMISectionProps {
     compact?: boolean;
 }
 
-export const BMISection: React.FC<BMISectionProps> = ({ title, categories, weight, unit, heightCm, compact }) => {
-    const calculatePointerPosition = () => {
-        const h = (heightCm || 170) / 100; // convert cm -> meters
-        const w = unit === 'lbs' ? weight * 0.453592 : weight;
-        const bmi = w / (h * h);
+function bmiCategoryLabel(
+    bmi: number,
+    categories: BMISectionProps['categories'],
+): string {
+    if (bmi < 18.5) return categories.underweight;
+    if (bmi < 25) return categories.normal;
+    if (bmi < 30) return categories.overweight;
+    return categories.obese;
+}
 
+export const BMISection = React.memo(function BMISection({
+    intro,
+    categories,
+    weight,
+    unit,
+    heightCm,
+    compact,
+}: BMISectionProps) {
+    const bmi = useMemo(() => {
+        const h = (heightCm || 170) / 100;
+        const wKg = unit === 'lbs' ? weight * 0.453592 : weight;
+        if (h <= 0 || wKg <= 0) return 22;
+        return wKg / (h * h);
+    }, [heightCm, weight, unit]);
+
+    const bmiDisplay = Math.round(bmi * 10) / 10;
+    const categoryLine = useMemo(
+        () => bmiCategoryLabel(bmi, categories),
+        [bmi, categories],
+    );
+
+    const pointerLeft = useMemo(() => {
         const minBMI = 15;
-        const maxBMI = 30;
+        const maxBMI = 35;
         const percentage = Math.max(0, Math.min(100, ((maxBMI - bmi) / (maxBMI - minBMI)) * 100));
-        return `${percentage}%` as any;
-    };
+        return `${percentage}%` as const;
+    }, [bmi]);
 
     return (
         <View style={[styles.bmiSection, compact && styles.bmiSectionCompact]}>
-            <Text style={[styles.bmiTitle, compact && styles.bmiTitleCompact]} numberOfLines={2}>
-                {title}
+            <Text style={[styles.bmiIntro, compact && styles.bmiIntroCompact]} numberOfLines={3}>
+                {intro}
+            </Text>
+            <Text style={[styles.bmiCategoryLine, compact && styles.bmiCategoryLineCompact]} numberOfLines={2}>
+                {categoryLine} · BMI {bmiDisplay}
             </Text>
             <View style={styles.bmiScaleLtr}>
             <View style={[styles.bmiScale, compact && styles.bmiScaleCompact]}>
-                <View style={[styles.bmiSegment, { backgroundColor: '#FFD700', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }]}>
+                <View style={[styles.bmiSegment, { backgroundColor: '#FFD700', borderTopLeftRadius: 6, borderBottomLeftRadius: 6 }]}>
                     <Text style={[styles.bmiLabel, compact && styles.bmiLabelCompact]}>30</Text>
                 </View>
                 <View style={[styles.bmiSegment, { backgroundColor: '#FF8C00' }]}>
                     <Text style={[styles.bmiLabel, compact && styles.bmiLabelCompact]}>25</Text>
                 </View>
-                <View style={[styles.bmiSegment, { backgroundColor: '#90EE90' }]}>
+                <View style={[styles.bmiSegment, { backgroundColor: '#86EFAC' }]}>
                     <Text style={[styles.bmiLabel, compact && styles.bmiLabelCompact]}>20</Text>
                 </View>
-                <View style={[styles.bmiSegment, { backgroundColor: '#DDA0DD', borderTopRightRadius: 5, borderBottomRightRadius: 5 }]}>
+                <View style={[styles.bmiSegment, { backgroundColor: '#C4B5FD', borderTopRightRadius: 6, borderBottomRightRadius: 6 }]}>
                     <Text style={[styles.bmiLabel, compact && styles.bmiLabelCompact]}>15</Text>
                 </View>
-                <View style={[styles.bmiPointer, { left: calculatePointerPosition() }]} />
+                <View style={[styles.bmiPointer, { left: pointerLeft }]} />
             </View>
             <View style={[styles.bmiSubLabels, compact && styles.bmiSubLabelsCompact]}>
                 <Text style={[styles.bmiSubLabel, compact && styles.bmiSubLabelCompact]} numberOfLines={1}>
@@ -69,26 +99,44 @@ export const BMISection: React.FC<BMISectionProps> = ({ title, categories, weigh
             </View>
         </View>
     );
-};
+});
 
 const styles = StyleSheet.create({
     bmiSection: {
         width: '100%',
-        marginBottom: 20,
+        marginBottom: 16,
     },
     bmiScaleLtr: {
         direction: 'ltr',
         width: '100%',
     },
-    bmiTitle: {
-        fontSize: 14,
+    bmiIntro: {
+        fontSize: 13,
+        fontFamily: 'Cairo_400Regular',
+        textAlign: 'center',
+        color: '#4b5563',
+        lineHeight: 19,
+        marginBottom: 6,
+    },
+    bmiIntroCompact: {
+        fontSize: 12,
+        lineHeight: 17,
+        marginBottom: 4,
+    },
+    bmiCategoryLine: {
+        fontSize: 15,
         fontFamily: 'Cairo_700Bold',
         textAlign: 'center',
-        marginBottom: 15,
+        color: '#111827',
+        marginBottom: 12,
+    },
+    bmiCategoryLineCompact: {
+        fontSize: 13,
+        marginBottom: 8,
     },
     bmiScale: {
         flexDirection: 'row',
-        height: 10,
+        height: 12,
         width: '100%',
         position: 'relative',
     },
@@ -108,15 +156,20 @@ const styles = StyleSheet.create({
     },
     bmiPointer: {
         position: 'absolute',
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: '#000',
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        backgroundColor: '#064E3B',
         borderWidth: 2,
         borderColor: '#FFF',
-        top: -1,
+        top: -2,
         zIndex: 10,
-        marginLeft: -6,
+        marginStart: -7,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        elevation: 3,
     },
     bmiSubLabels: {
         flexDirection: 'row',
@@ -130,15 +183,10 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     bmiSectionCompact: {
-        marginBottom: 12,
-    },
-    bmiTitleCompact: {
-        fontSize: 12,
-        marginBottom: 6,
-        lineHeight: 16,
+        marginBottom: 10,
     },
     bmiScaleCompact: {
-        height: 8,
+        height: 10,
     },
     bmiSubLabelsCompact: {
         marginTop: 6,

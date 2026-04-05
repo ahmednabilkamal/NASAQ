@@ -4,19 +4,20 @@ import { useRouter } from 'expo-router';
 import EvaluationLayout from '../../../components/EvaluationLayout';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
+import { onboardingScreenDirection } from '@/config/rtlLayout';
 import apiService, { FashionStyle } from '@/config/apiService';
 import { useAuth } from '@/config/authContext';
-import { useGender } from '@/config/genderContext';
+import { Ionicons } from '@expo/vector-icons';
+import { useOnboardingProgress } from '@/hooks/onboarding/useOnboardingProgress';
+import { resolveMediaUrl } from '@/utils/resolveMediaUrl';
 
 export default function StyleIdentityPage() {
     const router = useRouter();
     const { languageCode } = useLanguage();
-    const { user, updateProfile } = useAuth();
-    const { gender } = useGender();
+    const { updateProfile } = useAuth();
+    const { currentStep, totalSteps } = useOnboardingProgress('styles');
     const content = (pageData as any)[languageCode]?.fashionIdentity || (pageData as any)['ar'].fashionIdentity;
-    const isMale = gender === 'male' || user?.gender === 'male';
-
 
     const [styles_data, setStylesData] = useState<FashionStyle[]>([]);
     const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
@@ -30,15 +31,7 @@ export default function StyleIdentityPage() {
         try {
             const res = await apiService.getFashionStyles({ per_page: 50 });
             const payload = res?.data;
-            let styles = Array.isArray(payload) ? payload : [];
-
-            // Ensure we have at least 6 items for the 3x2 grid mockup look
-            if (styles.length > 0 && styles.length < 6) {
-                const original = [...styles];
-                while (styles.length < 6) {
-                    styles = [...styles, ...original].slice(0, 6);
-                }
-            }
+            const styles = Array.isArray(payload) ? payload : [];
             setStylesData(styles);
             if (styles.length === 0) {
                 setLoadError(true);
@@ -82,12 +75,12 @@ export default function StyleIdentityPage() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, onboardingScreenDirection]}>
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
-                currentStep={7}
-                totalSteps={7}
+                currentStep={currentStep}
+                totalSteps={totalSteps}
                 onNext={handleNext}
                 nextButtonText={saving ? '...' : content.nextButton}
                 isNextDisabled={selectedIndices.length === 0}
@@ -115,22 +108,7 @@ export default function StyleIdentityPage() {
                         showsVerticalScrollIndicator={false}
                         renderItem={({ item, index }) => {
                             const isSelected = selectedIndices.includes(index);
-
-                            // Determine fallback images based on gender and column (3-column grid)
-                            const colIndex = index % 3;
-                            let defaultImage;
-
-                            if (isMale) {
-                                // Male: Side columns (0, 2) are black image 164, middle (1) is yellow image 163
-                                defaultImage = (colIndex === 1)
-                                    ? require('../../../assets/image 163.png')
-                                    : require('../../../assets/image 164.png');
-                            } else {
-                                // Female: Side columns (0, 2) are denim stylewomen1, middle (1) is blazer stylewomen2
-                                defaultImage = (colIndex === 1)
-                                    ? require('../../../assets/stylewomen2.png')
-                                    : require('../../../assets/stylewomen1.png');
-                            }
+                            const styleImgUri = resolveMediaUrl(item.image_url || item.image);
 
                             return (
                                 <TouchableOpacity
@@ -141,11 +119,17 @@ export default function StyleIdentityPage() {
                                     onPress={() => handleSelect(index)}
                                     activeOpacity={0.9}
                                 >
-                                    <Image
-                                        source={item.image ? { uri: item.image } : defaultImage}
-                                        style={styles.cardImage}
-                                        resizeMode="cover"
-                                    />
+                                    {styleImgUri ? (
+                                        <Image
+                                            source={{ uri: styleImgUri }}
+                                            style={styles.cardImage}
+                                            resizeMode="cover"
+                                        />
+                                    ) : (
+                                        <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
+                                            <Ionicons name="shirt-outline" size={28} color="#9CA3AF" />
+                                        </View>
+                                    )}
                                     {isSelected && <View style={styles.selectedOverlay} />}
                                     <View style={styles.overlay}>
                                         <Text style={styles.styleName}>{item.name}</Text>
@@ -220,6 +204,11 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
         position: 'absolute',
+    },
+    cardImagePlaceholder: {
+        backgroundColor: '#E5E7EB',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     selectedOverlay: {
         ...StyleSheet.absoluteFillObject,

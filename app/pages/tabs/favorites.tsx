@@ -7,24 +7,32 @@ import {
     TouchableOpacity,
     ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
+import { userScreenDirection } from '@/config/rtlLayout';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '@/components/BottomNav';
 import StylistCard from '@/components/home/StylistCard';
 import { useAuth } from '@/config/authContext';
+import { isStylistUser, isStylistVerified } from '@/config/navigationFlow';
+import { ROUTES } from '@/constants/routes';
 import apiService, { Stylist } from '@/config/apiService';
 import { getBackChevron } from '@/config/directionalIcons';
+import { pickResolvedEntityImageUrl, toResolvedImageSource } from '@/utils/resolveMediaUrl';
 
 export default function FavoritesScreen() {
-    const { isAuthenticated, loading: authLoading } = useAuth();
+    const { user, isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
             router.replace('/pages/login');
+        } else if (!authLoading && isAuthenticated && isStylistUser(user)) {
+            router.replace(
+                (isStylistVerified(user) ? ROUTES.stylist.home : ROUTES.stylist.pendingVerification) as any
+            );
         }
-    }, [isAuthenticated, authLoading]);
+    }, [isAuthenticated, authLoading, user]);
     const [favorites, setFavorites] = useState<Stylist[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -66,7 +74,7 @@ export default function FavoritesScreen() {
                 <StylistCard
                     name={item.name}
                     subtitle={item.bio}
-                    imageUri={item.image ? { uri: item.image } : null}
+                    imageUri={toResolvedImageSource(pickResolvedEntityImageUrl(item as any)) ?? null}
                     rating={typeof item.rating === 'number' ? item.rating : parseFloat(String(item.rating ?? '0'))}
                     clientCount={Number(item.clients_count ?? 0)}
                     tags={tags}
@@ -79,7 +87,7 @@ export default function FavoritesScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={[styles.container, userScreenDirection]} edges={['top']}>
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity

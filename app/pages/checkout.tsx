@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
+import { userScreenDirection } from '@/config/rtlLayout';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getBackChevron } from '@/config/directionalIcons';
+import SarPriceText from '@/components/SarPriceText';
 
 export default function CheckoutScreen() {
     const router = useRouter();
@@ -14,7 +16,7 @@ export default function CheckoutScreen() {
     const decodedServiceTitle = service_title ? decodeURIComponent(String(service_title)) : undefined;
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, userScreenDirection]}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
                     <Ionicons name={getBackChevron()} size={22} color="#000" />
@@ -31,11 +33,11 @@ export default function CheckoutScreen() {
 
                 <View style={styles.card}>
                     <Text style={styles.label}>الإجمالي</Text>
-                    <Text style={styles.total}>ر.س {formatted}</Text>
+                    <SarPriceText value={Number.isFinite(amount) ? amount : 0} textStyle={styles.total} />
                 </View>
 
                 <Text style={styles.note}>
-                    اختاري طريقة الدفع من الصفحة التالية. إذا كانت بوابة الدفع غير متاحة حالياً، سيبقى الطلب محفوظاً ويمكنك إكمال الدفع لاحقاً.
+                    اختر طريقة الدفع من الصفحة التالية. إذا كانت بوابة الدفع غير متاحة حالياً، سيبقى الطلب محفوظاً ويمكنك إكمال الدفع لاحقاً.
                 </Text>
             </View>
 

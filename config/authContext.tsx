@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import authService, { LoginData, RegisterData, UpdateProfileData, GoogleLoginData } from './authService';
 import { initializeToken, clearAuthData } from './authToken';
+import { ROUTES } from '@/constants/routes';
+import { isStylistUser, isStylistVerified, hasBoyMeasurementsComplete } from '@/config/navigationFlow';
 
 export interface User {
     id: number | string;
@@ -12,9 +14,10 @@ export interface User {
     weight?: number;
     skin_tones?: string;
     body_shape?: string;
-    body_measurements?: Record<string, number>;
+    body_measurements?: Record<string, number | string>;
     fashion_styles?: number[];
     role?: string;
+    stylist_verified?: boolean;
     instagram?: string;
     twitter?: string;
     facebook?: string;
@@ -25,12 +28,13 @@ interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
     loading: boolean;
-    login: (data: LoginData) => Promise<void>;
+    login: (data: LoginData) => Promise<User | null>;
     register: (data: RegisterData) => Promise<void>;
-    googleLogin: (data: GoogleLoginData) => Promise<void>;
+    googleLogin: (data: GoogleLoginData) => Promise<User | null>;
     logout: () => Promise<void>;
-    refreshUser: () => Promise<void>;
+    refreshUser: () => Promise<User | null>;
     updateProfile: (data: UpdateProfileData) => Promise<void>;
+    deleteAccount: () => Promise<void>;
     getOnboardingStep: (user: User | null) => string | null;
 }
 
@@ -40,11 +44,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const refreshUser = async (): Promise<void> => {
+    const refreshUser = async (): Promise<User | null> => {
         try {
             const data = await authService.getProfile();
             const profile: User = data?.data ?? data?.user ?? data;
             setUser(profile);
+            return profile;
         } catch (error: any) {
             const status = error?.response?.status;
             if (status === 401 || status === 403) {
@@ -54,6 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (status !== 401 && status !== 403) {
                 console.error('❌ Failed to refresh user profile:', error);
             }
+            return null;
         }
     };
 
@@ -74,28 +80,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         initialize();
     }, []);
 
-    const login = async (data: LoginData): Promise<void> => {
+    const login = async (data: LoginData): Promise<User | null> => {
         const result = await authService.login(data);
         const profile: User = result?.data?.user ?? result?.user ?? result?.data ?? result;
         if (profile?.id) {
             setUser(profile);
-        } else {
-            await refreshUser();
+            return profile;
         }
+        return refreshUser();
     };
 
     const register = async (data: RegisterData): Promise<void> => {
         await authService.register(data);
     };
 
-    const googleLogin = async (data: GoogleLoginData): Promise<void> => {
+    const googleLogin = async (data: GoogleLoginData): Promise<User | null> => {
         const result = await authService.googleLogin(data);
         const profile: User = result?.data?.user ?? result?.user ?? result?.data ?? result;
         if (profile?.id) {
             setUser(profile);
-        } else {
-            await refreshUser();
+            return profile;
         }
+        return refreshUser();
     };
 
     const updateProfile = async (data: UpdateProfileData): Promise<void> => {
@@ -112,15 +118,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const deleteAccount = async (): Promise<void> => {
+        await authService.deleteAccount();
+        setUser(null);
+    };
+
     const getOnboardingStep = (u: User | null): string | null => {
         if (!u) return null;
-        if (!u.gender) return '/pages/onboarding/genderSelection';
-        if (!u.height) return '/pages/onboarding/heightSelection';
-        if (!u.weight) return '/pages/onboarding/weightSelection';
-        if (!u.skin_tones) return '/pages/onboarding/colorSelection';
-        if (!u.body_shape) return '/pages/onboarding/bodyShape';
-        if (!u.body_measurements || Object.keys(u.body_measurements).length === 0) return '/pages/onboarding/bodyMeasurement';
-        if (!u.fashion_styles || u.fashion_styles.length === 0) return '/pages/onboarding/styleIdentity';
+        if (isStylistUser(u) && !isStylistVerified(u)) {
+            return ROUTES.stylist.pendingVerification;
+        }
+        if (isStylistUser(u) && isStylistVerified(u)) {
+            return ROUTES.stylist.home;
+        }
+        if (!u.gender) return ROUTES.onboarding.genderSelection;
+        if (!u.height) return ROUTES.onboarding.heightSelection;
+        if (!u.weight) return ROUTES.onboarding.weightSelection;
+        if (!u.skin_tones) return ROUTES.onboarding.colorSelection;
+        if (!u.body_shape) return ROUTES.onboarding.bodyShape;
+        if (u.gender === 'male' && !hasBoyMeasurementsComplete(u)) {
+            return ROUTES.onboarding.boyMeasurements;
+        }
+        if (!u.fashion_styles || u.fashion_styles.length === 0) return ROUTES.onboarding.styleIdentity;
         return null;
     };
 
@@ -136,6 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 logout,
                 refreshUser,
                 updateProfile,
+                deleteAccount,
                 getOnboardingStep,
             }}
         >

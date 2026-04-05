@@ -1,5 +1,7 @@
 import BottomNav from '@/components/BottomNav';
+import StylistBottomNav from '@/components/StylistBottomNav';
 import { useAuth } from '@/config/authContext';
+import { isStylistUser } from '@/config/navigationFlow';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -16,15 +18,20 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
 import Toast from 'react-native-toast-message';
 import authService from '@/config/authService';
 import { getForwardChevron } from '@/config/directionalIcons';
+import { userScreenDirection } from '@/config/rtlLayout';
+import { rtlText } from '@/config/rtlText';
+import { ROUTES } from '@/constants/routes';
+import { resolveUserProfileAvatarUrl } from '@/utils/userProfileAvatar';
 
 export default function ProfileScreen() {
     const router = useRouter();
     const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
     const [loading, setLoading] = useState(false);
+    const isStylist = isStylistUser(user);
 
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
@@ -40,13 +47,11 @@ export default function ProfileScreen() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [otp, setOtp] = useState(['', '', '', '', '']); // 5 digits
+    const [otp, setOtp] = useState(['', '', '', '', '']);
     const [timer, setTimer] = useState(30);
     const [canResend, setCanResend] = useState(false);
 
     const otpInputs = React.useRef<TextInput[]>([]);
-
-
 
     useEffect(() => {
         let interval: any;
@@ -139,10 +144,10 @@ export default function ProfileScreen() {
         }
     };
 
-    const MenuItem = ({ icon, label, onPress, rightElement }: any) => (
+    const MenuItem = ({ icon, label, onPress, rightElement, color }: any) => (
         <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-            <Ionicons name={icon} size={22} color="#666" />
-            <Text style={styles.menuItemLabel}>{label}</Text>
+            <Ionicons name={icon} size={22} color={color || '#666'} />
+            <Text style={[styles.menuItemLabel, color && { color }]}>{label}</Text>
             {rightElement ? (
                 rightElement
             ) : (
@@ -151,19 +156,23 @@ export default function ProfileScreen() {
         </TouchableOpacity>
     );
 
+    const profileAvatarUri = resolveUserProfileAvatarUrl(user as Record<string, unknown> | null);
+
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <SafeAreaView style={[styles.container, userScreenDirection]} edges={['top']}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>الملف الشخصي</Text>
+                <Text style={styles.headerTitle}>
+                    {isStylist ? 'الإعدادات' : 'الملف الشخصي'}
+                </Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {/* Profile Card */}
                 <View style={styles.profileCard}>
                     <View style={styles.avatarContainer}>
-                        {user?.image ? (
+                        {profileAvatarUri ? (
                             <Image
-                                source={{ uri: user.image }}
+                                source={{ uri: profileAvatarUri }}
                                 style={styles.avatar}
                             />
                         ) : (
@@ -173,31 +182,47 @@ export default function ProfileScreen() {
                         )}
                     </View>
                     <View style={styles.profileInfo}>
-                        <Text style={styles.name}>{user?.name || "نور حسن"}</Text>
-                        <Text style={styles.email}>{user?.email || "nourhasan12@gmail.com"}</Text>
-
-                        {(user?.instagram || user?.twitter || user?.facebook) && (
-                            <View style={styles.socialRow}>
-                                {user?.instagram && (
-                                    <View style={styles.socialIconMini}>
-                                        <Ionicons name="logo-instagram" size={14} color="#E1306C" />
-                                    </View>
-                                )}
-                                {user?.twitter && (
-                                    <View style={styles.socialIconMini}>
-                                        <Ionicons name="logo-twitter" size={14} color="#1DA1F2" />
-                                    </View>
-                                )}
-                                {user?.facebook && (
-                                    <View style={styles.socialIconMini}>
-                                        <Ionicons name="logo-facebook" size={14} color="#4267B2" />
-                                    </View>
-                                )}
+                        <Text style={styles.name}>{user?.name || 'المستخدم'}</Text>
+                        <Text style={styles.email}>{user?.email || user?.phone || ''}</Text>
+                        {isStylist && (
+                            <View style={styles.roleBadge}>
+                                <Ionicons name="sparkles" size={12} color="#064E3B" />
+                                <Text style={styles.roleBadgeText}>منسّق أزياء</Text>
                             </View>
                         )}
+
                     </View>
                 </View>
 
+                {/* Stylist-specific sections */}
+                {isStylist && (
+                    <>
+                        {/* Stylist Profile Section */}
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <Ionicons name="briefcase-outline" size={18} color="#666" />
+                                <Text style={styles.sectionTitle}>الملف المهني</Text>
+                            </View>
+                            <View style={styles.sectionContent}>
+                                <MenuItem
+                                    label="تعديل الملف المهني"
+                                    icon="create-outline"
+                                    onPress={() => router.push('/pages/stylist/edit_profile' as any)}
+                                />
+                                <MenuItem
+                                    label="إدارة الخدمات"
+                                    icon="grid-outline"
+                                    onPress={() => router.push('/pages/stylist/services' as any)}
+                                />
+                                <MenuItem
+                                    label="الأرباح والمعاملات"
+                                    icon="wallet-outline"
+                                    onPress={() => router.push('/pages/stylist/earnings' as any)}
+                                />
+                            </View>
+                        </View>
+                    </>
+                )}
 
                 {/* Personal Info Section */}
                 <View style={styles.section}>
@@ -206,20 +231,17 @@ export default function ProfileScreen() {
                         <Text style={styles.sectionTitle}>المعلومات الشخصية</Text>
                     </View>
                     <View style={styles.sectionContent}>
-                        <MenuItem
-                            label="تعديل الملف الشخصي"
-                            icon="create-outline"
-                            onPress={() => router.push('/pages/profile/edit' as any)}
-                        />
+                        {!isStylist && (
+                            <MenuItem
+                                label="تعديل الملف الشخصي"
+                                icon="create-outline"
+                                onPress={() => router.push('/pages/profile/edit' as any)}
+                            />
+                        )}
                         <MenuItem
                             label="تغيير كلمة المرور"
                             icon="lock-closed-outline"
                             onPress={() => setPasswordModalVisible(true)}
-                        />
-                        <MenuItem
-                            label="المدفوعات"
-                            icon="card-outline"
-                            onPress={() => router.push('/pages/payment/cards' as any)}
                         />
                     </View>
                 </View>
@@ -232,9 +254,19 @@ export default function ProfileScreen() {
                     </View>
                     <View style={styles.sectionContent}>
                         <MenuItem
-                            label="الإشعارات"
-                            icon="notifications-outline"
-                            onPress={() => router.push('/pages/notifications' as any)}
+                            label="سياسة الخصوصية"
+                            icon="shield-outline"
+                            onPress={() => router.push(ROUTES.settings.privacy as any)}
+                        />
+                        <MenuItem
+                            label="الشروط والأحكام"
+                            icon="document-text-outline"
+                            onPress={() => router.push(ROUTES.settings.terms as any)}
+                        />
+                        <MenuItem
+                            label="سجل الإشعارات"
+                            icon="list-outline"
+                            onPress={() => router.push(ROUTES.client.notifications as any)}
                         />
                     </View>
                 </View>
@@ -247,9 +279,9 @@ export default function ProfileScreen() {
                     </View>
                     <View style={styles.sectionContent}>
                         <MenuItem
-                            label="المساعدة / الأسئلة الشائعة"
-                            icon="help-circle-outline"
-                            onPress={() => { }}
+                            label="تذاكر الدعم"
+                            icon="ticket-outline"
+                            onPress={() => router.push('/pages/tickets' as any)}
                         />
                         <MenuItem
                             label="تواصل معنا"
@@ -257,14 +289,13 @@ export default function ProfileScreen() {
                             onPress={() => router.push('/pages/contact_us' as any)}
                         />
                         <MenuItem
-                            label="الخصوصية والأمان"
-                            icon="shield-checkmark-outline"
-                            onPress={() => { }}
+                            label="حذف الحساب"
+                            icon="trash-outline"
+                            color="#B91C1C"
+                            onPress={() => router.push('/pages/profile/delete_account' as any)}
                         />
                     </View>
                 </View>
-
-
 
                 {/* Logout Button */}
                 <TouchableOpacity
@@ -278,7 +309,7 @@ export default function ProfileScreen() {
                     <Text style={styles.logoutText}>تسجيل الخروج</Text>
                 </TouchableOpacity>
             </ScrollView>
-            <BottomNav />
+            {isStylist ? <StylistBottomNav /> : <BottomNav />}
 
             {/* Change Password Modal */}
             <Modal
@@ -287,7 +318,7 @@ export default function ProfileScreen() {
                 animationType="slide"
                 onRequestClose={() => setPasswordModalVisible(false)}
             >
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
                     onPress={() => setPasswordModalVisible(false)}
@@ -300,7 +331,7 @@ export default function ProfileScreen() {
                             <View style={styles.modalHeader}>
                                 <Text style={styles.modalTitle}>تعديل كلمة المرور</Text>
                             </View>
-                            
+
                             <View style={styles.modalBody}>
                                 <View style={styles.inputGroup}>
                                     <Text style={styles.label}>كلمة المرور الجديدة</Text>
@@ -338,7 +369,7 @@ export default function ProfileScreen() {
                                     </View>
                                 </View>
 
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     style={[styles.modalButton, loading && { opacity: 0.7 }]}
                                     onPress={handlePasswordSubmit}
                                     disabled={loading}
@@ -358,7 +389,7 @@ export default function ProfileScreen() {
                 animationType="slide"
                 onRequestClose={() => setOtpModalVisible(false)}
             >
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
                     onPress={() => setOtpModalVisible(false)}
@@ -371,10 +402,10 @@ export default function ProfileScreen() {
                             <View style={styles.modalHeader}>
                                 <Text style={styles.modalTitle}>تأكيد كلمة المرور</Text>
                             </View>
-                            
+
                             <View style={styles.modalBody}>
                                 <Text style={styles.otpSubtitle}>أدخل رمز التحقق المرسل إلى رقم هاتفك</Text>
-                                
+
                                 <View style={styles.otpContainer}>
                                     {otp.map((digit, index) => (
                                         <TextInput
@@ -403,8 +434,8 @@ export default function ProfileScreen() {
                                         </Text>
                                     </TouchableOpacity>
                                 </View>
-                                
-                                <TouchableOpacity 
+
+                                <TouchableOpacity
                                     style={[styles.modalButton, loading && { opacity: 0.7 }]}
                                     onPress={() => handleOtpVerify()}
                                     disabled={loading}
@@ -435,7 +466,7 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
-        textAlign: 'center',
+        ...rtlText.alignStart,
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -474,7 +505,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-
     profileInfo: {
         flex: 1,
         alignItems: 'flex-start',
@@ -485,12 +515,30 @@ const styles = StyleSheet.create({
         fontFamily: 'Cairo_700Bold',
         color: '#000',
         alignSelf: 'stretch',
+        ...rtlText.alignStart,
     },
     email: {
         fontSize: 13,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
         alignSelf: 'stretch',
+        ...rtlText.alignStart,
+    },
+    roleBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: '#F0FDF4',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 3,
+        marginTop: 6,
+    },
+    roleBadgeText: {
+        fontSize: 12,
+        fontFamily: 'Cairo_700Bold',
+        color: '#064E3B',
+        ...rtlText.alignStart,
     },
     section: {
         marginBottom: 20,
@@ -506,8 +554,9 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 14,
-        fontFamily: 'Cairo_600SemiBold',
+        fontFamily: 'Cairo_700Bold',
         color: '#666',
+        ...rtlText.alignStart,
     },
     sectionContent: {
         backgroundColor: '#FFF',
@@ -530,6 +579,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
+        ...rtlText.alignStart,
     },
     logoutButton: {
         flexDirection: 'row',
@@ -548,22 +598,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: 'Cairo_700Bold',
         color: '#E11D48',
-    },
-    socialRow: {
-        flexDirection: 'row',
-        gap: 8,
-        marginTop: 5,
-        justifyContent: 'flex-start',
-    },
-    socialIconMini: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: '#F3F4F6',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
+        ...rtlText.alignStart,
     },
     // Modal Styles
     modalOverlay: {
@@ -588,6 +623,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
+        ...rtlText.alignStart,
     },
     modalBody: {
         paddingHorizontal: 20,
@@ -599,9 +635,9 @@ const styles = StyleSheet.create({
     },
     label: {
         fontSize: 14,
-        fontFamily: 'Cairo_600SemiBold',
+        fontFamily: 'Cairo_700Bold',
         color: '#333',
-        textAlign: 'right',
+        ...rtlText.alignStart,
     },
     passwordContainer: {
         flexDirection: 'row',
@@ -611,9 +647,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#E5E5E5',
     },
-    passwordContainerRtl: {
-        flexDirection: 'row',
-    },
     passwordInput: {
         flex: 1,
         paddingHorizontal: 15,
@@ -621,6 +654,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#333',
+        ...rtlText.alignStart,
     },
     eyeButton: {
         padding: 15,
@@ -637,6 +671,7 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: 16,
         fontFamily: 'Cairo_700Bold',
+        ...rtlText.alignStart,
     },
     // OTP specific
     otpSubtitle: {
@@ -673,10 +708,12 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
+        ...rtlText.alignStart,
     },
     resendLink: {
         fontSize: 12,
         fontFamily: 'Cairo_700Bold',
         color: '#064E3B',
+        ...rtlText.alignStart,
     },
 });

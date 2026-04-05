@@ -1,166 +1,190 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     FlatList,
     TouchableOpacity,
-    ActivityIndicator,
     RefreshControl,
+    Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
+import { userScreenDirection } from '@/config/rtlLayout';
+import { rtlText } from '@/config/rtlText';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getBackChevron } from '@/config/directionalIcons';
+import { useAuth } from '@/config/authContext';
+import {
+    loadNotificationHistory,
+    markAllNotificationsRead,
+    markNotificationRead,
+    type NotificationHistoryItem,
+} from '@/services/push/notificationHistory';
+import { parseNotificationData } from '@/services/push/notificationPayload';
+import { getHrefFromNotificationPayload } from '@/services/push/navigationFromNotification';
+import { format, isToday, isYesterday } from 'date-fns';
+import { ar } from 'date-fns/locale';
 
-type NotifType = 'message' | 'success' | 'offer' | 'order' | 'system';
+type RowType = 'message' | 'order' | 'system';
 
-interface Notification {
-    id: string;
-    title: string;
-    body?: string;
-    time: string;
-    type: NotifType;
-    read: boolean;
+function rowTypeFromParsed(parsed: ReturnType<typeof parseNotificationData>): RowType {
+    if (!parsed) return 'system';
+    return parsed.type === 'message' ? 'message' : 'order';
 }
 
-// Placeholder data – replace with API when backend has /user/notifications
-const MOCK_NOTIFICATIONS: Notification[] = [
-    {
-        id: '1',
-        title: 'المنسقة سارة أرسلت لك رسالة جديدة',
-        body: 'هلا وين أنتِ؟ أرسلت لك الاقتراحات',
-        time: 'اليوم | 03:30 م',
-        type: 'message',
-        read: false,
-    },
-    {
-        id: '2',
-        title: 'تم تأكيد باقة التنسيق بنجاح',
-        body: 'سيتواصل معكِ المنسق خلال 24 ساعة',
-        time: 'الثلاثاء | 04:30 م',
-        type: 'success',
-        read: false,
-    },
-    {
-        id: '3',
-        title: 'عرض خاص على باقات التنسيق',
-        body: 'خصم 20% على جميع باقات التنسيق لفترة محدودة',
-        time: 'الثلاثاء | 02:00 م',
-        type: 'offer',
-        read: true,
-    },
-    {
-        id: '4',
-        title: 'طلبك رقم #1024 في مرحلة التجهيز',
-        body: 'جارٍ تجهيز طلبك من قِبل المنسقة',
-        time: 'الاثنين | 11:00 ص',
-        type: 'order',
-        read: true,
-    },
-];
+function formatNotifTime(iso: string): string {
+    try {
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return '';
+        if (isToday(d)) {
+            return `اليوم | ${format(d, 'hh:mm a', { locale: ar })}`;
+        }
+        if (isYesterday(d)) {
+            return `أمس | ${format(d, 'hh:mm a', { locale: ar })}`;
+        }
+        return format(d, 'EEE d MMM | hh:mm a', { locale: ar });
+    } catch {
+        return '';
+    }
+}
 
-const TYPE_CONFIG: Record<NotifType, { icon: string; bg: string; color: string }> = {
-    message: { icon: 'chatbubble-ellipses',   bg: '#E8F5E9', color: '#064E3B' },
-    success: { icon: 'checkmark-circle',       bg: '#E8F5E9', color: '#10B981' },
-    offer:   { icon: 'pricetag',               bg: '#FEF3C7', color: '#D97706' },
-    order:   { icon: 'receipt-outline',        bg: '#EDE9FE', color: '#7C3AED' },
-    system:  { icon: 'notifications-outline',  bg: '#F3F4F6', color: '#6B7280' },
+const TYPE_CONFIG: Record<RowType, { icon: string; bg: string; color: string }> = {
+    message: { icon: 'chatbubble-ellipses', bg: '#E8F5E9', color: '#064E3B' },
+    order: { icon: 'receipt-outline', bg: '#EDE9FE', color: '#7C3AED' },
+    system: { icon: 'notifications-outline', bg: '#F3F4F6', color: '#6B7280' },
 };
 
 export default function NotificationsScreen() {
     const router = useRouter();
-    const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
-    const [loading, setLoading] = useState(false);
+    const { isAuthenticated } = useAuth();
+    const [notifications, setNotifications] = useState<NotificationHistoryItem[]>([]);
     const [refreshing, setRefreshing] = useState(false);
 
-    const unreadCount = notifications.filter(n => !n.read).length;
+    const reload = useCallback(async () => {
+        const list = await loadNotificationHistory();
+        setNotifications(list);
+    }, []);
 
-    const markAllRead = () => {
-        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    useFocusEffect(
+        useCallback(() => {
+            void reload();
+        }, [reload])
+    );
+
+    const unreadCount = notifications.filter((n) => !n.read).length;
+
+    const markAllRead = async () => {
+        await markAllNotificationsRead();
+        await reload();
     };
 
-    const markRead = (id: string) => {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    const onPressItem = async (item: NotificationHistoryItem) => {
+        await markNotificationRead(item.id);
+        await reload();
+
+        const parsed = item.data ? parseNotificationData(item.data) : null;
+        if (!parsed) {
+            return;
+        }
+
+        if (!isAuthenticated) {
+            Alert.alert('تسجيل الدخول', 'سجّل الدخول لفتح المحادثة أو تفاصيل الطلب.', [
+                { text: 'حسناً', style: 'cancel' },
+                { text: 'تسجيل الدخول', onPress: () => router.push('/pages/login' as any) },
+            ]);
+            return;
+        }
+
+        const href = getHrefFromNotificationPayload(parsed);
+        router.push(href);
     };
 
-    const onRefresh = () => {
+    const onRefresh = async () => {
         setRefreshing(true);
-        setTimeout(() => setRefreshing(false), 800); // replace with real fetch
+        await reload();
+        setRefreshing(false);
     };
 
-    const renderItem = ({ item }: { item: Notification }) => {
-        const cfg = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.system;
+    const renderItem = ({ item }: { item: NotificationHistoryItem }) => {
+        const parsed = item.data ? parseNotificationData(item.data) : null;
+        const rowType = rowTypeFromParsed(parsed);
+        const cfg = TYPE_CONFIG[rowType];
+        const navigable = parsed != null;
+
         return (
             <TouchableOpacity
                 style={[styles.card, !item.read && styles.cardUnread]}
-                onPress={() => markRead(item.id)}
+                onPress={() => void onPressItem(item)}
                 activeOpacity={0.85}
             >
-                {/* Unread dot */}
                 {!item.read && <View style={styles.unreadDot} />}
 
-                {/* Icon */}
                 <View style={[styles.iconBox, { backgroundColor: cfg.bg }]}>
                     <Ionicons name={cfg.icon as any} size={22} color={cfg.color} />
                 </View>
 
-                {/* Text */}
                 <View style={styles.textBlock}>
                     <Text style={[styles.title, !item.read && styles.titleBold]} numberOfLines={2}>
                         {item.title}
                     </Text>
-                    {item.body && (
-                        <Text style={styles.body} numberOfLines={1}>{item.body}</Text>
-                    )}
-                    <Text style={styles.time}>{item.time}</Text>
+                    {item.body ? (
+                        <Text style={styles.body} numberOfLines={2}>
+                            {item.body}
+                        </Text>
+                    ) : null}
+                    <Text style={styles.time}>{formatNotifTime(item.createdAt)}</Text>
                 </View>
+
+                {navigable ? (
+                    <Ionicons name="chevron-back" size={20} color="#9CA3AF" style={styles.chevron} />
+                ) : null}
             </TouchableOpacity>
         );
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header */}
+        <SafeAreaView style={[styles.container, userScreenDirection]} edges={['top']}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
                     <Ionicons name={getBackChevron()} size={24} color="#000" />
                 </TouchableOpacity>
 
                 <Text style={styles.headerTitle}>
-                    الاشعارات
-                    {unreadCount > 0 && (
-                        <Text style={styles.badge}> ({unreadCount})</Text>
-                    )}
+                    الإشعارات
+                    {unreadCount > 0 ? <Text style={styles.badge}> ({unreadCount})</Text> : null}
                 </Text>
 
-                <TouchableOpacity onPress={markAllRead} style={styles.headerBtn}>
-                    <Ionicons name="checkmark-done-outline" size={22} color="#064E3B" />
+                <TouchableOpacity
+                    onPress={() => void markAllRead()}
+                    style={styles.headerBtn}
+                    disabled={notifications.length === 0}
+                >
+                    <Ionicons
+                        name="checkmark-done-outline"
+                        size={22}
+                        color={notifications.length === 0 ? '#CCC' : '#064E3B'}
+                    />
                 </TouchableOpacity>
             </View>
 
-            {loading ? (
-                <View style={styles.centered}>
-                    <ActivityIndicator size="large" color="#064E3B" />
-                </View>
-            ) : notifications.length === 0 ? (
+            {notifications.length === 0 ? (
                 <View style={styles.centered}>
                     <Ionicons name="notifications-off-outline" size={64} color="#DDD" />
-                    <Text style={styles.emptyText}>لا توجد إشعارات</Text>
+                    <Text style={styles.emptyText}>لا توجد إشعارات بعد</Text>
+                    <Text style={styles.emptyHint}>
+                        ستظهر هنا رسائل الطلبات والمحادثات عند وصولها إلى جهازك.
+                    </Text>
                 </View>
             ) : (
                 <FlatList
                     data={notifications}
-                    keyExtractor={item => item.id}
+                    keyExtractor={(it) => it.id}
                     renderItem={renderItem}
                     contentContainerStyle={styles.list}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            tintColor="#064E3B"
-                        />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#064E3B" />
                     }
                 />
             )}
@@ -181,13 +205,13 @@ const styles = StyleSheet.create({
         borderBottomColor: '#F0F0F0',
     },
     headerBtn: { width: 38, height: 38, justifyContent: 'center', alignItems: 'center' },
-    headerTitle: { fontSize: 18, fontFamily: 'Cairo_700Bold', color: '#000' },
+    headerTitle: { fontSize: 18, fontFamily: 'Cairo_700Bold', color: '#000', ...rtlText.alignStart },
     badge: { fontSize: 15, color: '#064E3B', fontFamily: 'Cairo_700Bold' },
     list: { padding: 16, paddingBottom: 32 },
 
     card: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         backgroundColor: '#FFF',
         borderRadius: 16,
         padding: 14,
@@ -222,12 +246,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         flexShrink: 0,
     },
-    textBlock: { flex: 1, alignItems: 'flex-start' },
+    textBlock: { flex: 1, alignItems: 'flex-start', minWidth: 0 },
     title: {
         fontSize: 14,
-        fontFamily: 'Cairo_600SemiBold',
+        fontFamily: 'Cairo_400Regular',
         color: '#374151',
-        textAlign: 'right',
+        ...rtlText.alignStart,
         marginBottom: 3,
         lineHeight: 22,
     },
@@ -236,11 +260,30 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontFamily: 'Cairo_400Regular',
         color: '#6B7280',
-        textAlign: 'right',
+        ...rtlText.alignStart,
         marginBottom: 5,
     },
-    time: { fontSize: 11, fontFamily: 'Cairo_400Regular', color: '#9CA3AF' },
+    time: {
+        fontSize: 11,
+        fontFamily: 'Cairo_400Regular',
+        color: '#9CA3AF',
+        ...rtlText.alignStart,
+    },
+    chevron: { flexShrink: 0, opacity: 0.85 },
 
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
-    emptyText: { fontSize: 15, fontFamily: 'Cairo_400Regular', color: '#9CA3AF' },
+    centered: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 10,
+        paddingHorizontal: 32,
+    },
+    emptyText: { fontSize: 16, fontFamily: 'Cairo_700Bold', color: '#6B7280', ...rtlText.alignStart },
+    emptyHint: {
+        fontSize: 13,
+        fontFamily: 'Cairo_400Regular',
+        color: '#9CA3AF',
+        textAlign: 'center',
+        lineHeight: 20,
+    },
 });

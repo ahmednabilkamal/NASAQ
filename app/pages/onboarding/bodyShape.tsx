@@ -7,6 +7,9 @@ import pageData from '@/data/content';
 import { useGender } from '@/config/genderContext';
 import { bodyTypeData } from '@/constants/theme';
 import { useAuth } from '@/config/authContext';
+import { onboardingScreenDirection } from '@/config/rtlLayout';
+import { useOnboardingProgress } from '@/hooks/onboarding/useOnboardingProgress';
+import { ROUTES } from '@/constants/routes';
 
 export default function BodyShapePage() {
     const router = useRouter();
@@ -18,6 +21,7 @@ export default function BodyShapePage() {
     const [selected, setSelected] = useState<number | null>(null);
     const { updateProfile } = useAuth();
     const [saving, setSaving] = useState(false);
+    const { currentStep, totalSteps, isMale } = useOnboardingProgress('shape');
 
     const handleNext = async () => {
         if (selected === null) return;
@@ -26,7 +30,9 @@ export default function BodyShapePage() {
             const shapeObj = currentListData.find((item) => item.key === selected);
             const shapeValue = shapeObj ? shapeObj.value : selected.toString();
             await updateProfile({ body_shape: shapeValue });
-            router.push('/pages/onboarding/bodyMeasurement' as any);
+            router.push(
+                (isMale ? ROUTES.onboarding.boyMeasurements : ROUTES.onboarding.styleIdentity) as any
+            );
         } catch (error) {
             console.error('Failed to save body shape:', error);
         } finally {
@@ -35,12 +41,12 @@ export default function BodyShapePage() {
     };
 
     return (
-        <View style={styles.screen}>
+        <View style={[styles.screen, onboardingScreenDirection]}>
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
-                currentStep={5}
-                totalSteps={7}
+                currentStep={currentStep}
+                totalSteps={totalSteps}
                 onNext={handleNext}
                 isNextDisabled={selected === null}
                 nextButtonText={saving ? '...' : content.nextButton}

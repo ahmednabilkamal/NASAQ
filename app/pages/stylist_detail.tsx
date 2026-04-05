@@ -6,17 +6,24 @@ import {
     TouchableOpacity,
     Image,
     ScrollView,
-    ActivityIndicator,
     Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
+import { userScreenDirection } from '@/config/rtlLayout';
+import { rtlText } from '@/config/rtlText';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import pageData from '@/data/content';
 import apiService, { Stylist, StylistReview, StylistService } from '@/config/apiService';
 import { getBackChevron } from '@/config/directionalIcons';
 import { ServicePackageCard } from '@/components/home';
+import AnimatedFavoriteButton from '@/components/AnimatedFavoriteButton';
+import StylistDetailSkeleton from '@/components/stylist/StylistDetailSkeleton';
 import { APP_LANGUAGE } from '@/config/languageRef';
+import SarPriceText from '@/components/SarPriceText';
+import { pickStylistHeroImageUrl, resolveStylistPortfolioImageUrl } from '@/utils/resolveMediaUrl';
+import { ChatLegalConsentModal } from '@/components/chat/ChatLegalConsentModal';
+import { hasUserAcceptedChatLegal } from '@/utils/chatLegalConsent';
 
 export default function StylistDetailScreen() {
     type TabKey = 'services' | 'bio' | 'portfolio' | 'reviews';
@@ -27,10 +34,11 @@ export default function StylistDetailScreen() {
     const [services, setServices] = useState<StylistService[]>([]);
     const [loading, setLoading] = useState(true);
     const [isFavorite, setIsFavorite] = useState(false);
-    const [booking, setBooking] = useState(false);
     const [showServicePicker, setShowServicePicker] = useState(false);
     const [selectedServiceForBooking, setSelectedServiceForBooking] = useState<StylistService | null>(null);
     const [activeTab, setActiveTab] = useState<TabKey>('services');
+    const [canChatWithStylist, setCanChatWithStylist] = useState<boolean | null>(null);
+    const [showChatLegalModal, setShowChatLegalModal] = useState(false);
 
     const formatMetric = (value: unknown, unit: string) => {
         if (value === null || value === undefined || value === '') return null;
@@ -69,6 +77,19 @@ export default function StylistDetailScreen() {
         fetchData();
     }, [id]);
 
+    useEffect(() => {
+        if (!id) return;
+        (async () => {
+            try {
+                const res = await apiService.canMessageStylist(Number(id));
+                const data = (res as any)?.data ?? res;
+                setCanChatWithStylist(Boolean(data?.can_chat));
+            } catch {
+                setCanChatWithStylist(false);
+            }
+        })();
+    }, [id]);
+
     const handleToggleFavorite = async () => {
         if (!id) return;
         try {
@@ -79,7 +100,7 @@ export default function StylistDetailScreen() {
         }
     };
 
-    const handleContact = async () => {
+    const runStartConversation = async () => {
         if (!id) {
             return;
         }
@@ -87,11 +108,27 @@ export default function StylistDetailScreen() {
             const res = await apiService.startConversation(Number(id));
             const conversation = (res?.data as any) ?? res;
             const conversationId = conversation?.id;
-            router.push(`/pages/chat?id=${conversationId}` as any);
-        } catch (error) {
-            console.error('Start conversation error:', error);
-            router.push('/pages/chat' as any);
+            if (conversationId != null) {
+                router.push(`/pages/chat?id=${conversationId}` as any);
+            }
+        } catch (error: any) {
+            const msg =
+                error?.response?.data?.message ||
+                'لا يمكن بدء المحادثة إلا عند وجود طلب نشط مع هذا المنسّق.';
+            Alert.alert('تنبيه', typeof msg === 'string' ? msg : String(msg));
         }
+    };
+
+    const handleContact = async () => {
+        if (!id) {
+            return;
+        }
+        const accepted = await hasUserAcceptedChatLegal();
+        if (!accepted) {
+            setShowChatLegalModal(true);
+            return;
+        }
+        await runStartConversation();
     };
 
     const handleBookAndPay = async (service?: StylistService) => {
@@ -106,7 +143,7 @@ export default function StylistDetailScreen() {
 
         const selectedService = service ?? availableServices[0];
         if (!selectedService) {
-            Alert.alert('لا توجد خدمات', 'لا توجد خدمات متاحة لهذه المنسقة حالياً.');
+            Alert.alert('لا توجد خدمات', 'لا توجد خدمات متاحة لهذا المنسّق حالياً.');
             return;
         }
 
@@ -120,44 +157,46 @@ export default function StylistDetailScreen() {
 
     if (loading) {
         return (
-            <SafeAreaView style={[styles.container, styles.centerContent]}>
-                <ActivityIndicator size="large" color="#064E3B" />
+            <SafeAreaView style={[styles.container, userScreenDirection]} edges={['top']}>
+                <StylistDetailSkeleton />
             </SafeAreaView>
         );
     }
 
-    const hasRealImage = Boolean(stylist?.image && String(stylist.image).trim() !== '');
+    const heroUri = stylist ? pickStylistHeroImageUrl(stylist as unknown as Record<string, unknown>) : undefined;
+    const hasRealImage = Boolean(heroUri);
     const stylistHeight = formatMetric((stylist as any)?.height, 'cm');
     const stylistWeight = formatMetric((stylist as any)?.weight, 'kg');
-    const portfolioImages = Array.isArray(stylist?.images) ? (stylist?.images as string[]) : [];
+    const portfolioImages = Array.isArray(stylist?.images) ? stylist.images : [];
     const reviews = Array.isArray(stylist?.reviews) ? (stylist?.reviews as StylistReview[]) : [];
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, userScreenDirection]} edges={['top']}>
             <View style={styles.customHeader}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.headerIconButton}>
                     <Ionicons name={getBackChevron()} size={24} color="#333" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle} numberOfLines={1}>
-                    {stylist?.name || content.title || 'المنسقة'}
+                    {stylist?.name || content.title || 'المنسّق'}
                 </Text>
-                <TouchableOpacity onPress={handleToggleFavorite} style={styles.headerIconButton}>
-                    <Ionicons
-                        name={isFavorite ? 'heart' : 'heart-outline'}
-                        size={24}
-                        color={isFavorite ? '#E11D48' : '#333'}
-                    />
-                </TouchableOpacity>
+                <AnimatedFavoriteButton
+                    isFavorite={isFavorite}
+                    onPress={handleToggleFavorite}
+                    size={24}
+                    activeColor="#E11D48"
+                    inactiveColor="#333"
+                    style={styles.headerIconButton}
+                />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.photoWrap}>
                     {hasRealImage ? (
-                        <Image source={{ uri: stylist!.image as string }} style={styles.heroPhoto} resizeMode="cover" />
+                        <Image source={{ uri: heroUri! }} style={styles.heroPhoto} resizeMode="cover" />
                     ) : (
                         <View style={styles.photoPlaceholder}>
                             <Ionicons name="image-outline" size={56} color="#CCC" />
-                            <Text style={styles.photoPlaceholderText}>لا توجد صورة للمنسقة</Text>
+                            <Text style={styles.photoPlaceholderText}>لا توجد صورة للمنسّق</Text>
                         </View>
                     )}
                 </View>
@@ -246,14 +285,18 @@ export default function StylistDetailScreen() {
                         <View style={styles.tabPanel}>
                             {portfolioImages.length > 0 ? (
                                 <View style={styles.portfolioGrid}>
-                                    {portfolioImages.map((img, idx) => (
-                                        <Image
-                                            key={`${img}-${idx}`}
-                                            source={{ uri: img }}
-                                            style={styles.portfolioImage}
-                                            resizeMode="cover"
-                                        />
-                                    ))}
+                                    {portfolioImages.map((img, idx) => {
+                                        const pu = resolveStylistPortfolioImageUrl(img);
+                                        if (!pu) return null;
+                                        return (
+                                            <Image
+                                                key={`p-${idx}-${pu}`}
+                                                source={{ uri: pu }}
+                                                style={styles.portfolioImage}
+                                                resizeMode="cover"
+                                            />
+                                        );
+                                    })}
                                 </View>
                             ) : (
                                 <Text style={styles.noDataText}>لا توجد أعمال متاحة</Text>
@@ -275,7 +318,11 @@ export default function StylistDetailScreen() {
                                                 </View>
                                             </View>
                                             <Text style={styles.reviewBody}>
-                                                "{review.review || review.comment || 'تجربة ممتازة'}"
+                                                {
+                                                    '\u201c' +
+                                                    (review.review || review.comment || 'تجربة ممتازة') +
+                                                    '\u201d'
+                                                }
                                             </Text>
                                         </View>
                                     ))}
@@ -287,35 +334,27 @@ export default function StylistDetailScreen() {
                     )}
                 </View>
 
-                <View style={{ height: 120 }} />
+                <View style={{ height: canChatWithStylist === true ? 120 : 32 }} />
             </ScrollView>
 
-            <View style={styles.footer}>
-                <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
-                    <Ionicons name="chatbubble-ellipses-outline" size={18} color="#064E3B" style={{ marginEnd: 8 }} />
-                    <Text style={styles.contactButtonText}>تواصلي مع المنسقة</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.bookButton, booking && { opacity: 0.7 }]}
-                    onPress={() => handleBookAndPay()}
-                    disabled={booking}
-                >
-                    {booking ? (
-                        <ActivityIndicator color="#FFF" />
-                    ) : (
-                        <>
-                            <Ionicons name="calendar-outline" size={18} color="#FFF" style={{ marginEnd: 8 }} />
-                            <Text style={styles.bookButtonText}>احجزي والدفع</Text>
-                        </>
-                    )}
-                </TouchableOpacity>
-            </View>
+            {canChatWithStylist === true ? (
+                <View style={styles.footer}>
+                    <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
+                        <Ionicons
+                            name="chatbubble-ellipses-outline"
+                            size={18}
+                            color="#064E3B"
+                            style={styles.footerIcon}
+                        />
+                        <Text style={styles.contactButtonText}>{content.connectButton}</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : null}
 
             {showServicePicker && (
                 <View style={styles.pickerOverlay}>
                     <View style={styles.pickerSheet}>
-                        <Text style={styles.pickerTitle}>اختاري الخدمة</Text>
+                        <Text style={styles.pickerTitle}>اختر الخدمة</Text>
                         {services
                             .filter((s) => s.available !== false)
                             .map((svc) => (
@@ -329,15 +368,15 @@ export default function StylistDetailScreen() {
                                     ]}
                                     onPress={() => setSelectedServiceForBooking(svc)}
                                 >
-                                    <Text style={styles.pickerPrice}>{svc.price} ر.س</Text>
+                                    <SarPriceText value={svc.price} textStyle={styles.pickerPrice} />
                                     <Text style={styles.pickerItemTitle}>{svc.title}</Text>
                                 </TouchableOpacity>
                             ))}
 
                         <TouchableOpacity
-                            style={[styles.pickerConfirmButton, booking && { opacity: 0.7 }]}
+                            style={styles.pickerConfirmButton}
                             onPress={() => selectedServiceForBooking && handleBookAndPay(selectedServiceForBooking)}
-                            disabled={!selectedServiceForBooking || booking}
+                            disabled={!selectedServiceForBooking}
                         >
                             <Text style={styles.pickerConfirmText}>متابعة للدفع</Text>
                         </TouchableOpacity>
@@ -348,6 +387,12 @@ export default function StylistDetailScreen() {
                     </View>
                 </View>
             )}
+
+            <ChatLegalConsentModal
+                visible={showChatLegalModal}
+                onClose={() => setShowChatLegalModal(false)}
+                onAccepted={runStartConversation}
+            />
         </SafeAreaView>
     );
 }
@@ -356,10 +401,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FFF',
-    },
-    centerContent: {
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     customHeader: {
         flexDirection: 'row',
@@ -376,8 +417,8 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
-        textAlign: 'center',
         marginHorizontal: 8,
+        textAlign: 'center',
     },
     headerIconButton: {
         width: 40,
@@ -407,7 +448,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#9CA3AF',
-        textAlign: 'center',
+        ...rtlText.alignStart,
     },
     servicesSection: {
         paddingHorizontal: 20,
@@ -417,12 +458,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'flex-start',
-        gap: 8,
         marginBottom: 14,
     },
     tabButton: {
         paddingVertical: 8,
         paddingHorizontal: 6,
+        marginEnd: 8,
         borderRadius: 0,
         backgroundColor: 'transparent',
         borderBottomWidth: 2,
@@ -435,6 +476,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Cairo_600SemiBold',
         fontSize: 16,
         color: '#9CA3AF',
+        ...rtlText.alignStart,
     },
     tabTextActive: {
         color: '#111827',
@@ -442,7 +484,6 @@ const styles = StyleSheet.create({
     metricsRow: {
         flexDirection: 'row',
         justifyContent: 'flex-start',
-        gap: 8,
         marginBottom: 12,
         flexWrap: 'wrap',
     },
@@ -451,19 +492,23 @@ const styles = StyleSheet.create({
         borderRadius: 999,
         paddingHorizontal: 12,
         paddingVertical: 6,
+        marginEnd: 8,
+        marginBottom: 8,
     },
     metricText: {
         fontSize: 12,
         fontFamily: 'Cairo_600SemiBold',
         color: '#374151',
+        ...rtlText.alignStart,
+        writingDirection: 'ltr',
     },
     servicesHeading: {
         fontSize: 18,
         fontFamily: 'Cairo_700Bold',
         color: '#111',
-        textAlign: 'right',
         alignSelf: 'stretch',
         marginBottom: 16,
+        ...rtlText.alignStart,
     },
     servicesGrid: {
         flexDirection: 'row',
@@ -474,8 +519,8 @@ const styles = StyleSheet.create({
         fontFamily: 'Cairo_400Regular',
         fontSize: 14,
         color: '#999',
-        textAlign: 'center',
         paddingVertical: 20,
+        ...rtlText.alignStart,
     },
     tabPanel: {
         marginTop: 8,
@@ -485,23 +530,22 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#374151',
         lineHeight: 24,
-        textAlign: 'right',
+        ...rtlText.alignStart,
     },
     portfolioGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        gap: 10,
     },
     portfolioImage: {
         width: '48%',
         height: 130,
         borderRadius: 14,
         backgroundColor: '#F3F4F6',
+        marginBottom: 10,
     },
     reviewsRow: {
         flexDirection: 'row',
-        gap: 10,
         paddingVertical: 4,
     },
     reviewCard: {
@@ -511,6 +555,7 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         padding: 10,
         backgroundColor: '#FFF',
+        marginEnd: 10,
     },
     reviewHead: {
         flexDirection: 'row',
@@ -522,6 +567,9 @@ const styles = StyleSheet.create({
         fontFamily: 'Cairo_700Bold',
         fontSize: 13,
         color: '#111827',
+        ...rtlText.alignStart,
+        flex: 1,
+        marginEnd: 8,
     },
     reviewRating: {
         flexDirection: 'row',
@@ -532,13 +580,14 @@ const styles = StyleSheet.create({
         fontFamily: 'Cairo_600SemiBold',
         fontSize: 12,
         color: '#92400E',
+        writingDirection: 'ltr',
     },
     reviewBody: {
         fontFamily: 'Cairo_400Regular',
         fontSize: 13,
         color: '#6B7280',
         lineHeight: 22,
-        textAlign: 'right',
+        ...rtlText.alignStart,
     },
     footer: {
         position: 'absolute',
@@ -546,12 +595,14 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         flexDirection: 'row',
-        gap: 10,
         padding: 16,
         paddingBottom: 28,
         backgroundColor: '#FFF',
         borderTopWidth: 1,
         borderTopColor: '#F0F0F0',
+    },
+    footerIcon: {
+        marginEnd: 8,
     },
     contactButton: {
         flex: 1,
@@ -567,20 +618,7 @@ const styles = StyleSheet.create({
         color: '#064E3B',
         fontSize: 14,
         fontFamily: 'Cairo_700Bold',
-    },
-    bookButton: {
-        flex: 1,
-        height: 52,
-        borderRadius: 26,
-        backgroundColor: '#064E3B',
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexDirection: 'row',
-    },
-    bookButtonText: {
-        color: '#FFF',
-        fontSize: 14,
-        fontFamily: 'Cairo_700Bold',
+        ...rtlText.alignStart,
     },
     pickerOverlay: {
         position: 'absolute',
@@ -602,8 +640,8 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontFamily: 'Cairo_700Bold',
         color: '#111',
-        textAlign: 'center',
         marginBottom: 16,
+        ...rtlText.alignStart,
     },
     pickerItem: {
         flexDirection: 'row',
@@ -621,11 +659,13 @@ const styles = StyleSheet.create({
         color: '#111',
         flex: 1,
         marginEnd: 12,
+        ...rtlText.alignStart,
     },
     pickerPrice: {
         fontSize: 14,
         fontFamily: 'Cairo_600SemiBold',
         color: '#064E3B',
+        writingDirection: 'ltr',
     },
     pickerCancel: {
         marginTop: 6,
@@ -636,6 +676,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: 'Cairo_600SemiBold',
         color: '#EF4444',
+        ...rtlText.alignStart,
     },
     pickerItemSelected: {
         borderWidth: 2,
@@ -654,5 +695,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: 'Cairo_700Bold',
         color: '#FFF',
+        ...rtlText.alignStart,
     },
 });

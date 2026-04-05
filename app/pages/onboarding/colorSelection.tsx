@@ -6,6 +6,8 @@ import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { useGender } from '@/config/genderContext';
 import { useAuth } from '@/config/authContext';
+import { onboardingScreenDirection } from '@/config/rtlLayout';
+import { useOnboardingProgress } from '@/hooks/onboarding/useOnboardingProgress';
 
 const TONES = {
     female: [
@@ -30,6 +32,7 @@ export default function SkinTonePage() {
 
     const [selected, setSelected] = useState<string | null>(null);
     const { updateProfile } = useAuth();
+    const { currentStep, totalSteps } = useOnboardingProgress('color');
     const [saving, setSaving] = useState(false);
 
     const handleNext = async () => {
@@ -50,12 +53,12 @@ export default function SkinTonePage() {
     const currentTones = gender === 'male' ? TONES.male : TONES.female;
 
     return (
-        <View style={styles.screen}>
+        <View style={[styles.screen, onboardingScreenDirection]}>
             <EvaluationLayout
                 title={content.title}
                 subtitle={content.subtitle}
-                currentStep={4}
-                totalSteps={7}
+                currentStep={currentStep}
+                totalSteps={totalSteps}
                 onNext={handleNext}
                 isNextDisabled={!selected}
                 nextButtonText={saving ? '...' : content.nextButton}

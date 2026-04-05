@@ -1,11 +1,8 @@
 import React from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
+import { userScreenDirection } from '@/config/rtlLayout';
+import { rtlText } from '@/config/rtlText';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '@/config/languageRef';
@@ -19,7 +16,7 @@ export default function ContactUsScreen() {
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.profile || (pageData as any)['ar'].profile;
 
-    const ContactItem = ({ icon, label, value }: any) => (
+    const ContactItem = ({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }) => (
         <View style={styles.contactItem}>
             <View style={styles.contactIcon}>
                 <Ionicons name={icon} size={20} color="#666" />
@@ -31,74 +28,23 @@ export default function ContactUsScreen() {
         </View>
     );
 
-    const SocialItem = ({ icon, label, handle, color }: any) => (
-        <TouchableOpacity 
-            style={styles.socialItem}
-            onPress={() => router.push('/pages/profile/edit?mode=social' as any)}
-        >
-            <View style={[styles.socialIcon, { backgroundColor: color }]}>
-                <Ionicons name={icon} size={20} color="#FFF" />
-            </View>
-            <View style={styles.socialText}>
-                <Text style={styles.socialLabel}>{label}</Text>
-                <Text style={styles.socialHandle}>{handle || 'غير مضاف'}</Text>
-            </View>
-        </TouchableOpacity>
-    );
-
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, userScreenDirection]} edges={['top']}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()}>
+                <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
                     <Ionicons name={getBackChevron()} size={24} color="#000" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{content.contactUs}</Text>
-                <TouchableOpacity onPress={() => router.push('/pages/profile/edit?mode=social' as any)}>
-                    <Text style={styles.editBtnText}>تعديل</Text>
-                </TouchableOpacity>
+                <View style={styles.headerSpacer} />
             </View>
 
             <View style={styles.content}>
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>دعم العملاء</Text>
                     <View style={styles.card}>
-                        <ContactItem
-                            icon="call-outline"
-                            label="رقم التواصل"
-                            value={user?.phone || '+20 25268652'}
-                        />
+                        <ContactItem icon="call-outline" label="رقم التواصل" value={user?.phone || '+20 25268652'} />
                         <View style={styles.divider} />
-                        <ContactItem
-                            icon="mail-outline"
-                            label="عنوان البريد الإلكتروني"
-                            value={user?.email || 'help@venus.com'}
-                        />
-                    </View>
-                </View>
-
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>وسائل التواصل الإجتماعي</Text>
-                    <View style={styles.card}>
-                        <SocialItem
-                            icon="logo-instagram"
-                            label="إنستجرام"
-                            handle={user?.instagram}
-                            color="#E1306C"
-                        />
-                        <View style={styles.divider} />
-                        <SocialItem
-                            icon="logo-twitter"
-                            label="تويتر"
-                            handle={user?.twitter}
-                            color="#1DA1F2"
-                        />
-                        <View style={styles.divider} />
-                        <SocialItem
-                            icon="logo-facebook"
-                            label="فيس بوك"
-                            handle={user?.facebook}
-                            color="#4267B2"
-                        />
+                        <ContactItem icon="mail-outline" label="عنوان البريد الإلكتروني" value={user?.email || 'help@venus.com'} />
                     </View>
                 </View>
             </View>
@@ -118,29 +64,32 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 15,
         backgroundColor: '#FFF',
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#F0F0F0',
     },
     headerTitle: {
+        flex: 1,
         fontSize: 18,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
+        ...rtlText.alignCenter,
     },
-    editBtnText: {
-        fontSize: 14,
-        fontFamily: 'Cairo_700Bold',
-        color: '#064E3B',
+    headerSpacer: {
+        width: 24,
+        height: 24,
     },
     content: {
         padding: 20,
     },
     section: {
-        marginBottom: 30,
+        marginBottom: 24,
     },
     sectionTitle: {
         fontSize: 14,
         fontFamily: 'Cairo_700Bold',
         color: '#999',
         marginBottom: 10,
-        textAlign: 'right',
+        ...rtlText.alignStart,
     },
     card: {
         backgroundColor: '#FFF',
@@ -152,9 +101,10 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     contactItem: {
-        flexDirection: 'row-reverse',
+        flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 10,
+        gap: 12,
     },
     contactIcon: {
         width: 40,
@@ -163,46 +113,23 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8F9FA',
         justifyContent: 'center',
         alignItems: 'center',
-        marginLeft: 15,
     },
     contactText: {
-        alignItems: 'flex-start',
+        flex: 1,
+        minWidth: 0,
+        alignItems: 'stretch',
     },
     contactLabel: {
         fontSize: 12,
         color: '#999',
         fontFamily: 'Cairo_400Regular',
+        ...rtlText.alignStart,
     },
     contactValue: {
         fontSize: 14,
         color: '#000',
         fontFamily: 'Cairo_700Bold',
-    },
-    socialItem: {
-        flexDirection: 'row-reverse',
-        alignItems: 'center',
-        paddingVertical: 10,
-    },
-    socialIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: 15,
-    },
-    socialText: {
-        alignItems: 'flex-start',
-    },
-    socialLabel: {
-        fontSize: 12,
-        color: '#999',
-        fontFamily: 'Cairo_400Regular',
-    },
-    socialHandle: {
-        fontSize: 14,
-        color: '#000',
-        fontFamily: 'Cairo_700Bold',
+        ...rtlText.alignStart,
     },
     divider: {
         height: 1,

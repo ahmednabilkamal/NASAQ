@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     ScrollView,
@@ -9,9 +9,11 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import apiService, { FashionStyle, Stylist } from '@/config/apiService';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
+import { userScreenDirection } from '@/config/rtlLayout';
+import apiService, { Category, Stylist } from '@/config/apiService';
 import { clearStylistFilters, defaultStylistFilters, loadStylistFilters, saveStylistFilters } from '@/config/stylistFilters';
+import SaudiRiyalSymbol from '@/components/SaudiRiyalSymbol';
 
 export default function FilterScreen() {
     const router = useRouter();
@@ -19,11 +21,21 @@ export default function FilterScreen() {
 
     const [minPrice, setMinPrice] = useState(0);
     const [maxPrice, setMaxPrice] = useState(720);
-    const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
-    const [fashionStyles, setFashionStyles] = useState<FashionStyle[]>([]);
-    const [loadingStyles, setLoadingStyles] = useState(true);
+    const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [loadingCategories, setLoadingCategories] = useState(true);
     const [baseStylists, setBaseStylists] = useState<Stylist[]>([]);
     const [loadingBaseStylists, setLoadingBaseStylists] = useState(true);
+
+    const searchQuery = useMemo(() => {
+        const s = q != null ? String(q).trim() : '';
+        return s.length > 0 ? s : undefined;
+    }, [q]);
+
+    const categoryIdsParam = useMemo(
+        () => (selectedCategoryIds.length > 0 ? selectedCategoryIds.join(',') : undefined),
+        [selectedCategoryIds]
+    );
 
     useEffect(() => {
         let mounted = true;
@@ -33,27 +45,27 @@ export default function FilterScreen() {
             if (!mounted) return;
             setMinPrice(stored.minPrice);
             setMaxPrice(stored.maxPrice);
-            setSelectedStyles(stored.selectedStyleIds);
+            setSelectedCategoryIds(stored.selectedCategoryIds);
         };
 
-        const loadStyles = async () => {
+        const loadCategories = async () => {
             try {
-                setLoadingStyles(true);
-                const res = await apiService.getFashionStyles({ per_page: 50 });
+                setLoadingCategories(true);
+                const res = await apiService.getCategories();
                 const data = res?.data;
                 if (!mounted) return;
-                setFashionStyles(Array.isArray(data) ? data : []);
+                setCategories(Array.isArray(data) ? data : []);
             } catch {
                 if (!mounted) return;
-                setFashionStyles([]);
+                setCategories([]);
             } finally {
                 if (!mounted) return;
-                setLoadingStyles(false);
+                setLoadingCategories(false);
             }
         };
 
         load();
-        loadStyles();
+        loadCategories();
         return () => {
             mounted = false;
         };
@@ -67,7 +79,8 @@ export default function FilterScreen() {
                 setLoadingBaseStylists(true);
                 const res = await apiService.getStylists({
                     per_page: 20,
-                    search: q ? String(q).trim() : undefined,
+                    search: searchQuery,
+                    ...(categoryIdsParam ? { category_ids: categoryIdsParam } : {}),
                 });
                 const data = res?.data;
                 if (!mounted) return;
@@ -85,38 +98,21 @@ export default function FilterScreen() {
         return () => {
             mounted = false;
         };
-    }, [q]);
+    }, [searchQuery, categoryIdsParam]);
 
-    const fallbackStyles: FashionStyle[] = [
-        { id: '1', name: 'مناسبات' },
-        { id: '2', name: 'استايل رسمي' },
-        { id: '3', name: 'سهرة' },
-        { id: '4', name: 'أزياء عصرية' },
-        { id: '5', name: 'خزانة كاملة' },
-        { id: '6', name: 'كاجوال' },
-    ];
+    const getCategoryKey = (cat: Category) => String(cat.id);
 
-    const stylesList = fashionStyles.length > 0 ? fashionStyles : fallbackStyles;
-
-    const getStyleKey = (style: FashionStyle) => {
-        const idKey = style.id != null ? String(style.id) : '';
-        const nameKey = style.name != null ? String(style.name) : '';
-        return idKey || nameKey;
-    };
-
-    const toggleStyle = (styleKey: string) => {
-        if (selectedStyles.includes(styleKey)) {
-            setSelectedStyles(selectedStyles.filter((s) => s !== styleKey));
-        } else {
-            setSelectedStyles([...selectedStyles, styleKey]);
-        }
+    const toggleCategory = (key: string) => {
+        setSelectedCategoryIds((prev) =>
+            prev.includes(key) ? prev.filter((id) => id !== key) : [...prev, key]
+        );
     };
 
     const applyFilters = async () => {
         await saveStylistFilters({
             minPrice,
             maxPrice,
-            selectedStyleIds: selectedStyles,
+            selectedCategoryIds,
         });
         router.back();
     };
@@ -125,7 +121,7 @@ export default function FilterScreen() {
         await clearStylistFilters();
         setMinPrice(defaultStylistFilters.minPrice);
         setMaxPrice(defaultStylistFilters.maxPrice);
-        setSelectedStyles([]);
+        setSelectedCategoryIds([]);
         router.back();
     };
 
@@ -146,7 +142,7 @@ export default function FilterScreen() {
 
     const priceFilterActive =
         minPrice !== defaultStylistFilters.minPrice || maxPrice !== defaultStylistFilters.maxPrice;
-    const styleFilterActive = selectedStyles.length > 0;
+    const categoryFilterActive = selectedCategoryIds.length > 0;
 
     const getServicePrices = (s: any): number[] => {
         const services = Array.isArray(s?.services) ? s.services : [];
@@ -166,54 +162,51 @@ export default function FilterScreen() {
         return fallbackPrice >= minPrice && fallbackPrice <= maxPrice;
     };
 
+    const categorySet = useMemo(() => new Set(selectedCategoryIds), [selectedCategoryIds]);
+
+    const matchesCategory = (s: any): boolean => {
+        const services = Array.isArray(s?.services) ? s.services : [];
+        return services.some((svc: any) => {
+            const cid = svc?.category_id != null ? String(svc.category_id) : '';
+            const nested = svc?.category?.id != null ? String(svc.category.id) : '';
+            return categorySet.has(cid) || categorySet.has(nested);
+        });
+    };
+
     const matchingCount = baseStylists.filter((s: any) => {
         if (priceFilterActive && !matchesPriceRange(s)) return false;
-
-        if (styleFilterActive) {
-            const styleSet = new Set(selectedStyles);
-            const hasMatch = (s.fashion_styles ?? []).some((fs: any) => {
-                const name = String(fs?.name ?? '');
-                const id = fs?.id != null ? String(fs.id) : '';
-                return styleSet.has(name) || styleSet.has(id);
-            });
-            if (!hasMatch) return false;
-        }
-
+        if (categoryFilterActive && !matchesCategory(s)) return false;
         return true;
     }).length;
 
     return (
-        <SafeAreaView style={styles.container}>
-            {/* Handle */}
+        <SafeAreaView style={[styles.container, userScreenDirection]}>
             <View style={styles.handle} />
 
-            {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>فلتر المنسقات</Text>
-                <Text style={styles.headerSubtitle}>أعرض المنسقات ضمن ميزانيتك</Text>
+                <Text style={styles.headerSubtitle}>التصنيفات والميزانية</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                {/* Price Range Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>نطاق السعر</Text>
 
                     <View style={styles.priceRow}>
-                        {/* To (visually on left in RTL due to row-reverse) */}
                         <View style={styles.priceInputWrapper}>
-                            <Text style={styles.priceLabel}>إلى</Text>
+                            <Text style={styles.priceLabel}>من</Text>
                             <View style={styles.priceInput}>
-                                <Text style={styles.currency}>ر.س</Text>
                                 <TextInput
                                     style={styles.textInput}
-                                    value={maxPrice.toString()}
-                                    onChangeText={(v) => setMaxPrice(Number(v) || 0)}
+                                    value={minPrice.toString()}
+                                    onChangeText={(v) => setMinPrice(Number(v) || 0)}
                                     keyboardType="numeric"
+                                    textAlign="right"
                                 />
+                                <SaudiRiyalSymbol size={16} color="#064E3B" />
                             </View>
                         </View>
 
-                        {/* Slider in middle */}
                         <View style={styles.sliderContainer}>
                             <View style={styles.sliderTrack}>
                                 <View
@@ -225,90 +218,70 @@ export default function FilterScreen() {
                                         },
                                     ]}
                                 />
-                                <View
-                                    style={[
-                                        styles.sliderThumb,
-                                        { left: `${minPercent}%` },
-                                    ]}
-                                />
-                                <View
-                                    style={[
-                                        styles.sliderThumb,
-                                        { left: `${maxPercent}%` },
-                                    ]}
-                                />
+                                <View style={[styles.sliderThumb, { left: `${minPercent}%` }]} />
+                                <View style={[styles.sliderThumb, { left: `${maxPercent}%` }]} />
                             </View>
                         </View>
 
-                        {/* From (visually on right in RTL due to row-reverse) */}
                         <View style={styles.priceInputWrapper}>
-                            <Text style={styles.priceLabel}>من</Text>
+                            <Text style={styles.priceLabel}>إلى</Text>
                             <View style={styles.priceInput}>
-                                <Text style={styles.currency}>ر.س</Text>
                                 <TextInput
                                     style={styles.textInput}
-                                    value={minPrice.toString()}
-                                    onChangeText={(v) => setMinPrice(Number(v) || 0)}
+                                    value={maxPrice.toString()}
+                                    onChangeText={(v) => setMaxPrice(Number(v) || 0)}
                                     keyboardType="numeric"
+                                    textAlign="right"
                                 />
+                                <SaudiRiyalSymbol size={16} color="#064E3B" />
                             </View>
                         </View>
                     </View>
                 </View>
 
-                {/* Style Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>: الأستايل</Text>
+                    <Text style={styles.sectionTitle}>التصنيفات</Text>
 
-                    <View style={styles.stylesGrid}>
-                        {loadingStyles ? (
-                            <View style={{ paddingVertical: 10 }}>
+                    <View style={styles.chipsGrid}>
+                        {loadingCategories ? (
+                            <View style={styles.chipsLoading}>
                                 <ActivityIndicator size="small" color="#064E3B" />
                             </View>
+                        ) : categories.length === 0 ? (
+                            <Text style={styles.chipsEmptyText}>لا توجد تصنيفات متاحة</Text>
                         ) : (
-                            stylesList.map((style) => {
-                            const key = getStyleKey(style);
-                            const isSelected = selectedStyles.includes(key);
-                            return (
-                                <TouchableOpacity
-                                    key={key}
-                                    style={[
-                                        styles.styleChip,
-                                        isSelected && styles.styleChipActive,
-                                    ]}
-                                    onPress={() => toggleStyle(key)}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.styleText,
-                                            isSelected && styles.styleTextActive,
-                                        ]}
+                            categories.map((cat) => {
+                                const key = getCategoryKey(cat);
+                                const isSelected = selectedCategoryIds.includes(key);
+                                return (
+                                    <TouchableOpacity
+                                        key={key}
+                                        style={[styles.chip, isSelected && styles.chipActive]}
+                                        onPress={() => toggleCategory(key)}
+                                        activeOpacity={0.85}
                                     >
-                                        {style.name}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })
+                                        <Text
+                                            style={[styles.chipText, isSelected && styles.chipTextActive]}
+                                            numberOfLines={2}
+                                        >
+                                            {cat.name}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })
                         )}
                     </View>
                 </View>
             </ScrollView>
 
-            {/* Footer Buttons */}
             <View style={styles.footer}>
-                <TouchableOpacity
-                    style={styles.applyButton}
-                    onPress={applyFilters}
-                >
+                <TouchableOpacity style={styles.applyButton} onPress={applyFilters} activeOpacity={0.9}>
                     <Text style={styles.applyButtonText}>
-                        شاهد {loadingBaseStylists ? '...' : matchingCount} منسقة مطابقة
+                        {loadingBaseStylists ? 'جاري التحميل…' : `عرض ${matchingCount} منسّق مطابق`}
                     </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={styles.clearButton}
-                    onPress={clearFilters}
-                >
+                <TouchableOpacity style={styles.clearButton} onPress={clearFilters} activeOpacity={0.9}>
                     <Text style={styles.clearButtonText}>مسح كل الفلاتر</Text>
                 </TouchableOpacity>
             </View>
@@ -335,18 +308,21 @@ const styles = StyleSheet.create({
     header: {
         paddingHorizontal: 20,
         paddingVertical: 15,
-        alignItems: 'center',
+        alignSelf: 'stretch',
+        alignItems: 'stretch',
     },
     headerTitle: {
         fontSize: 20,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
         marginBottom: 5,
+        textAlign: 'left',
     },
     headerSubtitle: {
         fontSize: 13,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
+        textAlign: 'left',
     },
     content: {
         paddingHorizontal: 20,
@@ -361,10 +337,10 @@ const styles = StyleSheet.create({
         fontFamily: 'Cairo_600SemiBold',
         color: '#999',
         marginBottom: 15,
-        textAlign: 'right',
+        textAlign: 'left',
     },
     priceRow: {
-        flexDirection: 'row-reverse',
+        flexDirection: 'row',
         alignItems: 'flex-end',
         gap: 10,
     },
@@ -375,7 +351,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
-        textAlign: 'center',
+        textAlign: 'left',
         marginBottom: 8,
     },
     priceInput: {
@@ -386,19 +362,15 @@ const styles = StyleSheet.create({
         height: 50,
         paddingHorizontal: 12,
         justifyContent: 'center',
-    },
-    currency: {
-        fontSize: 12,
-        fontFamily: 'Cairo_400Regular',
-        color: '#999',
-        marginRight: 5,
+        gap: 8,
     },
     textInput: {
+        flex: 1,
         fontFamily: 'Cairo_700Bold',
         fontSize: 18,
         color: '#333',
-        textAlign: 'center',
-        minWidth: 50,
+        minWidth: 40,
+        paddingVertical: 0,
     },
     sliderContainer: {
         flex: 0.8,
@@ -426,31 +398,46 @@ const styles = StyleSheet.create({
         backgroundColor: '#064E3B',
         top: -6,
     },
-    stylesGrid: {
+    chipsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 10,
         justifyContent: 'flex-start',
     },
-    styleChip: {
-        paddingHorizontal: 18,
+    chipsLoading: {
+        paddingVertical: 10,
+        width: '100%',
+        alignItems: 'center',
+    },
+    chip: {
+        paddingHorizontal: 16,
         paddingVertical: 10,
         borderRadius: 25,
         borderWidth: 1,
         borderColor: '#E8E8E8',
         backgroundColor: '#FFF',
+        maxWidth: '100%',
     },
-    styleChipActive: {
+    chipActive: {
         backgroundColor: '#064E3B',
         borderColor: '#064E3B',
     },
-    styleText: {
+    chipText: {
         fontSize: 13,
         fontFamily: 'Cairo_600SemiBold',
         color: '#333',
+        textAlign: 'center',
     },
-    styleTextActive: {
+    chipTextActive: {
         color: '#FFF',
+    },
+    chipsEmptyText: {
+        fontSize: 13,
+        fontFamily: 'Cairo_400Regular',
+        color: '#9CA3AF',
+        paddingVertical: 8,
+        textAlign: 'left',
+        width: '100%',
     },
     footer: {
         paddingHorizontal: 20,
@@ -469,6 +456,7 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: 16,
         fontFamily: 'Cairo_700Bold',
+        textAlign: 'center',
     },
     clearButton: {
         height: 55,
@@ -483,5 +471,6 @@ const styles = StyleSheet.create({
         color: '#064E3B',
         fontSize: 16,
         fontFamily: 'Cairo_700Bold',
+        textAlign: 'center',
     },
 });

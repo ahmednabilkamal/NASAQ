@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { rtlText } from '@/config/rtlText';
+import AnimatedFavoriteButton from '@/components/AnimatedFavoriteButton';
 
 interface StylistCardProps {
     name: string;
@@ -20,10 +22,9 @@ export default function StylistCard({ name, subtitle, imageUri, rating, clientCo
             ? String(subtitle)
             : tags.length > 0 && tags[0] != null && String(tags[0]).trim() !== ''
               ? String(tags[0])
-              : 'منسقة أزياء';
+              : 'منسّق أزياء';
 
-    const handleFavoritePress = (e: any) => {
-        e.stopPropagation();
+    const handleFavoritePress = () => {
         onFavoriteToggle?.();
     };
 
@@ -41,17 +42,14 @@ export default function StylistCard({ name, subtitle, imageUri, rating, clientCo
                     <Ionicons name="star" size={10} color="#FFB800" />
                     <Text style={styles.ratingText}>{rating}</Text>
                 </View>
-                <TouchableOpacity
-                    style={styles.favoriteButton}
+                <AnimatedFavoriteButton
+                    isFavorite={isFavorite}
                     onPress={handleFavoritePress}
-                    activeOpacity={0.7}
-                >
-                    <Ionicons
-                        name={isFavorite ? "heart" : "heart-outline"}
-                        size={20}
-                        color={isFavorite ? "#FF4458" : "#999"}
-                    />
-                </TouchableOpacity>
+                    size={20}
+                    activeColor="#FF4458"
+                    inactiveColor="#999"
+                    style={styles.favoriteButton}
+                />
             </View>
 
             <View style={styles.infoContainer}>
@@ -80,7 +78,6 @@ const styles = StyleSheet.create({
         width: 170,
         backgroundColor: '#fff',
         borderRadius: 20,
-        marginStart: 16,
         overflow: 'hidden',
         elevation: 2,
         shadowColor: '#000',
@@ -107,7 +104,7 @@ const styles = StyleSheet.create({
     ratingBadge: {
         position: 'absolute',
         bottom: 10,
-        right: 10,
+        end: 10,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(0,0,0,0.5)',
@@ -120,11 +117,12 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontFamily: 'Cairo_600SemiBold',
         color: '#FFF',
+        writingDirection: 'ltr',
     },
     favoriteButton: {
         position: 'absolute',
         top: 10,
-        left: 10,
+        start: 10,
         width: 32,
         height: 32,
         borderRadius: 16,
@@ -139,12 +137,14 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: 'Cairo_700Bold',
         color: '#111',
+        ...rtlText.alignStart,
     },
     tags: {
         fontSize: 11,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
         marginTop: 2,
+        ...rtlText.alignStart,
     },
     statsRow: {
         flexDirection: 'row',
@@ -164,11 +164,13 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontFamily: 'Cairo_600SemiBold',
         color: '#888',
+        ...rtlText.alignStart,
     },
     totalLabel: {
         fontSize: 11,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
+        ...rtlText.alignStart,
     }
 });
 

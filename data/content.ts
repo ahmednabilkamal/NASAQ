@@ -72,7 +72,7 @@ const pageData = {
     weightSelection: {
       title: "Tell us about your weight",
       subtitle: "Determining weight helps us understand your body dimensions better to suggest fabrics and cuts that give you complete comfort and confidence.",
-      bmiText: "Your Body Mass Index (BMI) shows your weight is normal",
+      bmiText: "Body mass index (BMI) reflects how your weight relates to your height.",
       bmiCategories: {
         underweight: "Underweight",
         normal: "Normal",
@@ -91,18 +91,33 @@ const pageData = {
       subtitle: "Choose the icon closest to your body shape to help us filter thousands of designs and choose the most suitable for you.",
       nextButton: "Next"
     },
-    personalMeasurements: {
-      title: "Enter your personal measurements",
-      subtitle: "Enter your basic body measurements to provide size and shape recommendations tailored to you.",
-      shoulder: "Shoulder",
-      chest: "Chest",
-      waist: "Waist",
-      arm: "Arm",
-      buttocks: "Hips",
-      thigh: "Thigh",
-      leg: "Leg",
-      unit: "cm",
-      nextButton: "Next"
+    boyMeasurements: {
+      title: "Your measurements",
+      subtitle: "Accurate numbers help stylists suggest fits and sizes. Use a soft tape measure in centimeters.",
+      unitHint: "All values in centimeters (cm)",
+      progressLine: "{{n}} of {{total}} filled",
+      placeholder: "0",
+      nextButton: "Next",
+      skipButton: "Skip for now",
+      skipSaving: "...",
+      fields: {
+        shoulder: "Shoulder width",
+        chest: "Chest",
+        waist: "Waist",
+        arm: "Arm length",
+        hip: "Hips",
+        thigh: "Thigh",
+        leg: "Inside leg"
+      },
+      hints: {
+        shoulder: "Across the shoulders, back to front",
+        chest: "Around the fullest part",
+        waist: "Around the natural waistline",
+        arm: "Shoulder to wrist",
+        hip: "Around the fullest part of the seat",
+        thigh: "Around the fullest part of one thigh",
+        leg: "Crotch to ankle along the inside"
+      }
     },
     fashionIdentity: {
       title: "Define your fashion identity",
@@ -195,6 +210,8 @@ const pageData = {
       saveFailed: "Save failed, please try again",
       sendFailed: "Send failed",
       permissionDenied: "Permission denied",
+      permissionSettingsHint: "Allow Photos or Camera access for this app in your device settings.",
+      openSettings: "Open Settings",
       imageSelectFailed: "Image selection failed"
     },
     toast: {
@@ -225,7 +242,8 @@ const pageData = {
       },
       orderNumber: "Order #",
       orderDetails: "Order details",
-      noOrders: "No orders"
+      noOrders: "No orders",
+      emptySubtitle: "Completed and in-progress orders will show up here."
     },
     common: {
       or: "or",
@@ -250,6 +268,7 @@ const pageData = {
     imageAction: {
       title: "Change Photo",
       message: "Choose upload method",
+      cancel: "Cancel",
       takePhoto: "Take Photo",
       chooseFromGallery: "Choose from Gallery"
     },
@@ -334,16 +353,16 @@ const pageData = {
       nextButton: "التالي"
     },
     heightSelection: {
-      title: "أخبرينا عن طولك",
+      title: "أخبرنا عن طولك",
       subtitle: "طولك يساعدنا في تحديد أطوال الفساتين والقطع المناسبة لضمان إطلالة متوازنة ومثالية.",
       unitCm: "سم",
       unitFt: "قدم",
       nextButton: "التالي"
     },
     weightSelection: {
-      title: "أخبرينا عن وزنك",
+      title: "أخبرنا عن وزنك",
       subtitle: "تحديد الوزن يساعدنا في فهم أبعاد جسمك بشكل أفضل، لنقترح لك أقمشة وقصات تمنحك الراحة التامة والثقة.",
-      bmiText: "مؤشر كتلة جسمك (BMI) يظهر أن وزنك طبيعي",
+      bmiText: "مؤشر كتلة الجسم (BMI) يعكس علاقة وزنك بطولك.",
       bmiCategories: {
         underweight: "وزن ناقص",
         normal: "وزن طبيعي",
@@ -354,30 +373,45 @@ const pageData = {
     },
     skinTone: {
       title: "أيُّ هذه الدرجات تشبهك؟",
-      subtitle: "اختاري الدرجة الأقرب لبشرتك لنقوم بترشيح لوحة الألوان التي تتناغم معك بشكل مثالي.",
+      subtitle: "اختر الدرجة الأقرب لبشرتك لنقوم بترشيح لوحة الألوان التي تتناغم معك بشكل مثالي.",
       nextButton: "التالي"
     },
     bodyShape: {
       title: "ما هو شكل قوامك؟",
-      subtitle: "اختاري الأيقونة الأقرب لشكل جسمك لمساعدتنا في فلترة آلاف التصاميم واختيار الأنسب لك.",
+      subtitle: "اختر الأيقونة الأقرب لشكل جسمك لمساعدتنا في فلترة آلاف التصاميم واختيار الأنسب لك.",
       nextButton: "التالي"
     },
-    personalMeasurements: {
-      title: "أدخل قياساتك الشخصية",
-      subtitle: "أدخلي قياسات جسمك الأساسية لتقديم توصيات ملائمة لمقاسك وشكلك.",
-      shoulder: "الكتف",
-      chest: "الصدر",
-      waist: "الخصر",
-      arm: "الذراع",
-      buttocks: "المؤخرة",
-      thigh: "الفخذ",
-      leg: "الساق",
-      unit: "سم",
-      nextButton: "التالي"
+    boyMeasurements: {
+      title: "قياساتك",
+      subtitle: "الأرقام الدقيقة تساعد المنسقين على اقتراح المقاس والقص المناسب. استخدم شريط قياس لين بالسنتيمتر.",
+      unitHint: "جميع القيم بالسنتيمتر (سم)",
+      progressLine: "تم إدخال {{n}} من {{total}}",
+      placeholder: "0",
+      nextButton: "التالي",
+      skipButton: "تخطي",
+      skipSaving: "...",
+      fields: {
+        shoulder: "عرض الأكتاف",
+        chest: "محيط الصدر",
+        waist: "محيط الخصر",
+        arm: "طول الذراع",
+        hip: "محيط الورك",
+        thigh: "محيط الفخذ",
+        leg: "طول الساق من الداخل"
+      },
+      hints: {
+        shoulder: "من كتف إلى كتف في الخلف",
+        chest: "حول أعرض جزء من الصدر",
+        waist: "حول الخصر الطبيعي",
+        arm: "من الكتف إلى المعصم",
+        hip: "حول أعرض جزء من الورك",
+        thigh: "حول أعرض جزء من الفخذ",
+        leg: "من الفرج إلى الكاحل من الداخل"
+      }
     },
     fashionIdentity: {
-      title: "حددي هويتك في الموضة",
-      subtitle: "يمكنك اختيار أكثر من ستايل؛ فهم ذوقك العام يساعد المنسقة على تقديم اقتراحات تنسيق مثالية لكل مناسبة.",
+      title: "حدّد هويتك في الموضة",
+      subtitle: "يمكنك اختيار أكثر من ستايل؛ فهم ذوقك العام يساعد المنسّق على تقديم اقتراحات تنسيق مثالية لكل مناسبة.",
       styles: {
         modernCasual: "كاجوال عصري",
         formalClassic: "كلاسيكي رسمي"
@@ -385,22 +419,22 @@ const pageData = {
       nextButton: "التالي"
     },
     stylistsList: {
-      title: "كل المنسقات",
+      title: "كل المنسّقين",
       searchPlaceholder: "بحث",
-      filterTitle: "فلتر المنسقات",
+      filterTitle: "فلتر المنسّقين",
       filterByPrice: "الميزانية",
       from: "من",
       to: "إلي",
       style: "الأستايل:",
-      applyFilter: "شاهد المنسقات المتطابقة",
+      applyFilter: "شاهد المنسّقين المتطابقين",
       clearFilter: "مسح كل الفلاتر"
     },
     stylistDetail: {
-      about: "عن المنسقة",
+      about: "عن المنسّق",
       portfolio: "معرض الأعمال",
       reviews: "التقييمات",
       services: "الخدمات",
-      connectButton: "تواصل مع المنسقة",
+      connectButton: "تواصل مع المنسّق",
       payToChatButton: "ادفع للدردشة",
       hour: "ساعة"
     },
@@ -443,7 +477,7 @@ const pageData = {
     },
       home:{
       heroBannerTitle: "اختيار القصة المناسبة لجسمك يفرق أكثر من القطعة نفسها.",
-      trustedStylists: "منسقات موثوقات من الكثيرين",
+      trustedStylists: "منسّقون موثوقون لدى الكثيرين",
       packages:{
         title:"باقات مصممة لتلبية احتياجاتك",
         box1:{
@@ -466,6 +500,8 @@ const pageData = {
       saveFailed: "فشل الحفظ، يرجى المحاولة مجدداً",
       sendFailed: "فشل الإرسال",
       permissionDenied: "تم رفض الإذن",
+      permissionSettingsHint: "فعّل الوصول للصور أو الكاميرا من إعدادات الجهاز لهذا التطبيق.",
+      openSettings: "فتح الإعدادات",
       imageSelectFailed: "فشل اختيار الصورة"
     },
     toast: {
@@ -494,9 +530,10 @@ const pageData = {
         inactive: "ملغى",
         cancelled: "ملغى"
       },
-      orderNumber: "طلب رقم",
+      orderNumber: "طلب رقم #",
       orderDetails: "تفاصيل الطلب",
-      noOrders: "لا توجد طلبات"
+      noOrders: "لا توجد طلبات",
+      emptySubtitle: "ستظهر طلباتك المكتملة والجارية هنا."
     },
     common: {
       or: "أو",
@@ -512,7 +549,7 @@ const pageData = {
       viewAll: "عرض الكل",
       noResults: "لا توجد نتائج",
       noData: "لا توجد بيانات متاحة",
-      currency: "ريال سعودي",
+      currency: "\u20C1",
       perHour: "/ الساعة",
       defaultName: "مستخدم ضيف",
       greeting: "صباح الخير",
@@ -521,6 +558,7 @@ const pageData = {
     imageAction: {
       title: "تغيير الصورة",
       message: "اختر طريقة التحميل",
+      cancel: "إلغاء",
       takePhoto: "التقط صورة",
       chooseFromGallery: "اختر من المعرض"
     },

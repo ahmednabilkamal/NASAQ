@@ -41,6 +41,20 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#064E3B"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "يحتاج نسق إلى الوصول لصورك لاختيار صورة الملف الشخصي.",
+          "cameraPermission": "يحتاج نسق إلى الكاميرا لالتقاط صورة الملف الشخصي."
+        }
       ]
     ],
     "experiments": {

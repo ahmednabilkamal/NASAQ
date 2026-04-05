@@ -5,10 +5,12 @@ import EvaluationLayout from '../../../components/EvaluationLayout';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import { UnitToggle } from '@/components/onboarding/UnitToggle';
-import { HeightSlider, HEIGHT_SLIDER_TRACK_HEIGHT } from '@/components/onboarding/HeightSlider';
+import { HeightSlider } from '@/components/onboarding/HeightSlider';
 import { useHeightSelection } from '@/hooks/onboarding/useHeightSelection';
 import { useAuth } from '@/config/authContext';
 import { useGender } from '@/config/genderContext';
+import { onboardingScreenDirection } from '@/config/rtlLayout';
+import { useOnboardingProgress } from '@/hooks/onboarding/useOnboardingProgress';
 
 function formatHeightForUnit(cm: number, unit: 'cm' | 'ft'): string {
     if (unit === 'cm') {
@@ -26,9 +28,10 @@ export default function HeightPage() {
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.heightSelection || (pageData as any)['ar'].heightSelection;
 
-    const { unit, setUnit, height, panHandlers } = useHeightSelection();
+    const { unit, setUnit, height, panHandlers, sliderWidth } = useHeightSelection();
     const { updateProfile } = useAuth();
     const { gender } = useGender();
+    const { currentStep, totalSteps } = useOnboardingProgress('height');
     const [saving, setSaving] = useState(false);
 
     const characterImage =
@@ -38,12 +41,12 @@ export default function HeightPage() {
 
     const displayValue = useMemo(() => formatHeightForUnit(height, unit), [height, unit]);
     const imageScale = useMemo(
-        () => Math.min(1.05, Math.max(0.72, (height / 170) * 0.88)),
+        () => Math.min(1, Math.max(0.78, (height / 170) * 0.92)),
         [height]
     );
 
-    const maxImageHeight = Math.min(200, Math.round(windowHeight * 0.22));
-    const imageWidth = Math.min(190, Math.max(120, windowWidth * 0.4));
+    const maxImageHeight = Math.min(168, Math.round(windowHeight * 0.2));
+    const imageWidth = Math.min(180, Math.max(130, Math.min(windowWidth * 0.42, 200)));
 
     const handleNext = async () => {
         setSaving(true);
@@ -63,43 +66,46 @@ export default function HeightPage() {
     ];
 
     return (
-        <View style={styles.screen}>
+        <View style={[styles.screen, onboardingScreenDirection]}>
             <EvaluationLayout
                 variant="measurement"
                 title={content.title}
                 subtitle={content.subtitle}
-                currentStep={2}
-                totalSteps={7}
+                currentStep={currentStep}
+                totalSteps={totalSteps}
                 onNext={handleNext}
                 nextButtonText={saving ? '...' : content.nextButton}
             >
                 <View style={styles.fill}>
                     <UnitToggle compact unit={unit} options={unitOptions} onSelect={setUnit} />
 
+                    <View style={styles.characterContainer}>
+                        <Image
+                            source={characterImage}
+                            style={[
+                                styles.characterImage,
+                                {
+                                    width: imageWidth,
+                                    height: maxImageHeight,
+                                    transform: [{ scale: imageScale }],
+                                },
+                            ]}
+                            resizeMode="contain"
+                        />
+                    </View>
+
                     <View style={styles.heightDisplay}>
                         <Text style={styles.heightText}>{displayValue}</Text>
                         <Text style={styles.heightUnit}>{unit === 'cm' ? content.unitCm : content.unitFt}</Text>
                     </View>
 
-                    <View style={styles.contentRow}>
-                        <View style={styles.characterContainer}>
-                            <Image
-                                source={characterImage}
-                                style={[
-                                    styles.characterImage,
-                                    {
-                                        width: imageWidth,
-                                        maxHeight: maxImageHeight,
-                                        transform: [{ scale: imageScale }],
-                                    },
-                                ]}
-                                resizeMode="contain"
-                            />
-                        </View>
-
-                        <View style={styles.sliderColumn}>
-                            <HeightSlider height={height} panHandlers={panHandlers} />
-                        </View>
+                    <View style={styles.sliderWrap}>
+                        <HeightSlider
+                            height={height}
+                            panHandlers={panHandlers}
+                            trackWidth={sliderWidth}
+                            unit={unit}
+                        />
                     </View>
                 </View>
             </EvaluationLayout>
@@ -110,53 +116,47 @@ export default function HeightPage() {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
+        backgroundColor: '#F8F9FB',
     },
     fill: {
         flex: 1,
         minHeight: 0,
         width: '100%',
-    },
-    heightDisplay: {
-        flexDirection: 'row',
-        alignItems: 'baseline',
-        justifyContent: 'center',
-        marginBottom: 4,
-    },
-    heightText: {
-        fontSize: 30,
-        fontFamily: 'Cairo_700Bold',
-        color: '#111',
-    },
-    heightUnit: {
-        fontSize: 14,
-        fontFamily: 'Cairo_600SemiBold',
-        color: '#666',
-        marginStart: 6,
-    },
-    contentRow: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        minHeight: 0,
-        marginTop: 4,
-        gap: 4,
+        paddingTop: 4,
     },
     characterContainer: {
-        flex: 1,
-        minHeight: 0,
-        minWidth: 0,
+        minHeight: 148,
+        maxHeight: 180,
+        marginTop: 12,
+        marginBottom: 16,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    characterImage: {
-        height: undefined,
-    },
-    sliderColumn: {
+    characterImage: {},
+    heightDisplay: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
         justifyContent: 'center',
+        marginBottom: 20,
+    },
+    heightText: {
+        fontSize: 44,
+        fontFamily: 'Cairo_700Bold',
+        color: '#111827',
+        letterSpacing: -0.5,
+    },
+    heightUnit: {
+        fontSize: 18,
+        fontFamily: 'Cairo_600SemiBold',
+        color: '#6b7280',
+        marginStart: 10,
+        marginBottom: 6,
+    },
+    sliderWrap: {
         alignItems: 'center',
-        flexShrink: 0,
-        width: 80,
-        minHeight: HEIGHT_SLIDER_TRACK_HEIGHT,
+        justifyContent: 'center',
+        marginTop: 4,
+        paddingBottom: 8,
+        width: '100%',
     },
 });

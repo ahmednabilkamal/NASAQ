@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, ImageBackground, StyleSheet, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
+import { onboardingScreenDirection } from '@/config/rtlLayout';
+import { rtlText, rtlWritingMode } from '@/config/rtlText';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
@@ -81,12 +83,12 @@ export default function OnboardingScreen({
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, onboardingScreenDirection]}>
             <ImageBackground source={backgroundImage} style={styles.background} resizeMode="cover">
                 <SafeAreaView style={styles.overlay}>
                     <View style={styles.topBar}>
                         <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
-                            <Text style={styles.skipText}>{skipText}</Text>
+                            <Text style={[styles.skipText, rtlText.alignStart, rtlWritingMode]}>{skipText}</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -104,12 +106,14 @@ export default function OnboardingScreen({
                         </Animated.View>
 
                         <Animated.View style={[styles.textContainer, animatedStyle]}>
-                            <Text style={styles.title}>{title}</Text>
-                            {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+                            <Text style={[styles.title, rtlText.alignStart, rtlWritingMode]}>{title}</Text>
+                            {subtitle ? (
+                                <Text style={[styles.subtitle, rtlText.alignStart, rtlWritingMode]}>{subtitle}</Text>
+                            ) : null}
                         </Animated.View>
 
                         <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
-                            <Text style={styles.nextButtonText}>{nextText}</Text>
+                            <Text style={[styles.nextButtonText, rtlWritingMode]}>{nextText}</Text>
                         </TouchableOpacity>
                     </View>
                 </SafeAreaView>
@@ -139,25 +143,23 @@ const styles = StyleSheet.create({
     },
     skipButton: {
         backgroundColor: '#064E3B',
-        paddingHorizontal: 15,
-        paddingVertical: 5,
-        borderRadius: 8,
+        paddingHorizontal: 18,
+        paddingVertical: 8,
+        borderRadius: 20,
     },
     skipText: {
         color: '#FFFFFF',
         fontSize: 14,
         fontFamily: 'Cairo_700Bold',
-        lineHeight: 14,
-        letterSpacing: 0,
     },
     bottomContainer: {
         paddingHorizontal: 25,
-        paddingBottom: 40,
+        paddingBottom: 20,
         alignItems: 'stretch',
     },
     textContainer: {
         marginBottom: 35,
-        alignItems: 'flex-start',
+        alignItems: 'stretch',
     },
     pagination: {
         flexDirection: 'row',
@@ -183,7 +185,6 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 23,
         fontFamily: 'Cairo_700Bold',
-        textAlign: 'right',
         lineHeight: 32,
         letterSpacing: 0,
         textShadowColor: 'rgba(0, 0, 0, 0.75)',
@@ -195,7 +196,6 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 23,
         fontFamily: 'Cairo_700Bold',
-        textAlign: 'right',
         marginTop: 5,
         lineHeight: 32,
         letterSpacing: 0,
@@ -206,15 +206,15 @@ const styles = StyleSheet.create({
     nextButton: {
         backgroundColor: '#064E3B',
         width: '100%',
-        paddingVertical: 15,
-        borderRadius: 12,
+        height: 56,
+        borderRadius: 50,
         alignItems: 'center',
+        justifyContent: 'center',
     },
     nextButtonText: {
         color: '#FFFFFF',
-        fontSize: 14,
+        fontSize: 18,
         fontFamily: 'Cairo_700Bold',
-        lineHeight: 14,
-        letterSpacing: 0,
+        textAlign: 'center',
     },
 });

@@ -6,6 +6,7 @@ import pageData from '@/data/content';
 import { scale, scaleVertical } from '@/utils/responsive';
 import { Spacing, BorderRadius } from '@/utils/spacing';
 import { FontSizes, LineHeights } from '@/utils/typography';
+import { onboardingScreenDirection } from '@/config/rtlLayout';
 
 export default function Home() {
   const router = useRouter();
@@ -13,11 +14,11 @@ export default function Home() {
   const content = (pageData as any)[languageCode]?.page4 || (pageData as any)['ar'].page4;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, onboardingScreenDirection]}>
       <Text style={styles.text}>{content.title}</Text>
       <TouchableOpacity
         style={styles.button}
-        onPress={() => router.push('/pages/onboarding/genderSelection')}
+        onPress={() => router.push('/pages/onboarding/roleSelection')}
 
       >
         <Text style={styles.buttonText}>{content.buttonText}</Text>

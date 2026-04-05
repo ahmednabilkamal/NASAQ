@@ -5,13 +5,16 @@ import {
     StyleSheet,
     TextInput,
     TouchableOpacity,
-    SafeAreaView,
     KeyboardAvoidingView,
     Platform,
     Image,
     ScrollView,
     ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { userScreenDirection } from '@/config/rtlLayout';
+import { rtlInput, rtlText } from '@/config/rtlText';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
@@ -19,9 +22,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { getBackChevron } from '@/config/directionalIcons';
 import { useAuth } from '@/config/authContext';
 import { useAuthForm } from '@/hooks/useAuthForm';
+import { ROUTES, href } from '@/constants/routes';
+
+function FieldError({ message }: { message?: string }) {
+    if (!message) return null;
+    return (
+        <View style={styles.errorRow}>
+            <Ionicons name="alert-circle" size={14} color="#E11D48" style={styles.errorIcon} />
+            <Text style={styles.errorText}>{message}</Text>
+        </View>
+    );
+}
 
 export default function AuthScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { languageCode } = useLanguage();
     const {
         isLogin,
@@ -38,11 +53,11 @@ export default function AuthScreen() {
         setMobile,
         confirmPassword,
         setConfirmPassword,
-        loading
+        loading,
+        fieldErrors,
     } = useAuthForm();
 
     const { isAuthenticated, loading: authLoading, getOnboardingStep, user } = useAuth();
-
 
     React.useEffect(() => {
         if (!authLoading && isAuthenticated) {
@@ -51,10 +66,9 @@ export default function AuthScreen() {
         }
     }, [isAuthenticated, authLoading, user]);
 
-
     if (authLoading) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF' }}>
+            <View style={[{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF' }, userScreenDirection]}>
                 <ActivityIndicator size="large" color="#064E3B" />
             </View>
         );
@@ -65,19 +79,39 @@ export default function AuthScreen() {
     const registerContent = content.register;
     const currentContent = isLogin ? loginContent : registerContent;
 
+    const handleHeaderBack = () => {
+        if (router.canGoBack()) {
+            router.back();
+            return;
+        }
+        if (!isLogin) {
+            setAuthMode(true);
+            return;
+        }
+        router.replace(href(ROUTES.index));
+    };
+
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, userScreenDirection]} edges={['top', 'left', 'right']}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 8 : 0}
             >
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <TouchableOpacity onPress={handleHeaderBack} style={styles.backButton}>
                         <Ionicons name={getBackChevron()} size={24} color="#000" />
                     </TouchableOpacity>
                 </View>
 
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                    contentContainerStyle={[
+                        styles.scrollContent,
+                        { paddingBottom: Math.max(insets.bottom, 12) + 32 },
+                    ]}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
                     <Text style={styles.title}>{currentContent.title}</Text>
                     <Text style={styles.subtitle}>{currentContent.subtitle}</Text>
 
@@ -101,69 +135,85 @@ export default function AuthScreen() {
                     </View>
 
                     <View style={styles.form}>
+                        {/* Name (register only) */}
                         {!isLogin && (
                             <View style={styles.inputWrapper}>
-                                <Text style={styles.label}>{registerContent.namePlaceholder}<Text style={styles.required}>*</Text></Text>
-                                <View style={styles.inputContainer}>
+                                <Text style={styles.label}>
+                                    {registerContent.namePlaceholder}
+                                    <Text style={styles.required}> *</Text>
+                                </Text>
+                                <View style={[styles.inputContainer, fieldErrors.name && styles.inputContainerError]}>
                                     <TextInput
                                         style={styles.input}
                                         placeholder="محمد علي اسامة"
-                                        placeholderTextColor="#999"
-                                        textAlign="right"
+                                        placeholderTextColor="#B0B0B0"
                                         value={name}
                                         onChangeText={setName}
                                     />
                                 </View>
+                                <FieldError message={fieldErrors.name} />
                             </View>
                         )}
 
+                        {/* Email / Identifier */}
                         <View style={styles.inputWrapper}>
                             <Text style={styles.label}>
                                 {isLogin ? loginContent.identifierPlaceholder : registerContent.emailPlaceholder}
-                                <Text style={styles.required}>*</Text>
+                                <Text style={styles.required}> *</Text>
                             </Text>
-                            <View style={styles.inputContainer}>
+                            <View style={[styles.inputContainer, fieldErrors.identifier && styles.inputContainerError]}>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder={isLogin ? 'محمد علي اسامة' : 'name@example.com'}
-                                    placeholderTextColor="#999"
-                                    textAlign="right"
+                                    placeholder={isLogin ? 'البريد الإلكتروني أو رقم الجوال' : 'name@example.com'}
+                                    placeholderTextColor="#B0B0B0"
                                     value={identifier}
                                     onChangeText={setIdentifier}
+                                    keyboardType={isLogin ? 'default' : 'email-address'}
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
                                 />
                             </View>
+                            <FieldError message={fieldErrors.identifier} />
                         </View>
 
+                        {/* Mobile (register only) */}
                         {!isLogin && (
                             <View style={styles.inputWrapper}>
-                                <Text style={styles.label}>{registerContent.mobilePlaceholder}<Text style={styles.required}>*</Text></Text>
-                                <View style={styles.inputContainer}>
+                                <Text style={styles.label}>
+                                    {registerContent.mobilePlaceholder}
+                                    <Text style={styles.required}> *</Text>
+                                </Text>
+                                <View style={[styles.inputContainer, fieldErrors.mobile && styles.inputContainerError]}>
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="01222569996"
-                                        placeholderTextColor="#999"
+                                        placeholder="5XXXXXXXX"
+                                        placeholderTextColor="#B0B0B0"
                                         keyboardType="phone-pad"
-                                        textAlign="right"
                                         value={mobile}
                                         onChangeText={setMobile}
                                     />
                                 </View>
+                                <FieldError message={fieldErrors.mobile} />
                             </View>
                         )}
 
+                        {/* Password */}
                         <View style={styles.inputWrapper}>
-                            <Text style={styles.label}>{loginContent.passwordPlaceholder}<Text style={styles.required}>*</Text></Text>
-                            <View style={styles.inputContainer}>
+                            <Text style={styles.label}>
+                                {loginContent.passwordPlaceholder}
+                                <Text style={styles.required}> *</Text>
+                            </Text>
+                            <View style={[styles.inputContainer, fieldErrors.password && styles.inputContainerError]}>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="01222569996"
-                                    placeholderTextColor="#999"
+                                    placeholder="••••••••"
+                                    placeholderTextColor="#B0B0B0"
                                     secureTextEntry
-                                    textAlign="right"
                                     value={password}
                                     onChangeText={setPassword}
                                 />
                             </View>
+                            <FieldError message={fieldErrors.password} />
                         </View>
 
                         {isLogin ? (
@@ -174,31 +224,38 @@ export default function AuthScreen() {
                                 </TouchableOpacity>
                             </View>
                         ) : (
+                            /* Confirm Password (register only) */
                             <View style={styles.inputWrapper}>
-                                <Text style={styles.label}>{registerContent.confirmPasswordPlaceholder}<Text style={styles.required}>*</Text></Text>
-                                <View style={styles.inputContainer}>
+                                <Text style={styles.label}>
+                                    {registerContent.confirmPasswordPlaceholder}
+                                    <Text style={styles.required}> *</Text>
+                                </Text>
+                                <View style={[styles.inputContainer, fieldErrors.confirmPassword && styles.inputContainerError]}>
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="01222569996"
-                                        placeholderTextColor="#999"
+                                        placeholder="••••••••"
+                                        placeholderTextColor="#B0B0B0"
                                         secureTextEntry
-                                        textAlign="right"
                                         value={confirmPassword}
                                         onChangeText={setConfirmPassword}
                                     />
                                 </View>
+                                <FieldError message={fieldErrors.confirmPassword} />
                             </View>
                         )}
 
                         <TouchableOpacity
-                            style={styles.nextButton}
+                            style={[styles.nextButton, loading && styles.nextButtonDisabled]}
                             onPress={handleNext}
                             disabled={loading}
+                            activeOpacity={0.8}
                         >
                             {loading ? (
                                 <ActivityIndicator color="#FFF" />
                             ) : (
-                                <Text style={styles.nextButtonText}>{isLogin ? loginContent.nextButton : registerContent.nextButton}</Text>
+                                <Text style={styles.nextButtonText}>
+                                    {isLogin ? loginContent.nextButton : registerContent.nextButton}
+                                </Text>
                             )}
                         </TouchableOpacity>
 
@@ -208,7 +265,7 @@ export default function AuthScreen() {
                             <View style={styles.divider} />
                         </View>
 
-                        <TouchableOpacity style={styles.googleButton}>
+                        <TouchableOpacity style={styles.googleButton} activeOpacity={0.7}>
                             <Image
                                 source={{ uri: 'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png' }}
                                 style={styles.googleIcon}
@@ -230,7 +287,7 @@ export default function AuthScreen() {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </SafeAreaView >
+        </SafeAreaView>
     );
 }
 
@@ -238,9 +295,11 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FFF',
+        direction: 'rtl',
     },
     keyboardView: {
         flex: 1,
+        direction: 'rtl',
     },
     header: {
         paddingHorizontal: 20,
@@ -258,16 +317,16 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
-        textAlign: 'right',
         marginBottom: 8,
+        ...rtlText.alignStart,
     },
     subtitle: {
         fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#999',
-        textAlign: 'right',
         marginBottom: 30,
-        lineHeight: 20,
+        lineHeight: 22,
+        ...rtlText.alignStart,
     },
     tabContainer: {
         flexDirection: 'row',
@@ -289,21 +348,22 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: 'Cairo_700Bold',
         color: '#000',
+        textAlign: 'center',
     },
     activeTabText: {
         color: '#FFF',
     },
     form: {
-        gap: 20,
+        gap: 18,
     },
     inputWrapper: {
-        gap: 8,
+        gap: 6,
     },
     label: {
         fontSize: 14,
         fontFamily: 'Cairo_700Bold',
-        color: '#666',
-        textAlign: 'right',
+        color: '#555',
+        ...rtlText.alignStart,
     },
     required: {
         color: '#E11D48',
@@ -314,19 +374,42 @@ const styles = StyleSheet.create({
         height: 55,
         justifyContent: 'center',
         paddingHorizontal: 20,
+        borderWidth: 1.5,
+        borderColor: 'transparent',
+    },
+    inputContainerError: {
+        borderColor: '#E11D48',
+        backgroundColor: '#FFF5F5',
     },
     input: {
         fontSize: 16,
         fontFamily: 'Cairo_400Regular',
         color: '#000',
+        ...rtlInput,
+    },
+    errorRow: {
+        flexDirection: 'row-reverse',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        gap: 4,
+        marginTop: 2,
+    },
+    errorIcon: {
+        marginTop: 1,
+    },
+    errorText: {
+        fontSize: 12,
+        fontFamily: 'Cairo_400Regular',
+        color: '#E11D48',
+        ...rtlText.alignStart,
     },
     optionsRow: {
-        flexDirection: 'row',
+        flexDirection: 'row-reverse',
         alignItems: 'center',
         justifyContent: 'flex-start',
     },
     checkboxContainer: {
-        flexDirection: 'row',
+        flexDirection: 'row-reverse',
         alignItems: 'center',
         gap: 8,
     },
@@ -334,7 +417,7 @@ const styles = StyleSheet.create({
         width: 20,
         height: 20,
         borderRadius: 6,
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: '#DDD',
         backgroundColor: '#FFF',
     },
@@ -342,6 +425,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
+        ...rtlText.alignStart,
     },
     nextButton: {
         backgroundColor: '#064E3B',
@@ -349,18 +433,22 @@ const styles = StyleSheet.create({
         borderRadius: 25,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 10,
+        marginTop: 6,
+    },
+    nextButtonDisabled: {
+        opacity: 0.7,
     },
     nextButtonText: {
         color: '#FFF',
         fontSize: 16,
         fontFamily: 'Cairo_700Bold',
+        textAlign: 'center',
     },
     dividerRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 15,
-        marginVertical: 10,
+        marginVertical: 8,
     },
     divider: {
         flex: 1,
@@ -371,15 +459,18 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#999',
         fontFamily: 'Cairo_400Regular',
+        textAlign: 'center',
     },
     googleButton: {
-        flexDirection: 'row',
+        flexDirection: 'row-reverse',
         backgroundColor: '#F8F9FA',
         height: 55,
         borderRadius: 25,
         alignItems: 'center',
         justifyContent: 'center',
         gap: 12,
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
     },
     googleIcon: {
         width: 20,
@@ -389,15 +480,17 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: 'Cairo_400Regular',
         color: '#000',
+        textAlign: 'center',
     },
     footer: {
         alignItems: 'center',
-        marginTop: 10,
+        marginTop: 8,
     },
     footerText: {
         fontSize: 14,
         fontFamily: 'Cairo_400Regular',
         color: '#666',
+        textAlign: 'center',
     },
     footerLink: {
         color: '#10B981',

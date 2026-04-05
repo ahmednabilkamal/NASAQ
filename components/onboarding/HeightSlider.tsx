@@ -1,118 +1,123 @@
 import React from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
-import { HEIGHT_SLIDER_TRACK_HEIGHT } from '@/constants/onboardingSliders';
+import { View, Text, StyleSheet } from 'react-native';
 
-export { HEIGHT_SLIDER_TRACK_HEIGHT };
+export const HEIGHT_SLIDER_TRACK_HEIGHT = 176;
 
 interface HeightSliderProps {
     height: number;
     panHandlers: object;
+    trackWidth: number;
+    unit?: 'cm' | 'ft';
     minCm?: number;
     maxCm?: number;
 }
 
-export const HeightSlider: React.FC<HeightSliderProps> = ({
+function HeightSliderInner({
     height,
     panHandlers,
+    trackWidth,
+    unit = 'cm',
     minCm = 140,
     maxCm = 190,
-}) => {
-    const { width: windowWidth } = useWindowDimensions();
-    const lineSpan = Math.min(200, Math.max(120, windowWidth * 0.42));
+}: HeightSliderProps) {
+    const pointerHalf = 10;
+    const ratio = (height - minCm) / (maxCm - minCm);
+    const clampedRatio = Math.max(0, Math.min(1, ratio));
+    const position = clampedRatio * trackWidth - pointerHalf;
 
-    const marks = [190, 180, 170, 160, 150, 140];
-    const range = maxCm - minCm;
-    const yFromTop = range > 0 ? ((maxCm - height) / range) * HEIGHT_SLIDER_TRACK_HEIGHT : HEIGHT_SLIDER_TRACK_HEIGHT / 2;
+    const marksCm = [140, 150, 160, 170, 180, 190];
+    const toDisplay = (cm: number) => {
+        if (unit === 'ft') {
+            const totalIn = cm / 2.54;
+            const ft = Math.floor(totalIn / 12);
+            const inch = Math.round(totalIn - ft * 12);
+            return `${ft}'${inch}"`;
+        }
+        return String(cm);
+    };
 
     return (
-        <View style={styles.ltrWrap}>
-            <View style={styles.scaleContainer} {...panHandlers}>
-                <View style={styles.scaleRuler} pointerEvents="none">
-                    {marks.map((val) => (
-                        <View key={val} style={styles.scaleMark}>
-                            <Text style={styles.scaleLabel}>{val}</Text>
-                            <View style={styles.scaleLine} />
-                        </View>
-                    ))}
+        <View style={[styles.outer, { width: trackWidth }]}>
+            <View style={styles.ltrTrack}>
+                <View style={[styles.rulerContainer, { width: trackWidth }]} {...panHandlers}>
+                    <View style={styles.trackBg} pointerEvents="none" />
+                    <View style={[styles.trackFill, { width: Math.max(0, clampedRatio * trackWidth) }]} pointerEvents="none" />
+                    <View style={styles.rulerNumbers} pointerEvents="none">
+                        {marksCm.map((cm) => (
+                            <Text key={cm} style={styles.rulerNumber}>
+                                {toDisplay(cm)}
+                            </Text>
+                        ))}
+                    </View>
+                    <View style={[styles.thumb, { left: position }]} pointerEvents="none" />
                 </View>
-
-                <View
-                    style={[
-                        styles.activeLine,
-                        {
-                            top: yFromTop,
-                            width: lineSpan,
-                            left: -lineSpan + 28,
-                        },
-                    ]}
-                    pointerEvents="none"
-                />
-                <View
-                    style={[
-                        styles.activeCircle,
-                        {
-                            top: yFromTop - 5,
-                        },
-                    ]}
-                    pointerEvents="none"
-                />
             </View>
         </View>
     );
-};
+}
+
+export const HeightSlider = React.memo(HeightSliderInner);
 
 const styles = StyleSheet.create({
-    ltrWrap: {
+    outer: {
+        alignSelf: 'center',
+    },
+    ltrTrack: {
         direction: 'ltr',
     },
-    scaleContainer: {
-        width: 80,
-        height: HEIGHT_SLIDER_TRACK_HEIGHT,
-        marginTop: 0,
-        position: 'relative',
-        justifyContent: 'center',
-    },
-    scaleRuler: {
-        height: '100%',
-        justifyContent: 'space-between',
-    },
-    scaleMark: {
-        flexDirection: 'row',
-        alignItems: 'center',
+    rulerContainer: {
+        height: 88,
         justifyContent: 'flex-end',
+        paddingBottom: 8,
+        paddingTop: 10,
+        position: 'relative',
     },
-    scaleLabel: {
-        fontSize: 13,
-        color: '#999',
+    trackBg: {
+        position: 'absolute',
+        bottom: 34,
+        left: 0,
+        right: 0,
+        height: 6,
+        backgroundColor: '#E5E7EB',
+        borderRadius: 3,
+    },
+    trackFill: {
+        position: 'absolute',
+        bottom: 34,
+        left: 0,
+        height: 6,
+        backgroundColor: '#064E3B',
+        borderRadius: 3,
+        maxWidth: '100%',
+    },
+    rulerNumbers: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        position: 'absolute',
+        bottom: 2,
+        paddingHorizontal: 0,
+    },
+    rulerNumber: {
+        fontSize: 11,
+        color: '#6b7280',
         fontFamily: 'Cairo_400Regular',
-        marginRight: 10,
-        minWidth: 28,
-        textAlign: 'right',
+        maxWidth: 44,
+        textAlign: 'center',
     },
-    scaleLine: {
-        width: 22,
-        height: 1,
-        backgroundColor: '#E0E0E0',
-    },
-    activeLine: {
+    thumb: {
         position: 'absolute',
-        height: 2,
+        bottom: 26,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
         backgroundColor: '#064E3B',
-        borderRadius: 1,
-    },
-    activeCircle: {
-        position: 'absolute',
-        right: -5,
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: '#064E3B',
-        borderWidth: 2,
-        borderColor: '#FFF',
+        borderWidth: 3,
+        borderColor: '#fff',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 3,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+        elevation: 4,
     },
 });

@@ -4,7 +4,7 @@ import { getAccessToken, getAccessTokenSync } from "./authToken";
 
 const api = axios.create({
   baseURL: base_URL,
-  timeout: 10000,
+  timeout: 25000,
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",
@@ -31,6 +31,17 @@ api.interceptors.request.use(async (config) => {
       config.headers.Authorization = `Bearer ${syncToken}`;
     }
   }
+  // Multipart uploads must not use application/json (default) or a bare multipart type
+  // without boundary — let the native stack set Content-Type + boundary for FormData.
+  if (config.data instanceof FormData) {
+    const h = config.headers;
+    if (h && typeof (h as { delete?: (k: string) => void }).delete === "function") {
+      (h as { delete: (k: string) => void }).delete("Content-Type");
+    } else if (h && typeof h === "object") {
+      delete (h as Record<string, unknown>)["Content-Type"];
+    }
+  }
+
   if (__DEV__) {
     const method = (config.method || 'GET').toUpperCase();
     const url = buildUrl(config);
@@ -74,14 +85,16 @@ api.interceptors.response.use(
       }
     }
 
-    Toast.show({
-      type: 'error',
-      text1: 'خطأ', // Header in Arabic
-      text2: message,
-      position: 'bottom',
-      visibilityTime: 4000,
-      bottomOffset: 60, // A bit higher than the absolute bottom
-    });
+    if (!error.config?.skipErrorToast) {
+      Toast.show({
+        type: 'error',
+        text1: 'خطأ',
+        text2: message,
+        position: 'bottom',
+        visibilityTime: 4000,
+        bottomOffset: 60,
+      });
+    }
 
     return Promise.reject(error);
   }
@@ -89,5 +102,10 @@ api.interceptors.response.use(
 
 export default api;
 
-
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    /** When true, the global error interceptor will not show a Toast. */
+    skipErrorToast?: boolean;
+  }
+}
 

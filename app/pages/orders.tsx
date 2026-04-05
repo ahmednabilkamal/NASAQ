@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
@@ -8,41 +8,78 @@ import {
     FlatList,
     ActivityIndicator,
     RefreshControl,
+    ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
+import { userScreenDirection } from '@/config/rtlLayout';
+import { rtlText, rtlWritingMode } from '@/config/rtlText';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/config/authContext';
 import { useLanguage } from '@/config/languageRef';
 import pageData from '@/data/content';
 import BottomNav from '@/components/BottomNav';
+import { isStylistUser, isStylistVerified } from '@/config/navigationFlow';
+import { ROUTES } from '@/constants/routes';
 import { Ionicons } from '@expo/vector-icons';
 import apiService, { Order } from '@/config/apiService';
 import { scale, scaleVertical } from '@/utils/responsive';
-import { Spacing, BorderRadius } from '@/utils/spacing';
+import { Spacing, BorderRadius, Shadows } from '@/utils/spacing';
 import { FontSizes } from '@/utils/typography';
+import { format, isValid, parseISO } from 'date-fns';
+import { ar as arLocale, enUS } from 'date-fns/locale';
+import { getForwardChevron } from '@/config/directionalIcons';
+import { LinearGradient } from 'expo-linear-gradient';
+import SarPriceText from '@/components/SarPriceText';
+import { pickResolvedEntityImageUrl, resolveMediaUrl } from '@/utils/resolveMediaUrl';
+import {
+    StylistScreenHeader,
+    STYLIST_GREEN,
+    STYLIST_GREEN_MUTED,
+} from '@/components/StylistScreenHeader';
+import {
+    orderStatusLabelAr,
+    paymentStatusLabelAr,
+    stylistOrderServiceTitle,
+} from '@/utils/orderDisplay';
+
+/** Match stylist orders list pill colors */
+const STATUS_COLORS: Record<string, string> = {
+    pending: '#F59E0B',
+    new: '#3B82F6',
+    in_progress: '#2563EB',
+    processing: '#2563EB',
+    recent: '#2563EB',
+    completed: '#059669',
+    done: '#059669',
+    saved: '#059669',
+    cancelled: '#EF4444',
+    inactive: '#9CA3AF',
+};
 
 const STATUS_MAP: Record<string, string[]> = {
-    all:     [],
-    new:     ['pending', 'new'],
-    recent:  ['in_progress', 'processing', 'recent'],
-    saved:   ['completed', 'saved', 'done'],
+    all: [],
+    new: ['pending', 'new'],
+    recent: ['in_progress', 'processing', 'recent'],
+    saved: ['completed', 'saved', 'done'],
 };
 
-const STATUS_COLOR: Record<string, string> = {
-    active:      '#10B981',
-    pending:     '#F59E0B',
-    new:         '#3B82F6',
-    in_progress: '#8B5CF6',
-    processing:  '#8B5CF6',
-    completed:   '#10B981',
-    done:        '#10B981',
-    inactive:    '#9CA3AF',
-    cancelled:   '#EF4444',
-};
+function formatOrderDate(raw: string | undefined, languageCode: string): string | null {
+    if (!raw) return null;
+    try {
+        const d = parseISO(raw);
+        if (!isValid(d)) return null;
+        const loc = languageCode === 'ar' ? arLocale : enUS;
+        return format(d, languageCode === 'ar' ? 'd MMM yyyy' : 'MMM d, yyyy', {
+            locale: loc,
+        });
+    } catch {
+        return null;
+    }
+}
 
 export default function OrdersScreen() {
     const router = useRouter();
-    const { isAuthenticated, loading: authLoading } = useAuth();
+    const { user, isAuthenticated, loading: authLoading } = useAuth();
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode] || (pageData as any)['en'];
     const [activeTab, setActiveTab] = useState('all');
@@ -53,8 +90,12 @@ export default function OrdersScreen() {
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
             router.replace('/pages/login');
+        } else if (!authLoading && isAuthenticated && isStylistUser(user)) {
+            router.replace(
+                (isStylistVerified(user) ? ROUTES.stylist.home : ROUTES.stylist.pendingVerification) as any
+            );
         }
-    }, [isAuthenticated, authLoading]);
+    }, [isAuthenticated, authLoading, user]);
 
     const fetchOrders = useCallback(async () => {
         try {
@@ -72,118 +113,252 @@ export default function OrdersScreen() {
         if (isAuthenticated) fetchOrders();
     }, [isAuthenticated, fetchOrders]);
 
-    const onRefresh = () => {
+    const onRefresh = useCallback(() => {
         setRefreshing(true);
         fetchOrders();
-    };
+    }, [fetchOrders]);
 
-    const tabs = [
-        { id: 'saved',  label: content.orders?.tabs?.saved  },
-        { id: 'recent', label: content.orders?.tabs?.recent },
-        { id: 'new',    label: content.orders?.tabs?.new    },
-        { id: 'all',    label: content.orders?.tabs?.all    },
-    ];
+    const tabs = useMemo(
+        () => [
+            { id: 'all', label: content.orders?.tabs?.all },
+            { id: 'new', label: content.orders?.tabs?.new },
+            { id: 'recent', label: content.orders?.tabs?.recent },
+            { id: 'saved', label: content.orders?.tabs?.saved },
+        ],
+        [content.orders?.tabs]
+    );
 
-    const filteredOrders = activeTab === 'all'
-        ? orders
-        : orders.filter(o => {
+    const tabCounts = useMemo(() => {
+        const c = { all: orders.length, new: 0, recent: 0, saved: 0 };
+        for (const o of orders) {
+            const s = String(o.status ?? '').toLowerCase();
+            if (STATUS_MAP.new.includes(s)) c.new += 1;
+            if (STATUS_MAP.recent.includes(s)) c.recent += 1;
+            if (STATUS_MAP.saved.includes(s)) c.saved += 1;
+        }
+        return c;
+    }, [orders]);
+
+    const filteredOrders = useMemo(() => {
+        if (activeTab === 'all') return orders;
+        return orders.filter((o) => {
             const s = String(o.status ?? '').toLowerCase();
             return STATUS_MAP[activeTab].includes(s);
         });
+    }, [orders, activeTab]);
 
-    const renderOrderItem = ({ item }: { item: Order }) => {
-        const rawStatus = String(item.status ?? 'active').toLowerCase();
-        const statusKey = rawStatus as keyof typeof content.orders.status;
-        const label     = content.orders?.status?.[statusKey] ?? item.status ?? '—';
-        const color     = STATUS_COLOR[rawStatus]  ?? '#9CA3AF';
+    const getStatusColor = useCallback(
+        (status?: string) => STATUS_COLORS[String(status || '').toLowerCase()] || '#9CA3AF',
+        []
+    );
 
-        const imageUri = (item as any).service?.image
-            ? { uri: (item as any).service.image }
-            : require('@/assets/mirroimagewomen.png');
+    const renderOrderItem = useCallback(
+        ({ item }: { item: Order }) => {
+            const rec = item as Record<string, unknown>;
+            const rawStatus = String(item.status ?? '').toLowerCase();
+            const statusKey = rawStatus as keyof typeof content.orders.status;
+            const statusLabel =
+                languageCode === 'ar'
+                    ? orderStatusLabelAr(item.status)
+                    : (content.orders?.status?.[statusKey] ?? item.status ?? '—');
 
-        const price   = (item as any).service?.price
-            ?? (item as any).price
-            ?? '—';
+            const statusColor = getStatusColor(item.status);
+            const pay = String(rec.payment_status || '').toLowerCase();
+            const payLabel = paymentStatusLabelAr(rec.payment_status as string | undefined);
 
-        const title   = (item as any).service?.title
-            ?? (item as any).title
-            ?? `${content.orders?.orderNumber} ${item.id}`;
+            const serviceImage = resolveMediaUrl((item as any).service?.image as string | undefined);
+            const stylistImage = pickResolvedEntityImageUrl((item as any).stylist as Record<string, unknown>);
+            const avatarUri = serviceImage ?? stylistImage;
 
-        const desc    = (item as any).stylist?.name
-            ?? (item as any).description
-            ?? content.orders?.orderDetails;
+            const price =
+                (item as any).service?.price ?? (item as any).price ?? (item as any).total;
+            const moneyRaw = rec.total ?? price;
+            const moneyNum = parseFloat(String(moneyRaw ?? '').replace(/,/g, ''));
+            const showMoney = Number.isFinite(moneyNum);
 
+            const created =
+                typeof rec.created_at === 'string'
+                    ? rec.created_at
+                    : typeof rec.createdAt === 'string'
+                      ? rec.createdAt
+                      : undefined;
+            const dateLine = formatOrderDate(
+                typeof created === 'string' ? created : undefined,
+                languageCode
+            );
+
+            const stylistName =
+                ((item as any).stylist?.name as string) ||
+                (rec.stylist_name as string) ||
+                (languageCode === 'ar' ? 'المنسّق' : 'Stylist');
+
+            return (
+                <TouchableOpacity
+                    style={styles.orderCard}
+                    activeOpacity={0.85}
+                    onPress={() => router.push(`/pages/order_details?id=${item.id}` as any)}
+                >
+                    {avatarUri ? (
+                        <Image source={{ uri: avatarUri }} style={styles.avatar} />
+                    ) : (
+                        <LinearGradient colors={['#F0FDF4', '#ECFDF5']} style={styles.avatarPlaceholder}>
+                            <Ionicons name="bag-handle-outline" size={scale(22)} color={STYLIST_GREEN} />
+                        </LinearGradient>
+                    )}
+
+                    <View style={styles.orderBody}>
+                        <View style={styles.orderTopRow}>
+                            <Text style={styles.orderTitle} numberOfLines={2}>
+                                {stylistOrderServiceTitle(item)}
+                            </Text>
+                            <View
+                                style={[
+                                    styles.statusPill,
+                                    { backgroundColor: `${statusColor}22` },
+                                ]}
+                            >
+                                <Text
+                                    style={[styles.statusText, { color: statusColor }]}
+                                    numberOfLines={1}
+                                >
+                                    {statusLabel}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <Text style={[styles.orderMeta, rtlText.alignStart]} numberOfLines={1}>
+                            {content.orders?.orderNumber ?? '#'}
+                            {item.id}
+                            {dateLine ? ` · ${dateLine}` : ''}
+                        </Text>
+
+                        <View style={styles.stylistRow}>
+                            <Ionicons name="person-circle-outline" size={16} color="#94A3B8" />
+                            <Text style={[styles.stylistName, rtlText.alignStart]} numberOfLines={1}>
+                                {stylistName}
+                            </Text>
+                        </View>
+
+                        {pay === 'pending' ? (
+                            <Text style={[styles.paymentHint, rtlText.alignStart]}>{payLabel}</Text>
+                        ) : pay ? (
+                            <Text style={[styles.paymentOk, rtlText.alignStart]}>{payLabel}</Text>
+                        ) : null}
+
+                        {showMoney ? (
+                            <View style={styles.footerRow}>
+                                <Text style={[styles.totalLabel, rtlText.alignStart]}>
+                                    {languageCode === 'ar' ? 'المبلغ' : 'Amount'}
+                                </Text>
+                                <SarPriceText value={moneyNum} textStyle={styles.totalValue} />
+                            </View>
+                        ) : null}
+                    </View>
+
+                    <Ionicons
+                        name={getForwardChevron()}
+                        size={20}
+                        color="#9CA3AF"
+                        style={styles.chevron}
+                    />
+                </TouchableOpacity>
+            );
+        },
+        [content, languageCode, router, getStatusColor]
+    );
+
+    if (authLoading) {
         return (
-            <TouchableOpacity
-                style={styles.orderItem}
-                onPress={() => router.push(`/pages/order_details?id=${item.id}` as any)}
-                activeOpacity={0.8}
-            >
-                <View style={[styles.statusBadge, { backgroundColor: color }]}>
-                    <Text style={styles.statusText}>{label}</Text>
-                </View>
-
-                <View style={styles.orderContent}>
-                    <Text style={styles.orderTitle} numberOfLines={1}>{title}</Text>
-                    <Text style={styles.orderDescription} numberOfLines={1}>{desc}</Text>
-                    <Text style={styles.orderPrice}>{price} {content.common?.currency}</Text>
-                </View>
-
-                <Image source={imageUri} style={styles.orderImage} />
-            </TouchableOpacity>
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={STYLIST_GREEN} />
+            </View>
         );
-    };
+    }
 
-    if (authLoading) return null;
     if (!isAuthenticated) return null;
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.push('/pages/notifications' as any)}>
-                    <Ionicons name="notifications-outline" size={24} color="#333" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{content.orders?.title}</Text>
-                <View style={{ width: 24 }} />
-            </View>
-
-            <View style={styles.tabsContainer}>
-                {tabs.map((tab) => (
+        <SafeAreaView style={[styles.container, userScreenDirection]} edges={['top']}>
+            <StylistScreenHeader
+                title={content.orders?.title ?? 'الطلبات'}
+                showBack={false}
+                rightAccessory={
                     <TouchableOpacity
-                        key={tab.id}
-                        onPress={() => setActiveTab(tab.id)}
-                        style={[styles.tab, activeTab === tab.id && styles.tabActive]}
+                        onPress={() => router.push('/pages/notifications' as any)}
+                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                     >
-                        <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>
-                            {tab.label}
-                        </Text>
+                        <Ionicons name="notifications-outline" size={24} color={STYLIST_GREEN} />
                     </TouchableOpacity>
-                ))}
-            </View>
+                }
+            >
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.tabsScroll}
+                >
+                    {tabs.map((tab) => {
+                        const active = activeTab === tab.id;
+                        const count = tabCounts[tab.id as keyof typeof tabCounts];
+                        return (
+                            <TouchableOpacity
+                                key={tab.id}
+                                style={[styles.tabChip, active && styles.tabChipActive]}
+                                onPress={() => setActiveTab(tab.id)}
+                                activeOpacity={0.85}
+                            >
+                                <Text
+                                    style={[
+                                        styles.tabChipText,
+                                        active && styles.tabChipTextActive,
+                                        rtlWritingMode,
+                                    ]}
+                                >
+                                    {tab.label}
+                                </Text>
+                                <View style={[styles.tabCount, active && styles.tabCountActive]}>
+                                    <Text
+                                        style={[
+                                            styles.tabCountText,
+                                            active && styles.tabCountTextActive,
+                                        ]}
+                                    >
+                                        {count}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
+            </StylistScreenHeader>
 
             {loading ? (
-                <View style={styles.centered}>
-                    <ActivityIndicator size="large" color="#064E3B" />
-                </View>
-            ) : filteredOrders.length === 0 ? (
-                <View style={styles.centered}>
-                    <Ionicons name="receipt-outline" size={64} color="#DDD" />
-                    <Text style={styles.emptyText}>{content.orders?.noOrders || content.common?.noResults}</Text>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={STYLIST_GREEN} />
                 </View>
             ) : (
                 <FlatList
                     data={filteredOrders}
                     renderItem={renderOrderItem}
                     keyExtractor={(item) => String(item.id)}
+                    style={styles.list}
+                    contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
-                    style={styles.ordersList}
-                    contentContainerStyle={styles.ordersListContent}
+                    ItemSeparatorComponent={() => <View style={styles.cardGap} />}
                     refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            tintColor="#064E3B"
-                        />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={STYLIST_GREEN} />
+                    }
+                    ListEmptyComponent={
+                        <View style={styles.emptyWrap}>
+                            <View style={styles.emptyIconCircle}>
+                                <Ionicons name="receipt-outline" size={scale(44)} color={STYLIST_GREEN} />
+                            </View>
+                            <Text style={[styles.emptyTitle, rtlWritingMode]}>
+                                {content.orders?.noOrders || content.common?.noResults}
+                            </Text>
+                            <Text style={[styles.emptySubtitle, rtlWritingMode]}>
+                                {content.orders?.emptySubtitle}
+                            </Text>
+                        </View>
                     }
                 />
             )}
@@ -194,118 +369,205 @@ export default function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F8F9FA',
-    },
-    header: {
+    container: { flex: 1, backgroundColor: '#F3F4F6' },
+    loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    tabsScroll: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
         paddingHorizontal: Spacing.screenPaddingHorizontal,
-        paddingVertical: Spacing.verticalMd,
-        backgroundColor: '#FFF',
+        paddingBottom: Spacing.verticalSm,
+        gap: Spacing.sm,
     },
-    headerTitle: {
-        fontSize: FontSizes.h2,
-        fontFamily: 'Cairo_700Bold',
-        color: '#000',
-    },
-    tabsContainer: {
-        flexDirection: 'row-reverse',
-        backgroundColor: '#FFF',
-        paddingHorizontal: Spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
-    },
-    tab: {
-        flex: 1,
-        paddingVertical: Spacing.verticalMd,
-        alignItems: 'center',
-        borderBottomWidth: 2,
-        borderBottomColor: 'transparent',
-    },
-    tabActive: {
-        borderBottomColor: '#064E3B',
-    },
-    tabText: {
-        fontSize: FontSizes.body,
-        fontFamily: 'Cairo_600SemiBold',
-        color: '#9CA3AF',
-    },
-    tabTextActive: {
-        color: '#064E3B',
-    },
-    ordersList: {
-        flex: 1,
-    },
-    ordersListContent: {
-        paddingHorizontal: Spacing.screenPaddingHorizontal,
-        paddingVertical: Spacing.verticalMd,
-        paddingBottom: scaleVertical(100),
-    },
-    orderItem: {
+    tabChip: {
         flexDirection: 'row',
-        backgroundColor: '#FFF',
-        borderRadius: BorderRadius.lg,
-        padding: Spacing.cardPadding,
-        marginVertical: Spacing.verticalSm,
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 3,
-        gap: Spacing.gapLg,
+        paddingVertical: scaleVertical(10),
+        paddingHorizontal: scale(14),
+        borderRadius: BorderRadius.button,
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        borderWidth: 1,
+        borderColor: 'rgba(6, 78, 59, 0.12)',
     },
-    statusBadge: {
-        paddingHorizontal: Spacing.md,
-        paddingVertical: Spacing.verticalXs,
-        borderRadius: BorderRadius.sm,
-        alignSelf: 'center',
+    tabChipActive: {
+        backgroundColor: STYLIST_GREEN,
+        borderColor: STYLIST_GREEN,
     },
-    statusText: {
-        color: '#FFF',
+    tabChipText: {
         fontSize: FontSizes.bodySmall,
-        fontFamily: 'Cairo_700Bold',
+        fontFamily: 'Cairo_600SemiBold',
+        color: '#475569',
+        ...rtlText.alignStart,
     },
-    orderContent: {
+    tabChipTextActive: {
+        color: '#FFF',
+    },
+    tabCount: {
+        marginStart: Spacing.sm,
+        minWidth: scale(22),
+        height: scale(22),
+        borderRadius: scale(11),
+        backgroundColor: 'rgba(15, 23, 42, 0.08)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: scale(6),
+    },
+    tabCountActive: {
+        backgroundColor: 'rgba(255,255,255,0.25)',
+    },
+    tabCountText: {
+        fontSize: scale(11),
+        fontFamily: 'Cairo_700Bold',
+        color: '#334155',
+    },
+    tabCountTextActive: {
+        color: '#FFF',
+    },
+    list: { flex: 1 },
+    listContent: {
+        paddingHorizontal: Spacing.screenPaddingHorizontal,
+        paddingTop: Spacing.verticalMd,
+        paddingBottom: scaleVertical(100),
+        flexGrow: 1,
+    },
+    cardGap: { height: Spacing.verticalMd },
+    orderCard: {
+        flexDirection: 'row',
+        alignItems: 'stretch',
+        backgroundColor: '#FFF',
+        borderRadius: BorderRadius.card,
+        padding: Spacing.cardPadding,
+        borderWidth: 1,
+        borderColor: 'rgba(15, 23, 42, 0.06)',
+        ...Shadows.medium,
+        shadowOpacity: 0.08,
+        elevation: 4,
+    },
+    avatar: {
+        width: scale(56),
+        height: scale(56),
+        borderRadius: BorderRadius.lg,
+    },
+    avatarPlaceholder: {
+        width: scale(56),
+        height: scale(56),
+        borderRadius: BorderRadius.lg,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    orderBody: {
         flex: 1,
+        minWidth: 0,
+        marginStart: Spacing.md,
+        justifyContent: 'center',
+    },
+    orderTopRow: {
+        flexDirection: 'row',
         alignItems: 'flex-start',
+        gap: Spacing.sm,
+        marginBottom: Spacing.verticalXs,
     },
     orderTitle: {
+        flex: 1,
+        minWidth: 0,
         fontSize: scale(15),
         fontFamily: 'Cairo_700Bold',
-        color: '#111827',
-        marginBottom: Spacing.verticalXs,
-        textAlign: 'right',
+        color: '#0F172A',
+        ...rtlText.alignStart,
     },
-    orderDescription: {
+    statusPill: {
+        borderRadius: BorderRadius.badge,
+        paddingHorizontal: scale(10),
+        paddingVertical: scaleVertical(4),
+        flexShrink: 0,
+        maxWidth: '40%',
+    },
+    statusText: {
+        fontSize: scale(11),
+        fontFamily: 'Cairo_700Bold',
+        ...rtlText.alignStart,
+    },
+    orderMeta: {
         fontSize: FontSizes.bodySmall,
         fontFamily: 'Cairo_400Regular',
-        color: '#6B7280',
+        color: '#94A3B8',
         marginBottom: Spacing.verticalXs,
-        textAlign: 'right',
     },
-    orderPrice: {
+    stylistRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: Spacing.verticalXs,
+    },
+    stylistName: {
+        flex: 1,
+        fontSize: FontSizes.bodySmall,
+        fontFamily: 'Cairo_600SemiBold',
+        color: '#475569',
+    },
+    paymentHint: {
+        fontSize: scale(11),
+        fontFamily: 'Cairo_700Bold',
+        color: '#D97706',
+        marginBottom: Spacing.verticalXs,
+    },
+    paymentOk: {
+        fontSize: scale(11),
+        fontFamily: 'Cairo_400Regular',
+        color: '#059669',
+        marginBottom: Spacing.verticalXs,
+    },
+    footerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: Spacing.verticalXs,
+        paddingTop: Spacing.verticalSm,
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: '#E2E8F0',
+    },
+    totalLabel: {
+        fontSize: FontSizes.bodySmall,
+        fontFamily: 'Cairo_400Regular',
+        color: '#64748B',
+    },
+    totalValue: {
         fontSize: FontSizes.body,
         fontFamily: 'Cairo_700Bold',
-        color: '#064E3B',
+        color: STYLIST_GREEN,
+        writingDirection: 'ltr',
     },
-    orderImage: {
-        width: scale(58),
-        height: scale(58),
-        borderRadius: BorderRadius.md,
+    chevron: {
+        alignSelf: 'center',
+        marginStart: Spacing.sm,
     },
-    centered: {
-        flex: 1,
-        justifyContent: 'center',
+    emptyWrap: {
         alignItems: 'center',
+        paddingTop: scaleVertical(48),
+        paddingHorizontal: Spacing.xxl,
     },
-    emptyText: {
-        fontSize: FontSizes.bodyLarge,
+    emptyIconCircle: {
+        width: scale(100),
+        height: scale(100),
+        borderRadius: scale(50),
+        backgroundColor: STYLIST_GREEN_MUTED,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: Spacing.lg,
+        borderWidth: 1,
+        borderColor: 'rgba(6, 78, 59, 0.12)',
+    },
+    emptyTitle: {
+        fontSize: FontSizes.h3,
+        fontFamily: 'Cairo_700Bold',
+        color: '#334155',
+        textAlign: 'center',
+    },
+    emptySubtitle: {
+        marginTop: Spacing.verticalSm,
+        fontSize: FontSizes.body,
         fontFamily: 'Cairo_400Regular',
-        color: '#9CA3AF',
-        marginTop: Spacing.verticalMd,
+        color: '#94A3B8',
+        textAlign: 'center',
+        lineHeight: scaleVertical(22),
     },
 });

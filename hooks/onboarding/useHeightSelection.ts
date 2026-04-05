@@ -1,20 +1,24 @@
 import { useState, useMemo, useRef } from 'react';
-import { PanResponder } from 'react-native';
-import { HEIGHT_SLIDER_TRACK_HEIGHT } from '@/constants/onboardingSliders';
+import { PanResponder, useWindowDimensions } from 'react-native';
 
 interface UseHeightSelectionProps {
     minHeight?: number;
     maxHeight?: number;
     initialHeight?: number;
-    sliderHeight?: number;
+    sliderWidth?: number;
 }
 
 export const useHeightSelection = ({
     minHeight = 140,
     maxHeight = 190,
     initialHeight = 170,
-    sliderHeight = HEIGHT_SLIDER_TRACK_HEIGHT,
+    sliderWidth: sliderWidthOverride,
 }: UseHeightSelectionProps = {}) => {
+    const { width: windowWidth } = useWindowDimensions();
+    const sliderWidth = sliderWidthOverride ?? Math.min(320, Math.max(220, windowWidth - 56));
+    const sliderWidthRef = useRef(sliderWidth);
+    sliderWidthRef.current = sliderWidth;
+
     const [unit, setUnit] = useState<'cm' | 'ft'>('cm');
     const [height, setHeight] = useState(initialHeight);
     const startHeightRef = useRef(initialHeight);
@@ -22,19 +26,21 @@ export const useHeightSelection = ({
     const panResponder = useMemo(() => PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (evt, gestureState) => {
-            const relativeY = Math.max(0, Math.min(sliderHeight, evt.nativeEvent.locationY));
-            const newHeight = Math.round(maxHeight - (relativeY / sliderHeight) * (maxHeight - minHeight));
+        onPanResponderGrant: (evt) => {
+            const w = sliderWidthRef.current;
+            const relativeX = Math.max(0, Math.min(w, evt.nativeEvent.locationX));
+            const newHeight = Math.round(minHeight + (relativeX / w) * (maxHeight - minHeight));
             setHeight(newHeight);
             startHeightRef.current = newHeight;
         },
-        onPanResponderMove: (evt, gestureState) => {
-            const heightChange = (gestureState.dy / sliderHeight) * (maxHeight - minHeight);
-            const newHeight = Math.round(startHeightRef.current - heightChange);
+        onPanResponderMove: (_evt, gestureState) => {
+            const w = sliderWidthRef.current;
+            const heightChange = (gestureState.dx / w) * (maxHeight - minHeight);
+            const newHeight = Math.round(startHeightRef.current + heightChange);
             const clampedHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
             setHeight(clampedHeight);
         },
-    }), [sliderHeight, minHeight, maxHeight]);
+    }), [minHeight, maxHeight]);
 
     return {
         unit,
@@ -42,5 +48,6 @@ export const useHeightSelection = ({
         height,
         setHeight,
         panHandlers: panResponder.panHandlers,
+        sliderWidth,
     };
 };

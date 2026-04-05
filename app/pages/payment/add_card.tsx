@@ -1,200 +1,270 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TextInput,
     TouchableOpacity,
     ScrollView,
     ActivityIndicator,
-    KeyboardAvoidingView,
     Platform,
+    Linking,
+    Modal,
+    StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { WebView, WebViewNavigation, WebViewProps } from 'react-native-webview';
+import { SafeAreaView } from '@/components/RTLSafeAreaView';
+import { userScreenDirection } from '@/config/rtlLayout';
+import { rtlText } from '@/config/rtlText';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getBackChevron } from '@/config/directionalIcons';
-import authService from '@/config/authService';
+import apiService from '@/config/apiService';
 import Toast from 'react-native-toast-message';
+import {
+    isPaymobReturnNavigationUrl,
+    pickIntentionIdFromQuery,
+} from '@/config/paymobReturn';
 
-function formatCardNumber(raw: string) {
-    return raw.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
-}
-
-function formatExpiry(raw: string) {
-    const digits = raw.replace(/\D/g, '').slice(0, 4);
-    if (digits.length > 2) return digits.slice(0, 2) + '/' + digits.slice(2);
-    return digits;
-}
+type WebViewShouldStartRequest = Parameters<
+    NonNullable<WebViewProps['onShouldStartLoadWithRequest']>
+>[0];
 
 export default function AddCardScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
-
-    const [cardNumber, setCardNumber] = useState('');
-    const [expiry, setExpiry] = useState('');
-    const [cvv, setCvv] = useState('');
-    const [cardName, setCardName] = useState('');
-    const [rememberCard, setRememberCard] = useState(true);
     const [loading, setLoading] = useState(false);
+    const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+    const [paymobRedirectUrl, setPaymobRedirectUrl] = useState<string | null>(null);
+    const [trackedIntentionId, setTrackedIntentionId] = useState<string | null>(null);
+    const [trackedClientSecret, setTrackedClientSecret] = useState<string | null>(null);
+    const paymobReturnLockRef = useRef(false);
 
-    const rawNumber = cardNumber.replace(/\s/g, '');
-    const isVisa = rawNumber.startsWith('4');
-    const isMaster = rawNumber.startsWith('5');
+    useEffect(() => {
+        if (checkoutUrl) paymobReturnLockRef.current = false;
+    }, [checkoutUrl]);
 
-    const handleSave = async () => {
-        if (rawNumber.length < 16) {
-            Toast.show({ type: 'error', text1: 'خطأ', text2: 'رقم البطاقة يجب أن يكون 16 رقماً' });
-            return;
-        }
-        if (!expiry || expiry.length < 5) {
-            Toast.show({ type: 'error', text1: 'خطأ', text2: 'أدخل تاريخ انتهاء صحيح (MM/YY)' });
-            return;
-        }
-        if (!cvv || cvv.length < 3) {
-            Toast.show({ type: 'error', text1: 'خطأ', text2: 'أدخل رمز التحقق CVV' });
-            return;
-        }
-        if (!cardName.trim()) {
-            Toast.show({ type: 'error', text1: 'خطأ', text2: 'أدخل اسم حامل البطاقة' });
-            return;
-        }
+    const closeCheckout = useCallback(() => {
+        setCheckoutUrl(null);
+        setPaymobRedirectUrl(null);
+        setTrackedIntentionId(null);
+        setTrackedClientSecret(null);
+    }, []);
 
+    const startPaymob = useCallback(async () => {
         setLoading(true);
         try {
-            const cardType = isVisa ? 'visa' : isMaster ? 'mastercard' : 'card';
-            const res = await authService.storeCard({
-                card_name: cardName.trim(),
-                last_four: rawNumber.slice(-4),
-                card_type: cardType,
-            });
-            console.log('✅ Card saved response:', JSON.stringify(res));
-            Toast.show({ type: 'success', text1: 'نجاح', text2: 'تم حفظ البطاقة بنجاح' });
-            router.back();
-        } catch (error: any) {
-            console.error('Add card error:', error);
-            Toast.show({ type: 'error', text1: 'خطأ', text2: 'فشل حفظ البطاقة، حاولي مجدداً' });
+            const res = await apiService.saveCardIntent();
+            const data = res?.data as
+                | {
+                      payment_url?: string;
+                      paymob_redirect_url?: string | null;
+                      intention_id?: string | null;
+                      client_secret?: string | null;
+                  }
+                | undefined;
+            if (!data?.payment_url) {
+                throw new Error('تعذر تهيئة حفظ البطاقة');
+            }
+            setTrackedIntentionId(data.intention_id ? String(data.intention_id) : null);
+            setTrackedClientSecret(
+                typeof data.client_secret === 'string' && data.client_secret.length > 0
+                    ? data.client_secret
+                    : null
+            );
+            setPaymobRedirectUrl(
+                typeof data.paymob_redirect_url === 'string' ? data.paymob_redirect_url : null
+            );
+            if (Platform.OS === 'web') {
+                const ok = await Linking.canOpenURL(data.payment_url);
+                if (ok) await Linking.openURL(data.payment_url);
+                Toast.show({
+                    type: 'info',
+                    text1: 'تنبيه',
+                    text2: 'أكمل الدفع في المتصفح ثم حدّث قائمة البطاقات من الملف الشخصي.',
+                });
+                router.back();
+                return;
+            }
+            setCheckoutUrl(data.payment_url);
+        } catch (e: any) {
+            const msg = e?.response?.data?.message || e?.message || 'فشل التهيئة';
+            Toast.show({ type: 'error', text1: 'خطأ', text2: msg });
         } finally {
             setLoading(false);
         }
-    };
+    }, [router]);
+
+    const finalize = useCallback(
+        async (intentionIdFromUrl?: string | null) => {
+            const intention_id = (trackedIntentionId ?? intentionIdFromUrl)?.trim() || undefined;
+            const client_secret = trackedClientSecret?.trim() || undefined;
+            if (!client_secret && !intention_id) {
+                paymobReturnLockRef.current = false;
+                Toast.show({
+                    type: 'error',
+                    text1: 'خطأ',
+                    text2: 'تعذر التحقق من جلسة حفظ البطاقة.',
+                });
+                return;
+            }
+            try {
+                await apiService.confirmSaveCard({
+                    ...(intention_id ? { intention_id } : {}),
+                    ...(client_secret ? { client_secret } : {}),
+                });
+                Toast.show({ type: 'success', text1: 'تم', text2: 'تم حفظ البطاقة' });
+                closeCheckout();
+                router.back();
+            } catch (e: any) {
+                paymobReturnLockRef.current = false;
+                const msg = e?.response?.data?.message || e?.message || 'تعذر تأكيد الحفظ';
+                Toast.show({ type: 'error', text1: 'خطأ', text2: msg });
+            }
+        },
+        [router, closeCheckout, trackedIntentionId, trackedClientSecret]
+    );
+
+    const maybeFinishFromReturnUrl = useCallback(
+        (url: string) => {
+            if (!isPaymobReturnNavigationUrl(url, paymobRedirectUrl)) return;
+            if (paymobReturnLockRef.current) return;
+            try {
+                const u = new URL(url);
+                const q: Record<string, unknown> = {};
+                u.searchParams.forEach((v, k) => {
+                    q[k] = v;
+                });
+                const id = pickIntentionIdFromQuery(q) ?? trackedIntentionId;
+                if (!id && !trackedClientSecret) return;
+                paymobReturnLockRef.current = true;
+                void finalize(id ?? null);
+            } catch {
+                if (trackedIntentionId || trackedClientSecret) {
+                    paymobReturnLockRef.current = true;
+                    void finalize(trackedIntentionId);
+                }
+            }
+        },
+        [finalize, trackedIntentionId, trackedClientSecret, paymobRedirectUrl]
+    );
+
+    const onWebMessage = useCallback(
+        (raw: string) => {
+            try {
+                const msg = JSON.parse(raw) as { type?: string; query?: Record<string, unknown> };
+                if (msg.type !== 'paymob_return') return;
+                if (paymobReturnLockRef.current) return;
+                const id = pickIntentionIdFromQuery(msg.query) ?? trackedIntentionId;
+                if (!id && !trackedClientSecret) return;
+                paymobReturnLockRef.current = true;
+                void finalize(id ?? null);
+            } catch {
+                /* ignore */
+            }
+        },
+        [finalize, trackedIntentionId, trackedClientSecret]
+    );
+
+    const onWebNav = useCallback(
+        (nav: WebViewNavigation) => {
+            maybeFinishFromReturnUrl(nav.url);
+        },
+        [maybeFinishFromReturnUrl]
+    );
+
+    const onShouldStartLoadWithRequest = useCallback(
+        (request: WebViewShouldStartRequest) => {
+            if (isPaymobReturnNavigationUrl(request.url, paymobRedirectUrl)) {
+                maybeFinishFromReturnUrl(request.url);
+                return false;
+            }
+            return true;
+        },
+        [maybeFinishFromReturnUrl, paymobRedirectUrl]
+    );
+
+    const showModal = Boolean(checkoutUrl) && Platform.OS !== 'web';
 
     return (
-        <SafeAreaView style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
-                    <Ionicons name={getBackChevron()} size={22} color="#000" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>إضافة بطاقة جديدة</Text>
-                <View style={{ width: 38 }} />
-            </View>
-
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                <ScrollView
-                    contentContainerStyle={styles.scroll}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                >
-                    {/* Card Number */}
-                    <View style={styles.fieldGroup}>
-                        <Text style={styles.label}>رقم البطاقة <Text style={styles.required}>*</Text></Text>
-                        <View style={styles.inputRow}>
-                            <TextInput
-                                style={[styles.input, { flex: 1 }]}
-                                value={cardNumber}
-                                onChangeText={t => setCardNumber(formatCardNumber(t))}
-                                placeholder="أدخل رقم بطاقتك"
-                                keyboardType="numeric"
-                                maxLength={19}
-                                textAlign="right"
-                                placeholderTextColor="#CCC"
-                            />
-                            {(isVisa || isMaster) && (
-                                <View style={styles.cardIconBadge}>
-                                    <Ionicons name="card" size={20} color={isVisa ? '#1A1F71' : '#EB001B'} />
-                                </View>
-                            )}
-                        </View>
-                    </View>
-
-                    {/* Expiry + CVV row */}
-                    <View style={styles.rowFields}>
-                        <View style={[styles.fieldGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>الرمز الآمن (CVV) <Text style={styles.required}>*</Text></Text>
-                            <TextInput
-                                style={styles.input}
-                                value={cvv}
-                                onChangeText={setCvv}
-                                placeholder="الرمز الآمن"
-                                keyboardType="numeric"
-                                maxLength={4}
-                                secureTextEntry
-                                textAlign="right"
-                                placeholderTextColor="#CCC"
-                            />
-                        </View>
-                        <View style={[styles.fieldGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>تاريخ الانتهاء <Text style={styles.required}>*</Text></Text>
-                            <TextInput
-                                style={styles.input}
-                                value={expiry}
-                                onChangeText={t => setExpiry(formatExpiry(t))}
-                                placeholder="الشهر/السنة"
-                                keyboardType="numeric"
-                                maxLength={5}
-                                textAlign="right"
-                                placeholderTextColor="#CCC"
-                            />
-                        </View>
-                    </View>
-
-                    {/* Card Name */}
-                    <View style={styles.fieldGroup}>
-                        <Text style={styles.label}>اسم مستخدم البطاقة (اختياري)</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={cardName}
-                            onChangeText={setCardName}
-                            placeholder="مثل: ميرار محمود"
-                            textAlign="right"
-                            placeholderTextColor="#CCC"
-                        />
-                    </View>
-
-                    {/* Remember card checkbox */}
-                    <TouchableOpacity
-                        style={styles.checkboxRow}
-                        onPress={() => setRememberCard(!rememberCard)}
-                        activeOpacity={0.8}
-                    >
-                        <View style={[styles.checkbox, rememberCard && styles.checkboxActive]}>
-                            {rememberCard && <Ionicons name="checkmark" size={13} color="#FFF" />}
-                        </View>
-                        <Text style={styles.checkboxLabel}>ذكر هذه البطاقة (اختياري)</Text>
+        <>
+            <SafeAreaView style={[styles.container, userScreenDirection]}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
+                        <Ionicons name={getBackChevron()} size={22} color="#000" />
                     </TouchableOpacity>
+                    <Text style={styles.headerTitle}>إضافة بطاقة</Text>
+                    <View style={{ width: 38 }} />
+                </View>
 
-                    <Text style={styles.hint}>
-                        هذا سيساعدك لتجد البطاقات بشكل أسهل مستقبلاً
+                <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+                    <Text style={styles.body}>
+                        سيتم فتح صفحة Paymob الآمنة لإدخال بيانات البطاقة. قد يُخصم مبلغ تحقق صغير حسب إعدادات
+                        حسابك لدى Paymob، ثم تُحفظ البطاقة للدفع السريع لاحقاً.
                     </Text>
-
-                    <View style={{ height: 80 }} />
+                    <TouchableOpacity
+                        style={[styles.submitBtn, loading && { opacity: 0.7 }]}
+                        onPress={startPaymob}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="#FFF" />
+                        ) : (
+                            <Text style={styles.submitBtnText}>متابعة إلى Paymob</Text>
+                        )}
+                    </TouchableOpacity>
                 </ScrollView>
-            </KeyboardAvoidingView>
+            </SafeAreaView>
 
-            {/* Footer */}
-            <View style={styles.footer}>
-                <TouchableOpacity
-                    style={[styles.submitBtn, loading && { opacity: 0.7 }]}
-                    onPress={handleSave}
-                    disabled={loading}
-                >
-                    {loading
-                        ? <ActivityIndicator color="#FFF" />
-                        : <Text style={styles.submitBtnText}>إضافة البطاقة</Text>
-                    }
-                </TouchableOpacity>
-            </View>
-        </SafeAreaView>
+            <Modal
+                visible={showModal}
+                animationType="slide"
+                presentationStyle="fullScreen"
+                onRequestClose={closeCheckout}
+            >
+                <View style={[styles.modalRoot, userScreenDirection]}>
+                    <StatusBar barStyle="dark-content" />
+                    <View
+                        style={[
+                            styles.modalHeader,
+                            {
+                                paddingTop: insets.top + 6,
+                                paddingBottom: 12,
+                            },
+                        ]}
+                    >
+                        <TouchableOpacity
+                            onPress={closeCheckout}
+                            style={styles.modalCloseBtn}
+                            accessibilityRole="button"
+                            accessibilityLabel="إغلاق"
+                            hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+                        >
+                            <Ionicons name="close" size={26} color="#111" />
+                        </TouchableOpacity>
+                        <Text style={styles.modalTitle}>حفظ البطاقة</Text>
+                        <View style={{ width: 38 }} />
+                    </View>
+                    {checkoutUrl ? (
+                        <View style={[styles.modalWebViewWrap, { paddingBottom: insets.bottom }]}>
+                            <WebView
+                                source={{ uri: checkoutUrl }}
+                                style={styles.modalWebView}
+                                onMessage={(ev) => onWebMessage(ev.nativeEvent.data)}
+                                onNavigationStateChange={onWebNav}
+                                onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
+                                javaScriptEnabled
+                                domStorageEnabled
+                                thirdPartyCookiesEnabled
+                                sharedCookiesEnabled
+                                originWhitelist={['*']}
+                                setSupportMultipleWindows={false}
+                            />
+                        </View>
+                    ) : null}
+                </View>
+            </Modal>
+        </>
     );
 }
 
@@ -211,69 +281,15 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFF',
     },
     headerBtn: { width: 38, height: 38, justifyContent: 'center', alignItems: 'center' },
-    headerTitle: { fontSize: 18, fontFamily: 'Cairo_700Bold', color: '#000' },
+    headerTitle: { fontSize: 18, fontFamily: 'Cairo_700Bold', color: '#000', ...rtlText.alignStart },
     scroll: { padding: 24, paddingTop: 28 },
-
-    fieldGroup: { marginBottom: 20 },
-    label: {
-        fontSize: 13,
-        fontFamily: 'Cairo_600SemiBold',
-        color: '#555',
-        textAlign: 'right',
-        marginBottom: 8,
-    },
-    required: { color: '#E11D48' },
-    inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    input: {
-        backgroundColor: '#F8F9FA',
-        borderRadius: 12,
-        height: 52,
-        paddingHorizontal: 16,
+    body: {
         fontSize: 15,
         fontFamily: 'Cairo_400Regular',
-        color: '#111',
-        borderWidth: 1,
-        borderColor: '#EDEDED',
-    },
-    cardIconBadge: {
-        width: 40,
-        height: 52,
-        backgroundColor: '#F8F9FA',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#EDEDED',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    rowFields: { flexDirection: 'row-reverse', gap: 12 },
-
-    checkboxRow: {
-        flexDirection: 'row-reverse',
-        alignItems: 'center',
-        gap: 10,
-        marginBottom: 8,
-    },
-    checkbox: {
-        width: 20,
-        height: 20,
-        borderRadius: 6,
-        borderWidth: 1.5,
-        borderColor: '#DDD',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    checkboxActive: { backgroundColor: '#064E3B', borderColor: '#064E3B' },
-    checkboxLabel: { fontSize: 14, fontFamily: 'Cairo_400Regular', color: '#555', textAlign: 'right' },
-    hint: { fontSize: 12, fontFamily: 'Cairo_400Regular', color: '#AAA', textAlign: 'right', marginTop: 2 },
-
-    footer: {
-        position: 'absolute',
-        bottom: 0, left: 0, right: 0,
-        padding: 20,
-        paddingBottom: 30,
-        backgroundColor: '#FFF',
-        borderTopWidth: 1,
-        borderTopColor: '#F0F0F0',
+        color: '#444',
+        lineHeight: 24,
+        marginBottom: 28,
+        ...rtlText.alignStart,
     },
     submitBtn: {
         backgroundColor: '#064E3B',
@@ -282,5 +298,19 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    submitBtnText: { color: '#FFF', fontSize: 16, fontFamily: 'Cairo_700Bold' },
+    submitBtnText: { color: '#FFF', fontSize: 16, fontFamily: 'Cairo_700Bold', ...rtlText.alignStart },
+    modalRoot: { flex: 1, backgroundColor: '#FFF' },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
+        backgroundColor: '#FFF',
+    },
+    modalCloseBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
+    modalTitle: { fontSize: 17, fontFamily: 'Cairo_700Bold', color: '#111', ...rtlText.alignStart },
+    modalWebViewWrap: { flex: 1, backgroundColor: '#FFF' },
+    modalWebView: { flex: 1, backgroundColor: '#FFF' },
 });

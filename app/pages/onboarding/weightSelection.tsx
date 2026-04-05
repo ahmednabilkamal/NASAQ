@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import EvaluationLayout from '../../../components/EvaluationLayout';
@@ -9,6 +9,8 @@ import { BMISection } from '@/components/onboarding/BMISection';
 import { WeightSlider } from '@/components/onboarding/WeightSlider';
 import { useWeightSelection } from '@/hooks/onboarding/useWeightSelection';
 import { useAuth } from '@/config/authContext';
+import { onboardingScreenDirection } from '@/config/rtlLayout';
+import { useOnboardingProgress } from '@/hooks/onboarding/useOnboardingProgress';
 
 export default function WeightPage() {
     const router = useRouter();
@@ -16,21 +18,14 @@ export default function WeightPage() {
     const content = (pageData as any)[languageCode]?.weightSelection || (pageData as any)['ar'].weightSelection;
 
     const { unit, setUnit, weight, weightKg, panHandlers, sliderWidth } = useWeightSelection();
-    const { user, updateProfile, refreshUser } = useAuth();
+    const { user, updateProfile } = useAuth();
+    const { currentStep, totalSteps } = useOnboardingProgress('weight');
     const [saving, setSaving] = useState(false);
 
     const heightCm = useMemo(() => {
-        const h = Number((user as any)?.height);
+        const h = Number(user?.height);
         return Number.isFinite(h) && h > 0 ? h : 170;
-    }, [user]);
-
-    useEffect(() => {
-        // Ensure height is loaded before BMI calculation.
-        if (user?.height == null || Number.isNaN(Number(user?.height))) {
-            refreshUser();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [user?.height]);
 
     const handleNext = async () => {
         setSaving(true);
@@ -51,13 +46,13 @@ export default function WeightPage() {
     ];
 
     return (
-        <View style={styles.screen}>
+        <View style={[styles.screen, onboardingScreenDirection]}>
             <EvaluationLayout
                 variant="measurement"
                 title={content.title}
                 subtitle={content.subtitle}
-                currentStep={3}
-                totalSteps={7}
+                currentStep={currentStep}
+                totalSteps={totalSteps}
                 onNext={handleNext}
                 nextButtonText={saving ? '...' : content.nextButton}
             >
@@ -66,7 +61,7 @@ export default function WeightPage() {
 
                     <BMISection
                         compact
-                        title={content.bmiText}
+                        intro={content.bmiText}
                         categories={content.bmiCategories}
                         weight={weight}
                         unit={unit}
@@ -92,40 +87,46 @@ export default function WeightPage() {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
+        backgroundColor: '#F8F9FB',
     },
     fill: {
         flex: 1,
         minHeight: 0,
         width: '100%',
         justifyContent: 'flex-start',
+        paddingTop: 4,
     },
     centerBlock: {
         flex: 0,
         minHeight: 0,
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         alignItems: 'center',
-        marginTop: 6,
+        marginTop: 20,
+        paddingBottom: 8,
     },
     weightDisplay: {
         flexDirection: 'row',
-        alignItems: 'baseline',
+        alignItems: 'flex-end',
         justifyContent: 'center',
-        marginBottom: 8,
+        marginBottom: 20,
     },
     weightText: {
-        fontSize: 36,
+        fontSize: 44,
         fontFamily: 'Cairo_700Bold',
-        color: '#111',
+        color: '#111827',
+        letterSpacing: -0.5,
     },
     weightUnit: {
-        fontSize: 16,
+        fontSize: 18,
         fontFamily: 'Cairo_600SemiBold',
-        color: '#666',
-        marginStart: 8,
+        color: '#6b7280',
+        marginBottom: 6,
+        marginStart: 4,
     },
     sliderWrap: {
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 2,
+        width: '100%',
+        marginTop: 4,
     },
 });
