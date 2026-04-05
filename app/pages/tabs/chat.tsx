@@ -4,9 +4,10 @@ import StylistBottomNav from '@/components/StylistBottomNav';
 import apiService, { Conversation } from '@/config/apiService';
 import { useAuth } from '@/config/authContext';
 import { isStylistUser, isStylistVerified } from '@/config/navigationFlow';
+import { useChatUnread } from '@/providers/ChatUnreadProvider';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     FlatList,
     Image,
@@ -35,25 +36,33 @@ export default function ChatListScreen() {
     const [loading, setLoading] = useState(true);
 
     const stylistChatActive = isStylistUser(user) && isStylistVerified(user);
+    const { syncUnreadFromConversations } = useChatUnread();
 
-    useEffect(() => {
-        const fetchConversations = async () => {
-            setLoading(true);
-            try {
-                const res = stylistChatActive
-                    ? await apiService.listStylistConversations()
-                    : await apiService.listConversations();
-                const data = res?.data;
-                setConversations(Array.isArray(data) ? data : []);
-            } catch (error) {
-                console.error('Conversations fetch error:', error);
-                setConversations([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-        if (isAuthenticated) fetchConversations();
-    }, [isAuthenticated, stylistChatActive, user]);
+    const loadConversations = useCallback(async () => {
+        if (!isAuthenticated) return;
+        setLoading(true);
+        try {
+            const res = stylistChatActive
+                ? await apiService.listStylistConversations()
+                : await apiService.listConversations();
+            const data = res?.data;
+            const list = Array.isArray(data) ? data : [];
+            setConversations(list);
+            syncUnreadFromConversations(list);
+        } catch (error) {
+            console.error('Conversations fetch error:', error);
+            setConversations([]);
+            syncUnreadFromConversations([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [isAuthenticated, stylistChatActive, syncUnreadFromConversations]);
+
+    useFocusEffect(
+        useCallback(() => {
+            void loadConversations();
+        }, [loadConversations])
+    );
 
     // Get the other party's name depending on role (API may nest or flatten stylist fields)
     const getContactName = (c: Conversation) => {
@@ -139,7 +148,9 @@ export default function ChatListScreen() {
                 ) : null}
                 {(item.unread_count ?? 0) > 0 && (
                     <View style={styles.unreadBadge}>
-                        <Text style={styles.unreadText}>{item.unread_count}</Text>
+                        <Text style={styles.unreadText}>
+                            {(item.unread_count ?? 0) > 99 ? '99+' : item.unread_count}
+                        </Text>
                     </View>
                 )}
             </View>

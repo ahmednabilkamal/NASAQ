@@ -1,4 +1,5 @@
 import { AuthProvider } from '@/config/authContext';
+import { ChatUnreadProvider } from '@/providers/ChatUnreadProvider';
 import { NotificationProvider } from '@/providers/NotificationProvider';
 import { GenderProvider } from '@/config/genderContext';
 import LanguageProvider from '@/config/languageRef';
@@ -48,6 +49,7 @@ export default function RootLayout() {
             <LanguageProvider>
                 <GenderProvider>
                     <AuthProvider>
+                        <ChatUnreadProvider>
                         <NotificationProvider>
                             <View
                                 style={[{ flex: 1 }, Platform.OS === 'web' ? { direction: 'rtl' } : null]}
@@ -116,6 +118,7 @@ export default function RootLayout() {
                             </View>
                             <AppToast />
                         </NotificationProvider>
+                        </ChatUnreadProvider>
                     </AuthProvider>
                 </GenderProvider>
             </LanguageProvider>

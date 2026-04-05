@@ -27,6 +27,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import apiService, { Message, Stylist } from '@/config/apiService';
 import { useAuth } from '@/config/authContext';
+import { useChatUnread } from '@/providers/ChatUnreadProvider';
 import { isStylistUser } from '@/config/navigationFlow';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -80,6 +81,7 @@ export default function ChatScreen() {
         return raw != null && String(raw) !== '' ? String(raw) : null;
     }, [contextOrderIdParam]);
     const { user } = useAuth();
+    const { refreshChatUnread } = useChatUnread();
     const isStylist = isStylistUser(user);
     const insets = useSafeAreaInsets();
 
@@ -139,24 +141,25 @@ export default function ChatScreen() {
                         );
                     }
                 }
-            } else {
-                const res = await apiService.getMessages(conversationId);
-                const data = res?.data;
-                if (Array.isArray(data)) {
-                    setMessages(data);
-                }
-                const convRes = await apiService.listConversations({ skipErrorToast: true });
-                const list = Array.isArray(convRes?.data) ? convRes.data : [];
-                const currentConv = list.find((c) => String(c.id) === String(conversationId));
-                if (currentConv) {
-                    const ca = currentConv.closed_at;
-                    setConversationClosed(ca != null && String(ca) !== '');
-                    if (currentConv.stylist) {
-                        setStylist((prev) => prev ?? currentConv.stylist!);
+                } else {
+                    const res = await apiService.getMessages(conversationId);
+                    const data = res?.data;
+                    if (Array.isArray(data)) {
+                        setMessages(data);
+                    }
+                    const convRes = await apiService.listConversations({ skipErrorToast: true });
+                    const list = Array.isArray(convRes?.data) ? convRes.data : [];
+                    const currentConv = list.find((c) => String(c.id) === String(conversationId));
+                    if (currentConv) {
+                        const ca = currentConv.closed_at;
+                        setConversationClosed(ca != null && String(ca) !== '');
+                        if (currentConv.stylist) {
+                            setStylist((prev) => prev ?? currentConv.stylist!);
+                        }
                     }
                 }
-            }
-        } catch (error) {
+                void refreshChatUnread();
+            } catch (error) {
             console.error('Fetch messages error:', error);
             if (isAxiosError(error) && error.response?.status === 403) {
                 setMessages([]);

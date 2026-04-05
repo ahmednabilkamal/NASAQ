@@ -1,3 +1,4 @@
+import { useChatUnread } from '@/providers/ChatUnreadProvider';
 import { usePathname, useRouter } from 'expo-router';
 import React, { useCallback, useRef } from 'react';
 import { StyleSheet, TouchableOpacity, View, Text } from 'react-native';
@@ -12,11 +13,18 @@ const INACTIVE_COLOR = '#999';
 
 const TAB_NAV_DEBOUNCE_MS = 450;
 
+function formatChatTabBadge(total: number): string | null {
+    if (total <= 0) return null;
+    return total > 99 ? '99+' : String(total);
+}
+
 export default function BottomNav() {
     const router = useRouter();
     const pathname = usePathname();
     const insets = useSafeAreaInsets();
     const lastTabNavAt = useRef(0);
+    const { totalUnread } = useChatUnread();
+    const chatBadge = formatChatTabBadge(totalUnread);
 
     const tabs = [
         { id: 'profile', icon: 'person-outline' as const, label: 'الملف', route: '/pages/tabs/profile' },
@@ -107,11 +115,18 @@ export default function BottomNav() {
                             activeOpacity={0.7}
                             onPress={() => navigateToTab(tab)}
                         >
-                            <Ionicons
-                                name={isActive ? (tab.icon.replace('-outline', '') as any) : tab.icon}
-                                size={22}
-                                color={isActive ? ACTIVE_COLOR : INACTIVE_COLOR}
-                            />
+                            <View style={styles.tabIconWrap}>
+                                <Ionicons
+                                    name={isActive ? (tab.icon.replace('-outline', '') as any) : tab.icon}
+                                    size={22}
+                                    color={isActive ? ACTIVE_COLOR : INACTIVE_COLOR}
+                                />
+                                {tab.id === 'chat' && chatBadge ? (
+                                    <View style={styles.chatUnreadBadge}>
+                                        <Text style={styles.chatUnreadBadgeText}>{chatBadge}</Text>
+                                    </View>
+                                ) : null}
+                            </View>
                             <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{tab.label}</Text>
                         </TouchableOpacity>
                     );
@@ -149,6 +164,28 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         flex: 1,
         gap: 2,
+    },
+    tabIconWrap: {
+        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    chatUnreadBadge: {
+        position: 'absolute',
+        top: scale(-6),
+        end: scale(-10),
+        minWidth: scale(18),
+        height: scale(18),
+        paddingHorizontal: scale(4),
+        borderRadius: scale(9),
+        backgroundColor: '#DC2626',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    chatUnreadBadgeText: {
+        color: '#FFF',
+        fontSize: 9,
+        fontFamily: 'Cairo_700Bold',
     },
     tabLabel: {
         fontSize: 10,

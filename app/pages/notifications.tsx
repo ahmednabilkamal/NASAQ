@@ -26,11 +26,13 @@ import { getHrefFromNotificationPayload } from '@/services/push/navigationFromNo
 import { format, isToday, isYesterday } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
-type RowType = 'message' | 'order' | 'system';
+type RowType = 'message' | 'order' | 'ticket' | 'system';
 
 function rowTypeFromParsed(parsed: ReturnType<typeof parseNotificationData>): RowType {
     if (!parsed) return 'system';
-    return parsed.type === 'message' ? 'message' : 'order';
+    if (parsed.type === 'message') return 'message';
+    if (parsed.type === 'ticket') return 'ticket';
+    return 'order';
 }
 
 function formatNotifTime(iso: string): string {
@@ -52,6 +54,7 @@ function formatNotifTime(iso: string): string {
 const TYPE_CONFIG: Record<RowType, { icon: string; bg: string; color: string }> = {
     message: { icon: 'chatbubble-ellipses', bg: '#E8F5E9', color: '#064E3B' },
     order: { icon: 'receipt-outline', bg: '#EDE9FE', color: '#7C3AED' },
+    ticket: { icon: 'help-buoy-outline', bg: '#E0F2FE', color: '#0369A1' },
     system: { icon: 'notifications-outline', bg: '#F3F4F6', color: '#6B7280' },
 };
 

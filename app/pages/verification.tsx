@@ -20,6 +20,8 @@ import { getBackChevron } from '@/config/directionalIcons';
 import { rtlText } from '@/config/rtlText';
 import { userScreenDirection } from '@/config/rtlLayout';
 import authService from '@/config/authService';
+import { useAuth } from '@/config/authContext';
+import { registerAndSyncPushToken } from '@/services/push/registerPushToken';
 
 const RESEND_COOLDOWN_SEC = 60;
 
@@ -57,6 +59,7 @@ function formatApiError(error: unknown): string {
 export default function VerificationScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { refreshUser } = useAuth();
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.verification || (pageData as any)['ar'].verification;
     const { login: loginParam } = useLocalSearchParams<{ login?: string }>();
@@ -148,11 +151,17 @@ export default function VerificationScreen() {
         setErrorMessage(null);
         setLoading(true);
         try {
-            const result = await authService.verifyOtp(
+            await authService.verifyOtp(
                 { login: loginParam, otp },
                 { skipErrorToast: true },
             );
-            console.log('OTP Verification Response:', result);
+            // Bearer token is in SecureStore; load profile so AuthContext is authenticated and
+            // NotificationProvider runs push registration. Also register push here so it works even
+            // if profile fetch fails briefly.
+            await refreshUser().catch(() => {});
+            if (Platform.OS !== 'web') {
+                void registerAndSyncPushToken();
+            }
             router.replace('/pages/onboarding/roleSelection' as any);
         } catch (error: unknown) {
             setErrorMessage(formatApiError(error));

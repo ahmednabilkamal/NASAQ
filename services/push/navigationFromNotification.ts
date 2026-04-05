@@ -8,5 +8,8 @@ export function getHrefFromNotificationPayload(parsed: ParsedNotificationPayload
     qs.set('messageId', parsed.messageId);
     return `/pages/chat?${qs.toString()}` as Href;
   }
+  if (parsed.type === 'ticket') {
+    return `/pages/ticket_detail?id=${encodeURIComponent(parsed.ticketId)}` as Href;
+  }
   return `/pages/order_details?id=${encodeURIComponent(parsed.orderId)}` as Href;
 }

@@ -12,9 +12,15 @@ const orderPayloadSchema = z.object({
   status: z.string().min(1),
 });
 
+const ticketPayloadSchema = z.object({
+  type: z.literal('ticket'),
+  ticketId: z.string().min(1),
+});
+
 export type ParsedNotificationPayload =
   | z.infer<typeof messagePayloadSchema>
-  | z.infer<typeof orderPayloadSchema>;
+  | z.infer<typeof orderPayloadSchema>
+  | z.infer<typeof ticketPayloadSchema>;
 
 function coerceRecord(input: unknown): Record<string, string> | null {
   if (input === null || typeof input !== 'object' || Array.isArray(input)) {
@@ -50,6 +56,13 @@ export function parseNotificationData(data: unknown): ParsedNotificationPayload 
     const r = orderPayloadSchema.safeParse(flat);
     if (!r.success && __DEV__) {
       console.warn('[push] invalid order payload', r.error.flatten());
+    }
+    return r.success ? r.data : null;
+  }
+  if (t === 'ticket') {
+    const r = ticketPayloadSchema.safeParse(flat);
+    if (!r.success && __DEV__) {
+      console.warn('[push] invalid ticket payload', r.error.flatten());
     }
     return r.success ? r.data : null;
   }
