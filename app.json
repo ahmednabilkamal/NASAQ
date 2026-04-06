@@ -11,18 +11,24 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.venusstyle.app"
+      "bundleIdentifier": "com.venusstyle.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.venusstyle.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/venus-logo.png ",
+        "foregroundImage": "./assets/venus-logo.png",
         "backgroundImage": "./assets/venus-logo.png",
         "monochromeImage": "./assets/venus-logo.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "single",
@@ -46,7 +52,8 @@
         "expo-notifications",
         {
           "icon": "./assets/venus-logo.png",
-          "color": "#064E3B"
+          "color": "#064E3B",
+          "enableBackgroundRemoteNotifications": true
         }
       ],
       [
@@ -60,6 +67,12 @@
     "experiments": {
       "typedRoutes": false,
       "reactCompiler": false
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "00d5138c-4ef7-4f70-ab39-01c0770e5f1c"
+      }
     }
   }
 }
