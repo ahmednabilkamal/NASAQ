@@ -60,12 +60,6 @@ export default function StylistCard({ name, subtitle, imageUri, rating, clientCo
                     <Text key="tags" style={styles.tags} numberOfLines={1}>
                         {subtitleText}
                     </Text>,
-                    <View key="stats" style={styles.statsRow}>
-                        <View style={styles.clientCount}>
-                            <Text style={styles.totalLabel}>عملاء </Text>
-                            <Text style={styles.clientCountText}>{clientCount}</Text>
-                        </View>
-                    </View>,
                 ]}
             </View>
         </TouchableOpacity>
@@ -146,31 +140,5 @@ const styles = StyleSheet.create({
         marginTop: 2,
         ...rtlText.alignStart,
     },
-    statsRow: {
-        flexDirection: 'row',
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-        marginTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#F0F0F0',
-        paddingTop: 8,
-    },
-    clientCount: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    clientCountText: {
-        fontSize: 11,
-        fontFamily: 'Cairo_600SemiBold',
-        color: '#888',
-        ...rtlText.alignStart,
-    },
-    totalLabel: {
-        fontSize: 11,
-        fontFamily: 'Cairo_400Regular',
-        color: '#999',
-        ...rtlText.alignStart,
-    }
 });
 

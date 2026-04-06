@@ -14,14 +14,18 @@ import { rtlText } from '@/config/rtlText';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import pageData from '@/data/content';
-import apiService, { Stylist, StylistReview, StylistService } from '@/config/apiService';
+import ApiService, { Stylist, StylistReview, StylistService } from '@/config/apiService';
 import { getBackChevron } from '@/config/directionalIcons';
 import { ServicePackageCard } from '@/components/home';
 import AnimatedFavoriteButton from '@/components/AnimatedFavoriteButton';
 import StylistDetailSkeleton from '@/components/stylist/StylistDetailSkeleton';
 import { APP_LANGUAGE } from '@/config/languageRef';
 import SarPriceText from '@/components/SarPriceText';
-import { pickStylistHeroImageUrl, resolveStylistPortfolioImageUrl } from '@/utils/resolveMediaUrl';
+import {
+    entityToImageSource,
+    pickStylistHeroImageUrl,
+    resolveStylistPortfolioImageUrl,
+} from '@/utils/resolveMediaUrl';
 import { ChatLegalConsentModal } from '@/components/chat/ChatLegalConsentModal';
 import { hasUserAcceptedChatLegal } from '@/utils/chatLegalConsent';
 
@@ -56,8 +60,8 @@ export default function StylistDetailScreen() {
             setLoading(true);
             try {
                 const [stylistRes, favsRes] = await Promise.all([
-                    apiService.getStylistById(id),
-                    apiService.getFavorites(),
+                    ApiService.getStylistById(id),
+                    ApiService.getFavorites(),
                 ]);
 
                 const data: Stylist = stylistRes?.data ?? stylistRes;
@@ -81,7 +85,7 @@ export default function StylistDetailScreen() {
         if (!id) return;
         (async () => {
             try {
-                const res = await apiService.canMessageStylist(Number(id));
+                const res = await ApiService.canMessageStylist(Number(id));
                 const data = (res as any)?.data ?? res;
                 setCanChatWithStylist(Boolean(data?.can_chat));
             } catch {
@@ -93,7 +97,7 @@ export default function StylistDetailScreen() {
     const handleToggleFavorite = async () => {
         if (!id) return;
         try {
-            const res = await apiService.toggleFavorite(id);
+            const res = await ApiService.toggleFavorite(id);
             setIsFavorite(res.data.is_favorite);
         } catch (error) {
             console.error('Toggle favorite error:', error);
@@ -105,7 +109,7 @@ export default function StylistDetailScreen() {
             return;
         }
         try {
-            const res = await apiService.startConversation(Number(id));
+            const res = await ApiService.startConversation(Number(id));
             const conversation = (res?.data as any) ?? res;
             const conversationId = conversation?.id;
             if (conversationId != null) {
@@ -169,6 +173,23 @@ export default function StylistDetailScreen() {
     const stylistWeight = formatMetric((stylist as any)?.weight, 'kg');
     const portfolioImages = Array.isArray(stylist?.images) ? stylist.images : [];
     const reviews = Array.isArray(stylist?.reviews) ? (stylist?.reviews as StylistReview[]) : [];
+
+    const renderStars = (rawRating: unknown) => {
+        const n = Math.round(Number(rawRating ?? 0));
+        const rating = Number.isFinite(n) ? Math.min(5, Math.max(0, n)) : 0;
+        return (
+            <View style={styles.starsRow}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                    <Ionicons
+                        key={`s-${i}`}
+                        name={i < rating ? 'star' : 'star-outline'}
+                        size={18}
+                        color="#F59E0B"
+                    />
+                ))}
+            </View>
+        );
+    };
 
     return (
         <SafeAreaView style={[styles.container, userScreenDirection]} edges={['top']}>
@@ -307,16 +328,33 @@ export default function StylistDetailScreen() {
                     {activeTab === 'reviews' && (
                         <View style={styles.tabPanel}>
                             {reviews.length > 0 ? (
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.reviewsRow}>
+                                <ScrollView
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    contentContainerStyle={styles.reviewsRow}
+                                    snapToInterval={316}
+                                    decelerationRate="fast"
+                                >
                                     {reviews.map((review) => (
                                         <View key={String(review.id)} style={styles.reviewCard}>
-                                            <View style={styles.reviewHead}>
-                                                <Text style={styles.reviewAuthor}>{review.user?.name || 'مستخدمة'}</Text>
-                                                <View style={styles.reviewRating}>
-                                                    <Ionicons name="star" size={14} color="#F59E0B" />
-                                                    <Text style={styles.reviewRatingText}>{review.rating}</Text>
+                                            <View style={styles.reviewTopRow}>
+                                                <View style={styles.reviewAvatarWrap}>
+                                                    {entityToImageSource(review.user as any) ? (
+                                                        <Image
+                                                            source={entityToImageSource(review.user as any)}
+                                                            style={styles.reviewAvatar}
+                                                        />
+                                                    ) : (
+                                                        <View style={styles.reviewAvatarFallback}>
+                                                            <Ionicons name="person" size={18} color="#9CA3AF" />
+                                                        </View>
+                                                    )}
                                                 </View>
                                             </View>
+                                            <Text style={styles.reviewAuthorCenter} numberOfLines={1}>
+                                                {review.user?.name || 'مستخدمة'}
+                                            </Text>
+                                            {renderStars(review.rating)}
                                             <Text style={styles.reviewBody}>
                                                 {
                                                     '\u201c' +
@@ -324,6 +362,7 @@ export default function StylistDetailScreen() {
                                                     '\u201d'
                                                 }
                                             </Text>
+                                            <Ionicons name="heart-outline" size={20} color="#9CA3AF" style={styles.reviewHeart} />
                                         </View>
                                     ))}
                                 </ScrollView>
@@ -547,47 +586,76 @@ const styles = StyleSheet.create({
     reviewsRow: {
         flexDirection: 'row',
         paddingVertical: 4,
+        paddingHorizontal: 6,
     },
     reviewCard: {
-        width: 260,
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
-        borderRadius: 14,
-        padding: 10,
+        width: 300,
+        borderRadius: 18,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
         backgroundColor: '#FFF',
-        marginEnd: 10,
-    },
-    reviewHead: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    reviewAuthor: {
-        fontFamily: 'Cairo_700Bold',
-        fontSize: 13,
-        color: '#111827',
-        ...rtlText.alignStart,
-        flex: 1,
+        shadowColor: '#000',
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 6 },
+        elevation: 3,
         marginEnd: 8,
     },
-    reviewRating: {
+    reviewTopRow: {
         flexDirection: 'row',
+        justifyContent: 'flex-start',
         alignItems: 'center',
+        marginBottom: 4,
+    },
+    reviewAvatarWrap: {
+        width: 42,
+        height: 42,
+        borderRadius: 12,
+        backgroundColor: '#EEF2FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    reviewAvatar: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
+    reviewAvatarFallback: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#F3F4F6',
+    },
+    reviewAuthorCenter: {
+        fontFamily: 'Cairo_700Bold',
+        fontSize: 16,
+        color: '#111827',
+        textAlign: 'left',
+        marginBottom: 4,
+    },
+    starsRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        marginBottom: 8,
         gap: 4,
     },
-    reviewRatingText: {
-        fontFamily: 'Cairo_600SemiBold',
-        fontSize: 12,
-        color: '#92400E',
-        writingDirection: 'ltr',
+    reviewHeart: {
+        position: 'absolute',
+        bottom: 12,
+        left: 14,
+        opacity: 0.25,
     },
     reviewBody: {
         fontFamily: 'Cairo_400Regular',
         fontSize: 13,
         color: '#6B7280',
         lineHeight: 22,
-        ...rtlText.alignStart,
+        textAlign: 'left',
     },
     footer: {
         position: 'absolute',

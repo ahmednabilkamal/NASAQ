@@ -182,6 +182,18 @@ export default function StylistsScreen() {
         const tags = item.fashion_styles?.map((s: any) => s.name) ?? [];
         const height = item?.height != null && item?.height !== '' ? `${item.height} cm` : null;
         const weight = item?.weight != null && item?.weight !== '' ? `${item.weight} kg` : null;
+        const ratingValueRaw =
+            (item as any)?.avg_rating ?? (item as any)?.rating ?? (item as any)?.reviews_avg_rating ?? null;
+        const ratingValue = (() => {
+            const n = Number(ratingValueRaw);
+            return Number.isFinite(n) ? n : null;
+        })();
+        const reviewsCountRaw =
+            (item as any)?.reviews_count ?? (item as any)?.clients_count ?? (item as any)?.reviewsCount ?? null;
+        const reviewsCount = (() => {
+            const n = Number(reviewsCountRaw);
+            return Number.isFinite(n) ? n : null;
+        })();
 
         const handleFavoritePress = () => {
             toggleFavorite(id);
@@ -226,9 +238,11 @@ export default function StylistsScreen() {
                     )}
 
                     <View style={styles.cardFooter}>
-                        {item.rating != null && (
+                        {(ratingValue != null || (reviewsCount != null && reviewsCount > 0)) && (
                             <View style={styles.ratingContainer}>
-                                <Text style={styles.ratingText}>{item.rating}</Text>
+                                <Text style={styles.ratingText}>
+                                    {ratingValue != null ? ratingValue.toFixed(1).replace(/\.0$/, '') : '0'}
+                                </Text>
                                 <Ionicons name="star" size={14} color="#FFD700" />
                             </View>
                         )}

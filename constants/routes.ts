@@ -39,6 +39,7 @@ export const ROUTES = {
         services: '/pages/stylist/services',
         earnings: '/pages/stylist/earnings',
         editProfile: '/pages/stylist/edit_profile',
+        reviews: '/pages/stylist/reviews',
         pendingVerification: '/pages/stylist/pending_verification',
     },
 

@@ -20,7 +20,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from '@/components/RTLSafeAreaView';
 import Toast from 'react-native-toast-message';
-import authService from '@/config/authService';
+import AuthService from '@/config/authService';
 import { getForwardChevron } from '@/config/directionalIcons';
 import { userScreenDirection } from '@/config/rtlLayout';
 import { rtlText } from '@/config/rtlText';
@@ -78,7 +78,7 @@ export default function ProfileScreen() {
 
         setLoading(true);
         try {
-            await authService.sendOtp({ login: user?.phone || user?.email || '' });
+            await AuthService.sendOtp({ login: user?.phone || user?.email || '' });
             setPasswordModalVisible(false);
             setOtpModalVisible(true);
             setTimer(30);
@@ -97,7 +97,7 @@ export default function ProfileScreen() {
 
         setLoading(true);
         try {
-            await authService.changePassword({
+            await AuthService.changePassword({
                 otp: otpValue,
                 password: newPassword,
                 password_confirmation: confirmPassword
@@ -133,7 +133,7 @@ export default function ProfileScreen() {
         if (!canResend) return;
         setLoading(true);
         try {
-            await authService.sendOtp({ login: user?.phone || user?.email || '' });
+            await AuthService.sendOtp({ login: user?.phone || user?.email || '' });
             setTimer(30);
             setCanResend(false);
             Toast.show({ type: 'success', text1: 'تم الإرسال', text2: 'تم إعادة إرسال الرمز' });
@@ -213,6 +213,11 @@ export default function ProfileScreen() {
                                     label="إدارة الخدمات"
                                     icon="grid-outline"
                                     onPress={() => router.push('/pages/stylist/services' as any)}
+                                />
+                                <MenuItem
+                                    label="التقييمات"
+                                    icon="star-outline"
+                                    onPress={() => router.push(ROUTES.stylist.reviews as any)}
                                 />
                                 <MenuItem
                                     label="الأرباح والمعاملات"
