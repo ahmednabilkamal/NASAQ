@@ -2,7 +2,10 @@ import { useAuth } from '@/config/authContext';
 import { getHrefFromNotificationPayload } from '@/services/push/navigationFromNotification';
 import { parseNotificationData } from '@/services/push/notificationPayload';
 import { recordNotificationInHistory } from '@/services/push/notificationHistory';
-import { registerAndSyncPushToken } from '@/services/push/registerPushToken';
+import {
+  registerAndSyncPushToken,
+  registerDeviceForPushNotificationsAsync,
+} from '@/services/push/registerPushToken';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { useRouter, type Href } from 'expo-router';
@@ -59,6 +62,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     authRef.current = { isAuthenticated, loading };
   }, [isAuthenticated, loading]);
+
+  /** Prompt for notification permission on cold start (Android channel + iOS dialog). Backend sync stays after login. */
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    void registerDeviceForPushNotificationsAsync();
+  }, []);
 
   const navigateFromResponse = useCallback(async (response: Notifications.NotificationResponse | null) => {
     if (!response) return;
