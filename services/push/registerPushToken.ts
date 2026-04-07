@@ -7,33 +7,20 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import authService from '@/config/authService';
+import {
+  ensureAndroidNotificationChannel,
+  ensureNotificationPermissionAsync,
+} from '@/services/push/notificationPermissionHelpers';
 
-const ANDROID_CHANNEL_ID = 'nasq_default';
-
-export async function ensureAndroidNotificationChannel(): Promise<void> {
-  if (Platform.OS !== 'android') return;
-  await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-    name: 'عام',
-    importance: Notifications.AndroidImportance.DEFAULT,
-    vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#064E3B',
-  });
-}
+export { ensureAndroidNotificationChannel };
 
 export async function registerDeviceForPushNotificationsAsync(): Promise<string | null> {
   if (Platform.OS === 'web') {
     return null;
   }
 
-  await ensureAndroidNotificationChannel();
-
-  const { status: existing } = await Notifications.getPermissionsAsync();
-  let finalStatus = existing;
-  if (existing !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-  if (finalStatus !== 'granted') {
+  const allowed = await ensureNotificationPermissionAsync();
+  if (!allowed) {
     if (__DEV__) {
       console.warn('[push] notification permission not granted');
     }
