@@ -131,12 +131,6 @@ export default function BoyMeasurementsPage() {
     ).current;
 
     useEffect(() => {
-        if (effectiveGender === 'female') {
-            router.replace(ROUTES.onboarding.styleIdentity as any);
-        }
-    }, [effectiveGender, router]);
-
-    useEffect(() => {
         const m = user?.body_measurements;
         if (!m || typeof m !== 'object') return;
         if (m.skipped === true || m.skipped === 1 || m.skipped === 'true') return;
@@ -220,8 +214,6 @@ export default function BoyMeasurementsPage() {
             setSkipping(false);
         }
     };
-
-    if (effectiveGender === 'female') return null;
 
     const busy = saving || skipping;
 

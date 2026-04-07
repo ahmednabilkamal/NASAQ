@@ -31,7 +31,7 @@ export default function BodyShapePage() {
             const shapeValue = shapeObj ? shapeObj.value : selected.toString();
             await updateProfile({ body_shape: shapeValue });
             router.push(
-                (isMale ? ROUTES.onboarding.boyMeasurements : ROUTES.onboarding.styleIdentity) as any
+                ROUTES.onboarding.boyMeasurements as any
             );
         } catch (error) {
             console.error('Failed to save body shape:', error);

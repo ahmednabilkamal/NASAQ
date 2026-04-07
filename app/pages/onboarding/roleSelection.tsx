@@ -9,7 +9,7 @@ import { SafeAreaView } from '@/components/RTLSafeAreaView';
 import { onboardingScreenDirection } from '@/config/rtlLayout';
 import { rtlText, rtlWritingMode } from '@/config/rtlText';
 import { useRouter } from 'expo-router';
-import OnboardingHeader from '@/components/onboarding/OnboardingHeader';
+import { ROUTES } from '@/constants/routes';
 
 type Role = 'stylist' | 'client';
 
@@ -20,23 +20,14 @@ export default function RoleSelectionScreen() {
     const handleStart = () => {
         if (!selectedRole) return;
         if (selectedRole === 'stylist') {
-            router.push('/pages/onboarding/stylistProfile' as any);
+            router.push(ROUTES.onboarding.stylistProfile as any);
         } else {
-            router.push('/pages/onboarding/genderSelection' as any);
+            router.push(ROUTES.onboarding.genderSelection as any);
         }
-    };
-
-    const handleSkip = () => {
-        router.push('/pages/onboarding/genderSelection' as any);
     };
 
     return (
         <SafeAreaView style={[styles.container, onboardingScreenDirection]}>
-            <OnboardingHeader
-                onBack={handleSkip}
-                onClose={handleSkip}
-            />
-
             <View style={styles.content}>
                 <Text style={[styles.title, rtlWritingMode]}>كيف تود أن تكون تجربتك معنا؟</Text>
                 <Text style={[styles.subtitle, rtlWritingMode]}>

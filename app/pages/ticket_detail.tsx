@@ -15,7 +15,7 @@ import {
   Linking,
   Keyboard,
   InteractionManager,
-  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from '@/components/RTLSafeAreaView';
 import { userScreenDirection, stylistScreenDirection } from '@/config/rtlLayout';
@@ -25,16 +25,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { getBackChevron } from '@/config/directionalIcons';
 import { useAuth } from '@/config/authContext';
 import { isStylistUser } from '@/config/navigationFlow';
-import apiService, { TicketDetail, TicketMessage } from '@/config/apiService';
+import { apiService, TicketDetail, TicketMessage } from '@/config/apiService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { resolveMediaUrl as resolveMediaUrlUtil } from '@/utils/resolveMediaUrl';
+import { Video, ResizeMode } from 'expo-av';
 
 const COMPOSER_MIN = 64;
 
 type Att = { id?: number | string; type?: string; url?: string; original_name?: string };
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 function resolveAttachmentUrl(url: string | undefined): string {
   return resolveMediaUrlUtil(url) ?? '';
@@ -49,21 +52,33 @@ function normalizeMessages(raw: unknown): TicketMessage[] {
   return [];
 }
 
-function AttachmentGrid({ items, isOnDark }: { items: Att[]; isOnDark?: boolean }) {
+function AttachmentGrid({
+  items,
+  isOnDark,
+  onOpenMedia,
+}: {
+  items: Att[];
+  isOnDark?: boolean;
+  onOpenMedia?: (m: { type: 'image' | 'video'; uri: string }) => void;
+}) {
   if (!items?.length) return null;
   return (
     <View style={styles.attGrid}>
       {items.map((a, idx) => {
         const uri = resolveAttachmentUrl(a.url);
         const t = String(a.type ?? 'file');
+        if (!uri) return null;
         if (t === 'image') {
           return (
-            <Image
+            <TouchableOpacity
               key={`${a.id ?? idx}`}
-              source={{ uri }}
-              style={styles.attImage}
-              resizeMode="cover"
-            />
+              activeOpacity={0.9}
+              onPress={() => (onOpenMedia ? onOpenMedia({ type: 'image', uri }) : Linking.openURL(uri))}
+              accessibilityRole="button"
+              accessibilityLabel="عرض الصورة بالحجم الكامل"
+            >
+              <Image source={{ uri }} style={styles.attImage} resizeMode="cover" />
+            </TouchableOpacity>
           );
         }
         if (t === 'video') {
@@ -71,8 +86,10 @@ function AttachmentGrid({ items, isOnDark }: { items: Att[]; isOnDark?: boolean 
             <TouchableOpacity
               key={`${a.id ?? idx}`}
               style={styles.videoTile}
-              onPress={() => Linking.openURL(uri)}
+              onPress={() => (onOpenMedia ? onOpenMedia({ type: 'video', uri }) : Linking.openURL(uri))}
               activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="تشغيل الفيديو"
             >
               <Ionicons name="play-circle" size={44} color="#FFF" />
               <Text style={styles.videoHint}>فيديو</Text>
@@ -109,7 +126,8 @@ export default function TicketDetailScreen() {
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
-  const [pendingFiles, setPendingFiles] = useState<{ uri: string; name: string; type: string }[]>([]);
+  const [mediaViewer, setMediaViewer] = useState<{ type: 'image' | 'video'; uri: string } | null>(null);
+  const mediaVideoRef = useRef<Video | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
 
@@ -146,35 +164,35 @@ export default function TicketDetailScreen() {
     [ticket]
   );
 
-  const onSend = async () => {
-    if (!id || !canReply || sending) return;
-    const text = reply.trim();
-    if (!text && pendingFiles.length === 0) return;
-
-    setSending(true);
-    try {
-      const res = await apiService.replyToTicket(id, text, pendingFiles.length ? pendingFiles : undefined);
-      setReply('');
-      setPendingFiles([]);
+  const pushNewMsgOrReload = useCallback(
+    async (res: any) => {
       const raw = res?.data as TicketMessage | undefined;
-      const newMsg =
-        raw && typeof raw === 'object' && raw.id != null ? (raw as TicketMessage) : null;
+      const newMsg = raw && typeof raw === 'object' && raw.id != null ? (raw as TicketMessage) : null;
       if (newMsg) {
         setTicket((prev) => {
           if (!prev) return prev;
           const existing = normalizeMessages(prev.messages);
-          return {
-            ...prev,
-            messages: [...existing, newMsg],
-          };
+          return { ...prev, messages: [...existing, newMsg] };
         });
-        requestAnimationFrame(() =>
-          flatListRef.current?.scrollToEnd({ animated: true })
-        );
-      } else {
-        await load({ silent: true });
-        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 200);
+        requestAnimationFrame(() => flatListRef.current?.scrollToEnd({ animated: true }));
+        return;
       }
+      await load({ silent: true });
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 200);
+    },
+    [load]
+  );
+
+  const onSend = async () => {
+    if (!id || !canReply || sending) return;
+    const text = reply.trim();
+    if (!text) return;
+
+    setSending(true);
+    try {
+      const res = await apiService.replyToTicket(id, text);
+      setReply('');
+      await pushNewMsgOrReload(res);
     } catch {
       /* axios toast */
     } finally {
@@ -182,29 +200,73 @@ export default function TicketDetailScreen() {
     }
   };
 
-  const pickImage = async () => {
-    if (pendingFiles.length >= 10) return;
+  const closeMediaViewer = useCallback(async () => {
+    try {
+      const v = mediaVideoRef.current;
+      if (v) {
+        await v.pauseAsync();
+        await v.unloadAsync();
+      }
+    } catch {
+      /* ignore */
+    }
+    mediaVideoRef.current = null;
+    setMediaViewer(null);
+  }, []);
+
+  const pickGallery = async () => {
+    if (!id || !canReply || sending) return;
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return;
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.85,
+      mediaTypes: ['images', 'videos'],
+      allowsEditing: false,
+      quality: 0.9,
     });
     if (!result.canceled && result.assets[0]) {
       const a = result.assets[0];
-      const name = a.fileName || 'photo.jpg';
-      setPendingFiles((p) => [...p, { uri: a.uri, name, type: 'image/jpeg' }]);
+      const isVideo =
+        a.type === 'video' || (a.mimeType != null && String(a.mimeType).startsWith('video/'));
+      const name = a.fileName || (isVideo ? 'video.mp4' : 'photo.jpg');
+      const mime = a.mimeType || (isVideo ? 'video/mp4' : 'image/jpeg');
+      setShowAttachMenu(false);
+      setSending(true);
+      try {
+        const text = reply.trim();
+        const res = await apiService.replyToTicket(id, text, [{ uri: a.uri, name, type: mime }]);
+        setReply('');
+        await pushNewMsgOrReload(res);
+      } catch {
+        /* axios toast */
+      } finally {
+        setSending(false);
+      }
+      return;
     }
     setShowAttachMenu(false);
   };
 
   const pickDocument = async () => {
-    if (pendingFiles.length >= 10) return;
+    if (!id || !canReply || sending) return;
     try {
       const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
       if (!result.canceled && result.assets[0]) {
         const a = result.assets[0];
-        setPendingFiles((p) => [...p, { uri: a.uri, name: a.name, type: a.mimeType || 'application/octet-stream' }]);
+        setShowAttachMenu(false);
+        setSending(true);
+        try {
+          const text = reply.trim();
+          const res = await apiService.replyToTicket(id, text, [
+            { uri: a.uri, name: a.name, type: a.mimeType || 'application/octet-stream' },
+          ]);
+          setReply('');
+          await pushNewMsgOrReload(res);
+        } catch {
+          /* axios toast */
+        } finally {
+          setSending(false);
+        }
+        return;
       }
     } catch {
       /* noop */
@@ -236,7 +298,7 @@ export default function TicketDetailScreen() {
             {item.body ? (
               <Text style={[styles.msgText, fromUser ? styles.textUser : styles.textSupport]}>{item.body}</Text>
             ) : null}
-            <AttachmentGrid items={atts} isOnDark={!fromUser} />
+            <AttachmentGrid items={atts} isOnDark={!fromUser} onOpenMedia={setMediaViewer} />
           </View>
           <Text style={[styles.time, fromUser ? styles.timeUserPos : styles.timeSupportPos]}>
             {item.created_at
@@ -310,7 +372,7 @@ export default function TicketDetailScreen() {
           <View style={[styles.msgWrap, styles.wrapUser]}>
             <View style={[styles.bubble, styles.bubbleUser]}>
               <Text style={[styles.msgText, styles.textUser]}>{ticket.body}</Text>
-              <AttachmentGrid items={ticketAttachments} />
+              <AttachmentGrid items={ticketAttachments} onOpenMedia={setMediaViewer} />
             </View>
             <Text style={[styles.time, styles.timeUserPos]}>
               {ticket.created_at
@@ -347,8 +409,50 @@ export default function TicketDetailScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={keyboardOffset}
-        enabled={!showAttachMenu}
+        enabled={!showAttachMenu && mediaViewer === null}
       >
+        <Modal
+          visible={mediaViewer !== null}
+          animationType="fade"
+          transparent={false}
+          presentationStyle={Platform.OS === 'ios' ? 'fullScreen' : undefined}
+          statusBarTranslucent
+          onRequestClose={closeMediaViewer}
+        >
+          <View style={styles.mediaViewerRoot}>
+            <View style={[styles.mediaViewerHeader, { paddingTop: Math.max(insets.top, 12) }]}>
+              <TouchableOpacity
+                onPress={closeMediaViewer}
+                style={styles.mediaViewerCloseBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityRole="button"
+                accessibilityLabel="إغلاق"
+              >
+                <Ionicons name="close" size={30} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+            {mediaViewer?.type === 'image' ? (
+              <Pressable style={styles.mediaViewerImageArea} onPress={closeMediaViewer}>
+                <Image source={{ uri: mediaViewer.uri }} style={styles.mediaViewerImage} resizeMode="contain" />
+              </Pressable>
+            ) : mediaViewer?.type === 'video' ? (
+              <View style={styles.mediaViewerVideoArea}>
+                <Video
+                  ref={(r) => {
+                    mediaVideoRef.current = r;
+                  }}
+                  style={styles.mediaViewerVideo}
+                  source={{ uri: mediaViewer.uri }}
+                  useNativeControls
+                  resizeMode={ResizeMode.CONTAIN}
+                  shouldPlay
+                  isLooping={false}
+                />
+              </View>
+            ) : null}
+          </View>
+        </Modal>
+
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backHit} hitSlop={12}>
             <Ionicons name={getBackChevron()} size={24} color="#000" />
@@ -400,11 +504,11 @@ export default function TicketDetailScreen() {
                     </TouchableOpacity>
                   </View>
                   <View style={styles.attachMenu}>
-                    <TouchableOpacity style={styles.attachOpt} onPress={pickImage} activeOpacity={0.85}>
+                    <TouchableOpacity style={styles.attachOpt} onPress={pickGallery} activeOpacity={0.85}>
                       <View style={styles.attachIconPhotos}>
                         <Ionicons name="images" size={24} color="#FFF" />
                       </View>
-                      <Text style={styles.attachOptText}>صور</Text>
+                      <Text style={styles.attachOptText}>صور وفيديو</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.attachOpt} onPress={pickDocument} activeOpacity={0.85}>
                       <View style={styles.attachIconFiles}>
@@ -420,20 +524,6 @@ export default function TicketDetailScreen() {
             {canReply ? (
               !showAttachMenu ? (
                 <View style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-                  {pendingFiles.length > 0 ? (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pendingStrip}>
-                      {pendingFiles.map((f, i) => (
-                        <View key={`${f.uri}-${i}`} style={styles.pendingChip}>
-                          <Text style={styles.pendingName} numberOfLines={1}>
-                            {f.name}
-                          </Text>
-                          <TouchableOpacity onPress={() => setPendingFiles((p) => p.filter((_, j) => j !== i))}>
-                            <Ionicons name="close-circle" size={20} color="#9CA3AF" />
-                          </TouchableOpacity>
-                        </View>
-                      ))}
-                    </ScrollView>
-                  ) : null}
                   <View style={styles.inputInner}>
                     <TouchableOpacity style={styles.attachBtn} onPress={openAttachMenu}>
                       <Ionicons name="attach-outline" size={24} color="#666" />
@@ -450,15 +540,15 @@ export default function TicketDetailScreen() {
                     <TouchableOpacity
                       style={[
                         styles.sendBtn,
-                        ((!reply.trim() && pendingFiles.length === 0) || sending) && styles.sendBtnOff,
+                        (!reply.trim() || sending) && styles.sendBtnOff,
                       ]}
                       onPress={onSend}
-                      disabled={(!reply.trim() && pendingFiles.length === 0) || sending}
+                      disabled={!reply.trim() || sending}
                     >
                       {sending ? (
                         <ActivityIndicator size="small" color="#FFF" />
                       ) : (
-                        <Ionicons name="send" size={22} color="#FFF" />
+                        <Ionicons name="send" size={22} color="#FFF" style={styles.sendIconFlip} />
                       )}
                     </TouchableOpacity>
                   </View>
@@ -703,19 +793,6 @@ const styles = StyleSheet.create({
     borderTopColor: '#F0F0F0',
     backgroundColor: '#FFF',
   },
-  pendingStrip: { maxHeight: 44, paddingHorizontal: 12, paddingTop: 8 },
-  pendingChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginEnd: 8,
-    maxWidth: 160,
-  },
-  pendingName: { flex: 1, fontSize: 12, color: '#374151', fontFamily: 'Cairo_400Regular' },
   inputInner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -746,8 +823,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  sendIconFlip: {
+    transform: [{ scaleX: -1 }],
+  },
   sendBtnOff: { opacity: 0.45 },
   composerPlaceholder: { backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#F0F0F0' },
   closedBar: { padding: 14, backgroundColor: '#F3F4F6', borderTopWidth: 1, borderTopColor: '#E5E7EB' },
   closedText: { textAlign: 'center', color: '#6B7280', fontFamily: 'Cairo_400Regular', fontSize: 14 },
+
+  mediaViewerRoot: { flex: 1, backgroundColor: '#000' },
+  mediaViewerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+  },
+  mediaViewerCloseBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mediaViewerImageArea: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  mediaViewerImage: { width: SCREEN_W, height: SCREEN_H * 0.82 },
+  mediaViewerVideoArea: { flex: 1, justifyContent: 'center', paddingHorizontal: 8, paddingBottom: 24 },
+  mediaViewerVideo: { width: '100%', flex: 1, minHeight: 220 },
 });

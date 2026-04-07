@@ -259,20 +259,6 @@ export default function AuthScreen() {
                             )}
                         </TouchableOpacity>
 
-                        <View style={styles.dividerRow}>
-                            <View style={styles.divider} />
-                            <Text style={styles.dividerText}>أو</Text>
-                            <View style={styles.divider} />
-                        </View>
-
-                        <TouchableOpacity style={styles.googleButton} activeOpacity={0.7}>
-                            <Image
-                                source={{ uri: 'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png' }}
-                                style={styles.googleIcon}
-                            />
-                            <Text style={styles.googleButtonText}>{loginContent.googleButton}</Text>
-                        </TouchableOpacity>
-
                         <View style={styles.footer}>
                             <Text style={styles.footerText}>
                                 {isLogin ? loginContent.footerText : registerContent.footerText}
@@ -442,44 +428,6 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: 16,
         fontFamily: 'Cairo_700Bold',
-        textAlign: 'center',
-    },
-    dividerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 15,
-        marginVertical: 8,
-    },
-    divider: {
-        flex: 1,
-        height: 1,
-        backgroundColor: '#EEE',
-    },
-    dividerText: {
-        fontSize: 14,
-        color: '#999',
-        fontFamily: 'Cairo_400Regular',
-        textAlign: 'center',
-    },
-    googleButton: {
-        flexDirection: 'row-reverse',
-        backgroundColor: '#F8F9FA',
-        height: 55,
-        borderRadius: 25,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 12,
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
-    },
-    googleIcon: {
-        width: 20,
-        height: 20,
-    },
-    googleButtonText: {
-        fontSize: 16,
-        fontFamily: 'Cairo_400Regular',
-        color: '#000',
         textAlign: 'center',
     },
     footer: {

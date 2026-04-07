@@ -7,6 +7,7 @@ import pageData from '@/data/content';
 import { useGenderSelection } from '@/hooks/onboarding/useGenderSelection';
 import { useAuth } from '@/config/authContext';
 import { onboardingScreenDirection } from '@/config/rtlLayout';
+import { ROUTES } from '@/constants/routes';
 
 export default function GenderPage() {
     const router = useRouter();
@@ -37,11 +38,11 @@ export default function GenderPage() {
                 title={content.title}
                 subtitle={content.subtitle}
                 currentStep={1}
-                totalSteps={selected === 'male' ? 7 : 6}
+                    totalSteps={7}
                 onNext={handleNext}
                 isNextDisabled={!selected}
                 nextButtonText={saving ? '...' : content.nextButton}
-                backRoute={isAuthenticated ? '/pages/onboarding/page3' : '/pages/onboarding/page4'}
+                backRoute={ROUTES.onboarding.roleSelection}
             >
                 <View style={styles.cardsWrap}>
                     <View style={styles.cardsRow}>

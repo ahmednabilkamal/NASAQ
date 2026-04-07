@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     },
     photoWrap: {
         width: '100%',
-        aspectRatio: 3 / 4,
+        aspectRatio: 3 / 3.5,
         backgroundColor: '#F3F4F6',
     },
     heroPhoto: {

@@ -57,9 +57,9 @@ export const isStylistVerified = (user: any): boolean => {
 
 const BOY_MEASUREMENT_KEYS = ['shoulder', 'chest', 'waist', 'arm', 'hip', 'thigh', 'leg'] as const;
 
-/** Male clients: all measurement fields (cm), or explicit skip from the app. */
-export const hasBoyMeasurementsComplete = (user: any): boolean => {
-    if (!user || user.gender !== 'male') return true;
+/** Client measurements: all fields (cm), or explicit skip from the app. */
+export const hasClientMeasurementsComplete = (user: any): boolean => {
+    if (!user) return false;
     const m = user.body_measurements;
     if (!m || typeof m !== 'object') return false;
     if (m.skipped === true || m.skipped === 1 || m.skipped === '1' || m.skipped === 'true') {
@@ -85,7 +85,7 @@ export const isProfileComplete = (user: any): boolean => {
         user.weight &&
         user.skin_tones &&
         user.body_shape &&
-        hasBoyMeasurementsComplete(user) &&
+        hasClientMeasurementsComplete(user) &&
         hasStyles
     );
 };
@@ -105,7 +105,7 @@ export const getNextOnboardingStep = (user: any): string => {
     if (!user.weight) return ROUTES.onboarding.weightSelection;
     if (!user.skin_tones) return ROUTES.onboarding.colorSelection;
     if (!user.body_shape) return ROUTES.onboarding.bodyShape;
-    if (user.gender === 'male' && !hasBoyMeasurementsComplete(user)) {
+    if (!hasClientMeasurementsComplete(user)) {
         return ROUTES.onboarding.boyMeasurements;
     }
     const hasStyles = user.fashion_styles && user.fashion_styles.length > 0;

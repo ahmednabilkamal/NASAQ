@@ -4,7 +4,7 @@ import { HeroBanner, HomeHeader, StylistCard } from '@/components/home';
 import { useAuth } from '@/config/authContext';
 import { isStylistUser, isStylistVerified } from '@/config/navigationFlow';
 import { ROUTES } from '@/constants/routes';
-import apiService, { Banner, Stylist } from '@/config/apiService';
+import { apiService, Banner, Stylist } from '@/config/apiService';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -331,6 +331,6 @@ const styles = StyleSheet.create({
     },
 
     bottomSpacer: {
-        height: 80,
+        height: 120,
     },
 });

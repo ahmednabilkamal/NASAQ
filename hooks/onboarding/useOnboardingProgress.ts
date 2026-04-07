@@ -11,7 +11,7 @@ export type OnboardingScreenStep =
     | 'styles';
 
 /**
- * Progress dots for the client onboarding path: males have an extra measurements step (7 total).
+ * Progress dots for the client onboarding path: both genders include measurements (7 total).
  */
 export function useOnboardingProgress(screen: OnboardingScreenStep) {
     const { gender: ctxGender } = useGender();
@@ -19,7 +19,7 @@ export function useOnboardingProgress(screen: OnboardingScreenStep) {
     const gender =
         ctxGender ?? (user?.gender === 'male' || user?.gender === 'female' ? user.gender : null);
     const isMale = gender === 'male';
-    const totalSteps = isMale ? 7 : 6;
+    const totalSteps = 7;
 
     const stepsFemale: Record<OnboardingScreenStep, number> = {
         gender: 1,
@@ -28,7 +28,7 @@ export function useOnboardingProgress(screen: OnboardingScreenStep) {
         color: 4,
         shape: 5,
         measurements: 6,
-        styles: 6,
+        styles: 7,
     };
     const stepsMale: Record<OnboardingScreenStep, number> = {
         gender: 1,

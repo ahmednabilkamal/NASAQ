@@ -18,7 +18,7 @@ import { ROUTES } from '@/constants/routes';
 import { getForwardChevron } from '@/config/directionalIcons';
 import { stylistScreenDirection } from '@/config/rtlLayout';
 import { rtlText } from '@/config/rtlText';
-import apiService, { Order } from '@/config/apiService';
+import { apiService, Order } from '@/config/apiService';
 import StylistBottomNav from '@/components/StylistBottomNav';
 import {
     StylistScreenHeader,
@@ -53,6 +53,9 @@ export default function StylistHomeScreen() {
         if (!authLoading && !isAuthenticated) {
             router.replace('/pages/login');
         } else if (!authLoading && isAuthenticated && !isStylistUser(user)) {
+            // Prevent any stylist API calls while redirecting clients away.
+            setLoading(false);
+            setRefreshing(false);
             router.replace('/pages/tabs/homescreen' as any);
         } else if (
             !authLoading &&
@@ -62,9 +65,15 @@ export default function StylistHomeScreen() {
         ) {
             router.replace(ROUTES.stylist.pendingVerification as any);
         }
-    }, [isAuthenticated, authLoading, user]);
+    }, [isAuthenticated, authLoading, user, router]);
 
     const fetchDashboardData = useCallback(async () => {
+        // Guard: never call stylist endpoints for non-stylist users (can happen during fast transitions).
+        if (!isAuthenticated || !isStylistUser(user)) {
+            setLoading(false);
+            setRefreshing(false);
+            return;
+        }
         if (dashboardFetchRef.current) {
             return dashboardFetchRef.current;
         }
@@ -130,11 +139,11 @@ export default function StylistHomeScreen() {
             }
         });
         return run;
-    }, []);
+    }, [isAuthenticated, user]);
 
     useEffect(() => {
-        if (isAuthenticated) fetchDashboardData();
-    }, [isAuthenticated, fetchDashboardData]);
+        if (isAuthenticated && isStylistUser(user)) fetchDashboardData();
+    }, [isAuthenticated, user, fetchDashboardData]);
 
     const onRefresh = () => {
         setRefreshing(true);

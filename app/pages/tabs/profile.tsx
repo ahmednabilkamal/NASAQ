@@ -4,7 +4,7 @@ import { useAuth } from '@/config/authContext';
 import { isStylistUser } from '@/config/navigationFlow';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     Image,
     ScrollView,
@@ -31,10 +31,14 @@ export default function ProfileScreen() {
     const router = useRouter();
     const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [logoutBusy, setLogoutBusy] = useState(false);
     const isStylist = isStylistUser(user);
+    const didRedirectRef = useRef(false);
 
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
+            if (didRedirectRef.current) return;
+            didRedirectRef.current = true;
             console.log('ProfileScreen: Not authenticated, redirecting to login');
             router.replace('/pages/login');
         }
@@ -306,9 +310,16 @@ export default function ProfileScreen() {
                 <TouchableOpacity
                     style={styles.logoutButton}
                     onPress={async () => {
-                        await logout();
-                        router.replace('/pages/login');
+                        if (logoutBusy) return;
+                        setLogoutBusy(true);
+                        try {
+                            await logout();
+                            // Redirect is handled by the auth guard effect above.
+                        } finally {
+                            setLogoutBusy(false);
+                        }
                     }}
+                    disabled={logoutBusy}
                 >
                     <Ionicons name="log-out-outline" size={22} color="#E11D48" />
                     <Text style={styles.logoutText}>تسجيل الخروج</Text>

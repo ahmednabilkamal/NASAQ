@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import authService, { LoginData, RegisterData, UpdateProfileData, GoogleLoginData } from './authService';
+    import React, { createContext, useContext, useState, useEffect } from 'react';
+import AuthService, { LoginData, RegisterData, UpdateProfileData, GoogleLoginData } from './authService';
 import { initializeToken, clearAuthData } from './authToken';
 import { ROUTES } from '@/constants/routes';
-import { isStylistUser, isStylistVerified, hasBoyMeasurementsComplete } from '@/config/navigationFlow';
+import { isStylistUser, isStylistVerified, hasClientMeasurementsComplete } from '@/config/navigationFlow';
 
 export interface User {
     id: number | string;
@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const refreshUser = async (): Promise<User | null> => {
         try {
-            const data = await authService.getProfile();
+            const data = await AuthService.getProfile();
             const profile: User = data?.data ?? data?.user ?? data;
             setUser(profile);
             return profile;
@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const login = async (data: LoginData): Promise<User | null> => {
-        const result = await authService.login(data);
+        const result = await AuthService.login(data);
         const profile: User = result?.data?.user ?? result?.user ?? result?.data ?? result;
         if (profile?.id) {
             setUser(profile);
@@ -91,11 +91,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const register = async (data: RegisterData): Promise<void> => {
-        await authService.register(data);
+        await AuthService.register(data);
     };
 
     const googleLogin = async (data: GoogleLoginData): Promise<User | null> => {
-        const result = await authService.googleLogin(data);
+        const result = await AuthService.googleLogin(data);
         const profile: User = result?.data?.user ?? result?.user ?? result?.data ?? result;
         if (profile?.id) {
             setUser(profile);
@@ -105,21 +105,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const updateProfile = async (data: UpdateProfileData): Promise<void> => {
-        await authService.updateProfile(data);
+        await AuthService.updateProfile(data);
         await refreshUser();
     };
 
     const logout = async (): Promise<void> => {
         setUser(null);
         try {
-            await authService.logout();
+            await AuthService.logout();
         } catch {
             await clearAuthData();
         }
     };
 
     const deleteAccount = async (): Promise<void> => {
-        await authService.deleteAccount();
+        await AuthService.deleteAccount();
         setUser(null);
     };
 
@@ -131,12 +131,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (isStylistUser(u) && isStylistVerified(u)) {
             return ROUTES.stylist.home;
         }
-        if (!u.gender) return ROUTES.onboarding.genderSelection;
+        // New users should pick their journey first (stylist vs client).
+        if (!u.gender) return ROUTES.onboarding.roleSelection;
         if (!u.height) return ROUTES.onboarding.heightSelection;
         if (!u.weight) return ROUTES.onboarding.weightSelection;
         if (!u.skin_tones) return ROUTES.onboarding.colorSelection;
         if (!u.body_shape) return ROUTES.onboarding.bodyShape;
-        if (u.gender === 'male' && !hasBoyMeasurementsComplete(u)) {
+        if (!hasClientMeasurementsComplete(u)) {
             return ROUTES.onboarding.boyMeasurements;
         }
         if (!u.fashion_styles || u.fashion_styles.length === 0) return ROUTES.onboarding.styleIdentity;

@@ -23,6 +23,7 @@ import Toast from 'react-native-toast-message';
 import { MAX_STYLIST_IMAGE_BYTES } from '@/utils/imageUploadFormData';
 import { getStylistOnboardingCoverUri, setStylistOnboardingCoverUri } from '@/utils/stylistOnboardingCoverStorage';
 import { ensureUploadableImageUri } from '@/utils/ensureUploadableImageUri';
+import { ROUTES } from '@/constants/routes';
 
 export default function StylistProfileScreen() {
     const router = useRouter();
@@ -135,7 +136,8 @@ export default function StylistProfileScreen() {
             <OnboardingHeader
                 currentStep={1}
                 totalSteps={3}
-                onBack={() => router.back()}
+                onBack={() => router.replace(ROUTES.onboarding.roleSelection as any)}
+                onClose={() => router.replace(ROUTES.onboarding.roleSelection as any)}
             />
 
             <KeyboardAvoidingView

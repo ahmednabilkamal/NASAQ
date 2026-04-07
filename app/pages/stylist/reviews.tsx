@@ -6,6 +6,7 @@ import { rtlText } from '@/config/rtlText';
 import { Ionicons } from '@expo/vector-icons';
 import apiService, { StylistReview } from '@/config/apiService';
 import { entityToImageSource } from '@/utils/resolveMediaUrl';
+import { StylistScreenHeader, STYLIST_GREEN } from '@/components/StylistScreenHeader';
 
 function clampRating(raw: unknown): number {
     const n = Math.round(Number(raw ?? 0));
@@ -70,20 +71,20 @@ export default function StylistReviewsScreen() {
 
     return (
         <SafeAreaView style={[styles.container, stylistScreenDirection]} edges={['top']}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>التقييمات</Text>
-            </View>
+            <StylistScreenHeader title="التقييمات" />
 
             {loading ? (
                 <View style={styles.loadingWrap}>
-                    <ActivityIndicator size="large" color="#064E3B" />
+                    <ActivityIndicator size="large" color={STYLIST_GREEN} />
                 </View>
             ) : (
                 <FlatList
                     data={reviews}
                     keyExtractor={(r) => String(r.id)}
                     contentContainerStyle={styles.listContent}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#064E3B" />}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={STYLIST_GREEN} />
+                    }
                     ListEmptyComponent={<Text style={styles.emptyText}>لا توجد تقييمات حالياً</Text>}
                     renderItem={({ item }) => {
                         const imgSrc = entityToImageSource(item.user as any);
@@ -125,19 +126,7 @@ export default function StylistReviewsScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F8F9FA' },
-    header: {
-        paddingHorizontal: 20,
-        paddingTop: 14,
-        paddingBottom: 10,
-        backgroundColor: '#F8F9FA',
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontFamily: 'Cairo_700Bold',
-        color: '#000',
-        ...rtlText.alignStart,
-    },
+    container: { flex: 1, backgroundColor: '#F3F4F6' },
     loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     listContent: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 10, gap: 12 },
     emptyText: {
