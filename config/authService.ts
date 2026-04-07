@@ -1,6 +1,57 @@
 import type { AxiosRequestConfig } from "axios";
 import api from "./axios";
 import { setAccessToken } from "./authToken";
+import Constants from "expo-constants";
+import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
+import { Platform } from "react-native";
+
+type PushContext = {
+    expo_push_token?: string;
+    device_id?: string;
+    platform?: string;
+};
+
+async function getOptionalPushContext(): Promise<PushContext> {
+    if (Platform.OS === "web") return {};
+
+    try {
+        const { status: existing } = await Notifications.getPermissionsAsync();
+        let finalStatus = existing;
+        if (existing !== "granted") {
+            const { status } = await Notifications.requestPermissionsAsync();
+            finalStatus = status;
+        }
+        if (finalStatus !== "granted") {
+            return {};
+        }
+
+        const projectId =
+            Constants.expoConfig?.extra?.eas?.projectId ??
+            Constants.easConfig?.projectId;
+
+        const tokenResponse = await Notifications.getExpoPushTokenAsync(
+            projectId ? { projectId } : undefined
+        );
+        const expo_push_token = tokenResponse.data;
+
+        const parts = [
+            Device.osBuildId,
+            Device.osInternalBuildId,
+            Device.modelId,
+            Device.modelName,
+        ].filter((p) => p != null && String(p) !== "");
+        const device_id = parts.length ? parts.map(String).join(":") : undefined;
+
+        return {
+            expo_push_token,
+            device_id,
+            platform: Platform.OS,
+        };
+    } catch {
+        return {};
+    }
+}
 
 export interface LoginData {
     login: string;
@@ -61,12 +112,15 @@ export interface UpdateProfileData {
 
 export const authService = {
     register: async (data: RegisterData) => {
-        const response = await api.post("/user/register", data);
+        const push = await getOptionalPushContext();
+        const payload = { ...data, ...push };
+        const response = await api.post("/user/register", payload);
         return response.data;
     },
 
     login: async (data: LoginData) => {
-        const payload = { device_name: 'venus-app', ...data };
+        const push = await getOptionalPushContext();
+        const payload = { device_name: 'venus-app', ...data, ...push };
         const response = await api.post("/user/login", payload);
         const token: string | undefined =
             response.data?.data?.token ??
@@ -86,7 +140,8 @@ export const authService = {
     },
 
     verifyOtp: async (data: OtpVerifyData, axiosConfig?: AxiosRequestConfig) => {
-        const payload = { device_name: 'venus-app', ...data };
+        const push = await getOptionalPushContext();
+        const payload = { device_name: 'venus-app', ...data, ...push };
         const response = await api.post("/user/verify-otp", payload, axiosConfig);
         const token: string | undefined =
             response.data?.data?.token ??
@@ -209,7 +264,8 @@ export const authService = {
     },
 
     googleLogin: async (data: GoogleLoginData) => {
-        const payload = { device_name: 'venus-app-google', ...data };
+        const push = await getOptionalPushContext();
+        const payload = { device_name: 'venus-app-google', ...data, ...push };
         const response = await api.post("/user/google-login", payload);
         const token: string | undefined =
             response.data?.data?.token ??
