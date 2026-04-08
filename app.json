@@ -5,7 +5,7 @@
     "slug": "nasaq",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/venus-logo.png",
+    "icon": "./assets/app_logo.png",
     "scheme": "venus",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -20,9 +20,9 @@
       "package": "com.venusstyle.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/venus-logo.png",
-        "backgroundImage": "./assets/venus-logo.png",
-        "monochromeImage": "./assets/venus-logo.png"
+        "foregroundImage": "./assets/app_logo.png",
+        "backgroundImage": "./assets/app_logo.png",
+        "monochromeImage": "./assets/app_logo.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -33,14 +33,14 @@
     },
     "web": {
       "output": "single",
-      "favicon": "./assets/venus-logo.png"
+      "favicon": "./assets/app_logo.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/venus-logo.png",
+          "image": "./assets/app_logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -52,7 +52,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/venus-logo.png",
+          "icon": "./assets/app_logo.png",
           "color": "#064E3B",
           "enableBackgroundRemoteNotifications": true
         }
