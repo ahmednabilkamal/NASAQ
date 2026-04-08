@@ -1,8 +1,8 @@
 import { useAuth } from '@/config/authContext';
 import { getInitialRoute } from '@/config/navigationFlow';
 import { href } from '@/constants/routes';
-import { useRouter } from 'expo-router';
 import { colors } from '@/theme/colors';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import { Dimensions, Image, StyleSheet, View } from 'react-native';
 import Animated, {
@@ -53,7 +53,7 @@ export default function Home() {
     <View style={styles.container}>
       <Animated.View style={[styles.imageContainer, imageStyle]}>
         <Image
-          source={require('@/assets/venus-logo.png')}
+          source={require('@/assets/nasaq_logo.jpg')}
           style={styles.image}
         />
       </Animated.View>
