@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+    Animated,
     View,
     Text,
     StyleSheet,
@@ -20,6 +21,55 @@ import apiService, { Stylist } from '@/config/apiService';
 import { getBackChevron } from '@/config/directionalIcons';
 import { pickResolvedEntityImageUrl, toResolvedImageSource } from '@/utils/resolveMediaUrl';
 
+const AnimatedView = Animated.createAnimatedComponent(View);
+
+function AnimatedFavoriteCard({
+    index,
+    children,
+}: {
+    index: number;
+    children: React.ReactNode;
+}) {
+    const anim = React.useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        anim.setValue(0);
+        Animated.timing(anim, {
+            toValue: 1,
+            duration: 260,
+            delay: Math.min(index, 9) * 55,
+            useNativeDriver: true,
+        }).start();
+    }, [anim, index]);
+
+    return (
+        <AnimatedView
+            style={[
+                styles.cardWrapper,
+                {
+                    opacity: anim,
+                    transform: [
+                        {
+                            translateY: anim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [14, 0],
+                            }),
+                        },
+                        {
+                            scale: anim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0.96, 1],
+                            }),
+                        },
+                    ],
+                },
+            ]}
+        >
+            {children}
+        </AnimatedView>
+    );
+}
+
 export default function FavoritesScreen() {
     const { user, isAuthenticated, loading: authLoading } = useAuth();
     const router = useRouter();
@@ -35,6 +85,7 @@ export default function FavoritesScreen() {
     }, [isAuthenticated, authLoading, user]);
     const [favorites, setFavorites] = useState<Stylist[]>([]);
     const [loading, setLoading] = useState(true);
+    const sectionAnims = React.useRef([new Animated.Value(0), new Animated.Value(0)]).current;
 
     const fetchFavorites = async () => {
         setLoading(true);
@@ -52,6 +103,21 @@ export default function FavoritesScreen() {
         fetchFavorites();
     }, []);
 
+    useEffect(() => {
+        if (loading) return;
+        sectionAnims.forEach((anim) => anim.setValue(0));
+        Animated.stagger(
+            100,
+            sectionAnims.map((anim) =>
+                Animated.timing(anim, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: true,
+                })
+            )
+        ).start();
+    }, [loading, sectionAnims]);
+
     const handleStylistPress = (stylistId: number | string) => {
         router.push(`/pages/stylist_detail?id=${stylistId}` as any);
     };
@@ -65,12 +131,12 @@ export default function FavoritesScreen() {
         }
     };
 
-    const renderStylist = ({ item }: { item: Stylist }) => {
+    const renderStylist = ({ item, index }: { item: Stylist; index: number }) => {
         const id = String(item.id);
         const tags = item.fashion_styles?.map((s: any) => s.name) ?? [];
 
         return (
-            <View style={styles.cardWrapper}>
+            <AnimatedFavoriteCard index={index}>
                 <StylistCard
                     name={item.name}
                     subtitle={item.bio}
@@ -82,14 +148,29 @@ export default function FavoritesScreen() {
                     isFavorite={true}
                     onFavoriteToggle={() => handleRemoveFavorite(item.id)}
                 />
-            </View>
+            </AnimatedFavoriteCard>
         );
     };
 
     return (
         <SafeAreaView style={[styles.container, userScreenDirection]} edges={['top']}>
             {/* Header */}
-            <View style={styles.header}>
+            <AnimatedView
+                style={[
+                    styles.header,
+                    {
+                        opacity: sectionAnims[0],
+                        transform: [
+                            {
+                                translateY: sectionAnims[0].interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [12, 0],
+                                }),
+                            },
+                        ],
+                    },
+                ]}
+            >
                 <TouchableOpacity
                     style={styles.backButton}
                     onPress={() => router.back()}
@@ -98,7 +179,7 @@ export default function FavoritesScreen() {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>المفضلة</Text>
                 <View style={styles.placeholder} />
-            </View>
+            </AnimatedView>
 
             {/* Favorites Grid */}
             {loading ? (
@@ -106,15 +187,30 @@ export default function FavoritesScreen() {
                     <ActivityIndicator size="large" color="#064E3B" />
                 </View>
             ) : favorites.length > 0 ? (
-                <FlatList
-                    data={favorites}
-                    keyExtractor={(item) => String(item.id)}
-                    renderItem={renderStylist}
-                    numColumns={2}
-                    contentContainerStyle={styles.listContent}
-                    columnWrapperStyle={styles.columnWrapper}
-                    showsVerticalScrollIndicator={false}
-                />
+                <AnimatedView
+                    style={{
+                        flex: 1,
+                        opacity: sectionAnims[1],
+                        transform: [
+                            {
+                                translateY: sectionAnims[1].interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [16, 0],
+                                }),
+                            },
+                        ],
+                    }}
+                >
+                    <FlatList
+                        data={favorites}
+                        keyExtractor={(item) => String(item.id)}
+                        renderItem={renderStylist}
+                        numColumns={2}
+                        contentContainerStyle={styles.listContent}
+                        columnWrapperStyle={styles.columnWrapper}
+                        showsVerticalScrollIndicator={false}
+                    />
+                </AnimatedView>
             ) : (
                 <View style={styles.emptyContainer}>
                     <Ionicons name="heart-outline" size={80} color="#DDD" />

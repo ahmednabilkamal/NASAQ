@@ -48,6 +48,17 @@ export interface Stylist {
     [key: string]: any;
 }
 
+/** Latest reviews on the home feed (`/stylists/recent-reviews`). */
+export interface HomeFeedReview {
+    id: number | string;
+    rating: number;
+    review?: string;
+    comment?: string;
+    created_at?: string;
+    user?: { id?: number; name?: string; image?: string };
+    stylist?: { id?: number; name?: string };
+}
+
 export interface StylistReview {
     id: number | string;
     rating: number;
@@ -260,6 +271,8 @@ function buildStylistEarningsFallback(
 export interface CreateOrderData {
     stylist_service_id: number;
     notes?: string;
+    /** Stable key per checkout attempt to prevent duplicate order creation. */
+    idempotency_key?: string;
 }
 
 export interface CreateReviewData {
@@ -410,6 +423,22 @@ export const apiService = {
         return response.data;
     },
 
+    getPopularStylists: async (params?: { limit?: number }): Promise<ApiResponse<Stylist[]>> => {
+        const response = await api.get('/stylists/popular', {
+            params: { limit: params?.limit ?? 10 },
+            skipErrorToast: true,
+        });
+        return response.data;
+    },
+
+    getRecentStylistReviews: async (params?: { limit?: number }): Promise<ApiResponse<HomeFeedReview[]>> => {
+        const response = await api.get('/stylists/recent-reviews', {
+            params: { limit: params?.limit ?? 12 },
+            skipErrorToast: true,
+        });
+        return response.data;
+    },
+
     getRecommendedServices: async (params?: PaginationParams): Promise<ApiResponse<RecommendedService[]>> => {
         const response = await api.get('/stylists/recommended-services', { params });
         return response.data;
@@ -456,7 +485,16 @@ export const apiService = {
     },
 
     createOrder: async (data: CreateOrderData): Promise<ApiResponse<Order>> => {
-        const response = await api.post('/user/orders', data);
+        const idempotencyKey = data.idempotency_key?.trim();
+        const response = await api.post('/user/orders', data, {
+            ...(idempotencyKey
+                ? {
+                      headers: {
+                          'Idempotency-Key': idempotencyKey,
+                      },
+                  }
+                : {}),
+        });
         return response.data;
     },
 

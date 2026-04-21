@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
+    Animated,
     View,
     Text,
     TouchableOpacity,
@@ -41,6 +42,47 @@ import {
     paymentStatusLabelAr,
     stylistOrderServiceTitle,
 } from '@/utils/orderDisplay';
+
+const AnimatedView = Animated.createAnimatedComponent(View);
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+
+function AnimatedOrderCard({
+    index,
+    children,
+}: {
+    index: number;
+    children: React.ReactNode;
+}) {
+    const anim = React.useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        anim.setValue(0);
+        Animated.timing(anim, {
+            toValue: 1,
+            duration: 280,
+            delay: Math.min(index, 10) * 45,
+            useNativeDriver: true,
+        }).start();
+    }, [anim, index]);
+
+    return (
+        <AnimatedView
+            style={{
+                opacity: anim,
+                transform: [
+                    {
+                        translateY: anim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [14, 0],
+                        }),
+                    },
+                ],
+            }}
+        >
+            {children}
+        </AnimatedView>
+    );
+}
 
 /** Match stylist orders list pill colors */
 const STATUS_COLORS: Record<string, string> = {
@@ -86,6 +128,7 @@ export default function OrdersScreen() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const sectionAnims = React.useRef([new Animated.Value(0), new Animated.Value(0)]).current;
 
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
@@ -112,6 +155,21 @@ export default function OrdersScreen() {
     useEffect(() => {
         if (isAuthenticated) fetchOrders();
     }, [isAuthenticated, fetchOrders]);
+
+    useEffect(() => {
+        if (loading) return;
+        sectionAnims.forEach((anim) => anim.setValue(0));
+        Animated.stagger(
+            100,
+            sectionAnims.map((anim) =>
+                Animated.timing(anim, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: true,
+                })
+            )
+        ).start();
+    }, [loading, sectionAnims]);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
@@ -153,7 +211,7 @@ export default function OrdersScreen() {
     );
 
     const renderOrderItem = useCallback(
-        ({ item }: { item: Order }) => {
+        ({ item, index }: { item: Order; index: number }) => {
             const rec = item as Record<string, unknown>;
             const rawStatus = String(item.status ?? '').toLowerCase();
             const statusKey = rawStatus as keyof typeof content.orders.status;
@@ -193,75 +251,77 @@ export default function OrdersScreen() {
                 (languageCode === 'ar' ? 'المنسّق' : 'Stylist');
 
             return (
-                <TouchableOpacity
-                    style={styles.orderCard}
-                    activeOpacity={0.85}
-                    onPress={() => router.push(`/pages/order_details?id=${item.id}` as any)}
-                >
-                    {avatarUri ? (
-                        <Image source={{ uri: avatarUri }} style={styles.avatar} />
-                    ) : (
-                        <LinearGradient colors={['#F0FDF4', '#ECFDF5']} style={styles.avatarPlaceholder}>
-                            <Ionicons name="bag-handle-outline" size={scale(22)} color={STYLIST_GREEN} />
-                        </LinearGradient>
-                    )}
+                <AnimatedOrderCard index={index}>
+                    <AnimatedTouchableOpacity
+                        style={styles.orderCard}
+                        activeOpacity={0.85}
+                        onPress={() => router.push(`/pages/order_details?id=${item.id}` as any)}
+                    >
+                        {avatarUri ? (
+                            <Image source={{ uri: avatarUri }} style={styles.avatar} />
+                        ) : (
+                            <LinearGradient colors={['#F0FDF4', '#ECFDF5']} style={styles.avatarPlaceholder}>
+                                <Ionicons name="bag-handle-outline" size={scale(22)} color={STYLIST_GREEN} />
+                            </LinearGradient>
+                        )}
 
-                    <View style={styles.orderBody}>
-                        <View style={styles.orderTopRow}>
-                            <Text style={styles.orderTitle} numberOfLines={2}>
-                                {stylistOrderServiceTitle(item)}
-                            </Text>
-                            <View
-                                style={[
-                                    styles.statusPill,
-                                    { backgroundColor: `${statusColor}22` },
-                                ]}
-                            >
-                                <Text
-                                    style={[styles.statusText, { color: statusColor }]}
-                                    numberOfLines={1}
+                        <View style={styles.orderBody}>
+                            <View style={styles.orderTopRow}>
+                                <Text style={styles.orderTitle} numberOfLines={2}>
+                                    {stylistOrderServiceTitle(item)}
+                                </Text>
+                                <View
+                                    style={[
+                                        styles.statusPill,
+                                        { backgroundColor: `${statusColor}22` },
+                                    ]}
                                 >
-                                    {statusLabel}
-                                </Text>
+                                    <Text
+                                        style={[styles.statusText, { color: statusColor }]}
+                                        numberOfLines={1}
+                                    >
+                                        {statusLabel}
+                                    </Text>
+                                </View>
                             </View>
-                        </View>
 
-                        <Text style={[styles.orderMeta, rtlText.alignStart]} numberOfLines={1}>
-                            {content.orders?.orderNumber ?? '#'}
-                            {item.id}
-                            {dateLine ? ` · ${dateLine}` : ''}
-                        </Text>
-
-                        <View style={styles.stylistRow}>
-                            <Ionicons name="person-circle-outline" size={16} color="#94A3B8" />
-                            <Text style={[styles.stylistName, rtlText.alignStart]} numberOfLines={1}>
-                                {stylistName}
+                            <Text style={[styles.orderMeta, rtlText.alignStart]} numberOfLines={1}>
+                                {content.orders?.orderNumber ?? '#'}
+                                {item.id}
+                                {dateLine ? ` · ${dateLine}` : ''}
                             </Text>
+
+                            <View style={styles.stylistRow}>
+                                <Ionicons name="person-circle-outline" size={16} color="#94A3B8" />
+                                <Text style={[styles.stylistName, rtlText.alignStart]} numberOfLines={1}>
+                                    {stylistName}
+                                </Text>
+                            </View>
+
+                            {pay === 'pending' ? (
+                                <Text style={[styles.paymentHint, rtlText.alignStart]}>{payLabel}</Text>
+                            ) : pay ? (
+                                <Text style={[styles.paymentOk, rtlText.alignStart]}>{payLabel}</Text>
+                            ) : null}
+
+                            {showMoney ? (
+                                <View style={styles.footerRow}>
+                                    <Text style={[styles.totalLabel, rtlText.alignStart]}>
+                                        {languageCode === 'ar' ? 'المبلغ' : 'Amount'}
+                                    </Text>
+                                    <SarPriceText value={moneyNum} textStyle={styles.totalValue} />
+                                </View>
+                            ) : null}
                         </View>
 
-                        {pay === 'pending' ? (
-                            <Text style={[styles.paymentHint, rtlText.alignStart]}>{payLabel}</Text>
-                        ) : pay ? (
-                            <Text style={[styles.paymentOk, rtlText.alignStart]}>{payLabel}</Text>
-                        ) : null}
-
-                        {showMoney ? (
-                            <View style={styles.footerRow}>
-                                <Text style={[styles.totalLabel, rtlText.alignStart]}>
-                                    {languageCode === 'ar' ? 'المبلغ' : 'Amount'}
-                                </Text>
-                                <SarPriceText value={moneyNum} textStyle={styles.totalValue} />
-                            </View>
-                        ) : null}
-                    </View>
-
-                    <Ionicons
-                        name={getForwardChevron()}
-                        size={20}
-                        color="#9CA3AF"
-                        style={styles.chevron}
-                    />
-                </TouchableOpacity>
+                        <Ionicons
+                            name={getForwardChevron()}
+                            size={20}
+                            color="#9CA3AF"
+                            style={styles.chevron}
+                        />
+                    </AnimatedTouchableOpacity>
+                </AnimatedOrderCard>
             );
         },
         [content, languageCode, router, getStatusColor]
@@ -291,44 +351,58 @@ export default function OrdersScreen() {
                     </TouchableOpacity>
                 }
             >
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.tabsScroll}
+                <AnimatedView
+                    style={{
+                        opacity: sectionAnims[0],
+                        transform: [
+                            {
+                                translateY: sectionAnims[0].interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [12, 0],
+                                }),
+                            },
+                        ],
+                    }}
                 >
-                    {tabs.map((tab) => {
-                        const active = activeTab === tab.id;
-                        const count = tabCounts[tab.id as keyof typeof tabCounts];
-                        return (
-                            <TouchableOpacity
-                                key={tab.id}
-                                style={[styles.tabChip, active && styles.tabChipActive]}
-                                onPress={() => setActiveTab(tab.id)}
-                                activeOpacity={0.85}
-                            >
-                                <Text
-                                    style={[
-                                        styles.tabChipText,
-                                        active && styles.tabChipTextActive,
-                                        rtlWritingMode,
-                                    ]}
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.tabsScroll}
+                    >
+                        {tabs.map((tab) => {
+                            const active = activeTab === tab.id;
+                            const count = tabCounts[tab.id as keyof typeof tabCounts];
+                            return (
+                                <TouchableOpacity
+                                    key={tab.id}
+                                    style={[styles.tabChip, active && styles.tabChipActive]}
+                                    onPress={() => setActiveTab(tab.id)}
+                                    activeOpacity={0.85}
                                 >
-                                    {tab.label}
-                                </Text>
-                                <View style={[styles.tabCount, active && styles.tabCountActive]}>
                                     <Text
                                         style={[
-                                            styles.tabCountText,
-                                            active && styles.tabCountTextActive,
+                                            styles.tabChipText,
+                                            active && styles.tabChipTextActive,
+                                            rtlWritingMode,
                                         ]}
                                     >
-                                        {count}
+                                        {tab.label}
                                     </Text>
-                                </View>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </ScrollView>
+                                    <View style={[styles.tabCount, active && styles.tabCountActive]}>
+                                        <Text
+                                            style={[
+                                                styles.tabCountText,
+                                                active && styles.tabCountTextActive,
+                                            ]}
+                                        >
+                                            {count}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </AnimatedView>
             </StylistScreenHeader>
 
             {loading ? (
@@ -336,31 +410,46 @@ export default function OrdersScreen() {
                     <ActivityIndicator size="large" color={STYLIST_GREEN} />
                 </View>
             ) : (
-                <FlatList
-                    data={filteredOrders}
-                    renderItem={renderOrderItem}
-                    keyExtractor={(item) => String(item.id)}
-                    style={styles.list}
-                    contentContainerStyle={styles.listContent}
-                    showsVerticalScrollIndicator={false}
-                    ItemSeparatorComponent={() => <View style={styles.cardGap} />}
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={STYLIST_GREEN} />
-                    }
-                    ListEmptyComponent={
-                        <View style={styles.emptyWrap}>
-                            <View style={styles.emptyIconCircle}>
-                                <Ionicons name="receipt-outline" size={scale(44)} color={STYLIST_GREEN} />
+                <AnimatedView
+                    style={{
+                        flex: 1,
+                        opacity: sectionAnims[1],
+                        transform: [
+                            {
+                                translateY: sectionAnims[1].interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [16, 0],
+                                }),
+                            },
+                        ],
+                    }}
+                >
+                    <FlatList
+                        data={filteredOrders}
+                        renderItem={renderOrderItem}
+                        keyExtractor={(item) => String(item.id)}
+                        style={styles.list}
+                        contentContainerStyle={styles.listContent}
+                        showsVerticalScrollIndicator={false}
+                        ItemSeparatorComponent={() => <View style={styles.cardGap} />}
+                        refreshControl={
+                            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={STYLIST_GREEN} />
+                        }
+                        ListEmptyComponent={
+                            <View style={styles.emptyWrap}>
+                                <View style={styles.emptyIconCircle}>
+                                    <Ionicons name="receipt-outline" size={scale(44)} color={STYLIST_GREEN} />
+                                </View>
+                                <Text style={[styles.emptyTitle, rtlWritingMode]}>
+                                    {content.orders?.noOrders || content.common?.noResults}
+                                </Text>
+                                <Text style={[styles.emptySubtitle, rtlWritingMode]}>
+                                    {content.orders?.emptySubtitle}
+                                </Text>
                             </View>
-                            <Text style={[styles.emptyTitle, rtlWritingMode]}>
-                                {content.orders?.noOrders || content.common?.noResults}
-                            </Text>
-                            <Text style={[styles.emptySubtitle, rtlWritingMode]}>
-                                {content.orders?.emptySubtitle}
-                            </Text>
-                        </View>
-                    }
-                />
+                        }
+                    />
+                </AnimatedView>
             )}
 
             <BottomNav />

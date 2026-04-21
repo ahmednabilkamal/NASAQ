@@ -21,5 +21,6 @@ export function resolveUserProfileAvatarUrl(
 
     if (fromUser && !isGeneratedAvatar(fromUser)) return fromUser;
     if (fromStylist && !isGeneratedAvatar(fromStylist)) return fromStylist;
-    return fromUser ?? fromStylist;
+    // If we only have generated avatars (or none), let UI show local placeholder fallback.
+    return undefined;
 }

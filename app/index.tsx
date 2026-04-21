@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
+const SPLASH_MIN_DURATION_MS = 600;
 
 export default function Home() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function Home() {
 
     const timer = setTimeout(() => {
       navigateToNextScreen();
-    }, 2500); // Slightly longer to show the splash animation
+    }, SPLASH_MIN_DURATION_MS);
 
     return () => clearTimeout(timer);
   }, [loading, isAuthenticated, user]);

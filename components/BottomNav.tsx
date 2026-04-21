@@ -1,7 +1,7 @@
 import { useChatUnread } from '@/providers/ChatUnreadProvider';
 import { usePathname, useRouter } from 'expo-router';
 import React, { useCallback, useRef } from 'react';
-import { StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { Animated, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { userScreenDirection } from '@/config/rtlLayout';
@@ -16,6 +16,129 @@ const TAB_NAV_DEBOUNCE_MS = 450;
 function formatChatTabBadge(total: number): string | null {
     if (total <= 0) return null;
     return total > 99 ? '99+' : String(total);
+}
+
+function AnimatedTabItem({
+    tab,
+    isActive,
+    onPress,
+    chatBadge,
+}: {
+    tab: {
+        id: string;
+        icon: 'person-outline' | 'receipt-outline' | 'home' | 'heart-outline' | 'chatbubble-ellipses-outline';
+        label: string;
+        route: string;
+        isCenter?: boolean;
+    };
+    isActive: boolean;
+    onPress: () => void;
+    chatBadge: string | null;
+}) {
+    const scale = useRef(new Animated.Value(0.9)).current;
+    const iconRise = useRef(new Animated.Value(0)).current;
+
+    React.useEffect(() => {
+        Animated.parallel([
+            Animated.spring(scale, {
+                toValue: isActive ? 1 : 0.95,
+                useNativeDriver: true,
+                friction: 7,
+                tension: 120,
+            }),
+            Animated.timing(iconRise, {
+                toValue: isActive ? -2 : 0,
+                duration: 180,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, [iconRise, isActive, scale]);
+
+    const handlePressIn = () => {
+        Animated.spring(scale, {
+            toValue: 0.9,
+            useNativeDriver: true,
+            friction: 8,
+            tension: 160,
+        }).start();
+    };
+
+    const handleSelectAndNavigate = () => {
+        Animated.sequence([
+            Animated.spring(scale, {
+                toValue: 0.88,
+                useNativeDriver: true,
+                friction: 8,
+                tension: 170,
+            }),
+            Animated.spring(scale, {
+                toValue: 1,
+                useNativeDriver: true,
+                friction: 7,
+                tension: 120,
+            }),
+        ]).start();
+
+        onPress();
+    };
+
+    const handlePressOut = () => {
+        Animated.spring(scale, {
+            toValue: isActive ? 1 : 0.95,
+            useNativeDriver: true,
+            friction: 7,
+            tension: 120,
+        }).start();
+    };
+
+    if (tab.isCenter) {
+        return (
+            <TouchableOpacity
+                key={tab.id}
+                style={styles.centerButtonContainer}
+                activeOpacity={0.85}
+                onPress={handleSelectAndNavigate}
+                onPressIn={handlePressIn}
+                onPressOut={handlePressOut}
+            >
+                <Animated.View
+                    style={[
+                        styles.centerButton,
+                        isActive && styles.centerButtonActive,
+                        { transform: [{ scale }] },
+                    ]}
+                >
+                    <Ionicons name={tab.icon} size={26} color="#FFF" />
+                </Animated.View>
+                <Text style={[styles.tabLabel, styles.tabLabelActive]}>{tab.label}</Text>
+            </TouchableOpacity>
+        );
+    }
+
+    return (
+        <TouchableOpacity
+            key={tab.id}
+            style={styles.tabItem}
+            activeOpacity={0.8}
+            onPress={handleSelectAndNavigate}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+        >
+            <Animated.View style={[styles.tabIconWrap, { transform: [{ translateY: iconRise }, { scale }] }]}>
+                <Ionicons
+                    name={isActive ? (tab.icon.replace('-outline', '') as any) : tab.icon}
+                    size={22}
+                    color={isActive ? ACTIVE_COLOR : INACTIVE_COLOR}
+                />
+                {tab.id === 'chat' && chatBadge ? (
+                    <View style={styles.chatUnreadBadge}>
+                        <Text style={styles.chatUnreadBadgeText}>{chatBadge}</Text>
+                    </View>
+                ) : null}
+            </Animated.View>
+            <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{tab.label}</Text>
+        </TouchableOpacity>
+    );
 }
 
 export default function BottomNav() {
@@ -76,7 +199,7 @@ export default function BottomNav() {
             const now = Date.now();
             if (now - lastTabNavAt.current < TAB_NAV_DEBOUNCE_MS) return;
             lastTabNavAt.current = now;
-            router.push(tab.route as any);
+            router.replace(tab.route as any);
         },
         [pathname, router]
     );
@@ -91,44 +214,14 @@ export default function BottomNav() {
             >
                 {tabs.map((tab) => {
                     const isActive = tabIsActive(tab);
-
-                    if (tab.isCenter) {
-                        return (
-                            <TouchableOpacity
-                                key={tab.id}
-                                style={styles.centerButtonContainer}
-                                activeOpacity={0.8}
-                                onPress={() => navigateToTab(tab)}
-                            >
-                                <View style={[styles.centerButton, isActive && styles.centerButtonActive]}>
-                                    <Ionicons name={tab.icon} size={26} color="#FFF" />
-                                </View>
-                                <Text style={[styles.tabLabel, styles.tabLabelActive]}>{tab.label}</Text>
-                            </TouchableOpacity>
-                        );
-                    }
-
                     return (
-                        <TouchableOpacity
+                        <AnimatedTabItem
                             key={tab.id}
-                            style={styles.tabItem}
-                            activeOpacity={0.7}
+                            tab={tab}
+                            isActive={isActive}
                             onPress={() => navigateToTab(tab)}
-                        >
-                            <View style={styles.tabIconWrap}>
-                                <Ionicons
-                                    name={isActive ? (tab.icon.replace('-outline', '') as any) : tab.icon}
-                                    size={22}
-                                    color={isActive ? ACTIVE_COLOR : INACTIVE_COLOR}
-                                />
-                                {tab.id === 'chat' && chatBadge ? (
-                                    <View style={styles.chatUnreadBadge}>
-                                        <Text style={styles.chatUnreadBadgeText}>{chatBadge}</Text>
-                                    </View>
-                                ) : null}
-                            </View>
-                            <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{tab.label}</Text>
-                        </TouchableOpacity>
+                            chatBadge={chatBadge}
+                        />
                     );
                 })}
             </View>

@@ -217,13 +217,13 @@ export default function EditProfileScreen() {
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>البريد الإلكتروني</Text>
                             <TextInput
-                                style={[styles.input, rtlInput]}
+                                style={[styles.input, styles.inputDisabled, rtlInput]}
                                 value={email}
-                                onChangeText={setEmail}
                                 placeholder="أدخل بريدك الإلكتروني"
                                 placeholderTextColor="#999"
                                 keyboardType="email-address"
                                 autoCapitalize="none"
+                                editable={false}
                             />
                         </View>
 
@@ -359,6 +359,10 @@ const styles = StyleSheet.create({
         color: '#333',
         borderWidth: 1,
         borderColor: '#E5E5E5',
+    },
+    inputDisabled: {
+        color: '#6B7280',
+        backgroundColor: '#F3F4F6',
     },
     phoneInputContainer: {
         flexDirection: 'row',

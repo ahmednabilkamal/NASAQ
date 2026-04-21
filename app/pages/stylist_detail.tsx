@@ -29,6 +29,10 @@ import {
 import { ChatLegalConsentModal } from '@/components/chat/ChatLegalConsentModal';
 import { hasUserAcceptedChatLegal } from '@/utils/chatLegalConsent';
 
+function buildOrderIdempotencyKey(serviceId: number | string): string {
+    return `order:${String(serviceId)}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export default function StylistDetailScreen() {
     type TabKey = 'services' | 'bio' | 'portfolio' | 'reviews';
     const router = useRouter();
@@ -154,8 +158,9 @@ export default function StylistDetailScreen() {
         setShowServicePicker(false);
         setSelectedServiceForBooking(null);
         const total = selectedService?.price ?? 0;
+        const idempotencyKey = buildOrderIdempotencyKey(selectedService.id);
         router.push(
-            `/pages/checkout?service_id=${selectedService.id}&service_title=${encodeURIComponent(selectedService.title)}&price=${total}` as any
+            `/pages/checkout?service_id=${selectedService.id}&service_title=${encodeURIComponent(selectedService.title)}&price=${total}&idempotency_key=${encodeURIComponent(idempotencyKey)}` as any
         );
     };
 

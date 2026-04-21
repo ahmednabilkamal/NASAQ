@@ -53,6 +53,8 @@ export interface LoginData {
     login: string;
     password: string;
     device_name?: string;
+    /** When false, token is not saved for next app launch (session-only). Default true. */
+    remember_me?: boolean;
 }
 
 export interface RegisterData {
@@ -124,7 +126,8 @@ export const authService = {
             response.data?.access_token ??
             response.data?.accessToken;
         if (token) {
-            await setAccessToken(token);
+            const persist = data.remember_me !== false;
+            await setAccessToken(token, { persist });
             console.log('✅ Login successful, token stored');
         }
         return response.data;

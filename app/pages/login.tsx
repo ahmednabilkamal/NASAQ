@@ -55,6 +55,8 @@ export default function AuthScreen() {
         setConfirmPassword,
         loading,
         fieldErrors,
+        rememberMe,
+        toggleRememberMe,
     } = useAuthForm();
 
     const { isAuthenticated, loading: authLoading, getOnboardingStep, user } = useAuth();
@@ -218,8 +220,18 @@ export default function AuthScreen() {
 
                         {isLogin ? (
                             <View style={styles.optionsRow}>
-                                <TouchableOpacity style={styles.checkboxContainer}>
-                                    <View style={styles.checkbox} />
+                                <TouchableOpacity
+                                    style={styles.checkboxContainer}
+                                    onPress={toggleRememberMe}
+                                    activeOpacity={0.7}
+                                    accessibilityRole="checkbox"
+                                    accessibilityState={{ checked: rememberMe }}
+                                >
+                                    <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                                        {rememberMe ? (
+                                            <Ionicons name="checkmark" size={14} color="#FFF" />
+                                        ) : null}
+                                    </View>
                                     <Text style={styles.rememberMeText}>{loginContent.rememberMe}</Text>
                                 </TouchableOpacity>
                             </View>
@@ -406,6 +418,12 @@ const styles = StyleSheet.create({
         borderWidth: 1.5,
         borderColor: '#DDD',
         backgroundColor: '#FFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkboxChecked: {
+        backgroundColor: '#064E3B',
+        borderColor: '#064E3B',
     },
     rememberMeText: {
         fontSize: 14,

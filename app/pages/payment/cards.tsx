@@ -43,13 +43,18 @@ type UserCardRow = {
     paymob_ready?: boolean;
 };
 
+function buildOrderIdempotencyKey(serviceId: string | undefined): string {
+    return `order:${serviceId ?? 'unknown'}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export default function PaymentCardsScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { order_id, service_id, price } = useLocalSearchParams<{
+    const { order_id, service_id, price, idempotency_key } = useLocalSearchParams<{
         order_id?: string;
         service_id?: string;
         price?: string;
+        idempotency_key?: string;
     }>();
 
     const isCheckout = Boolean(order_id || service_id);
@@ -77,6 +82,8 @@ export default function PaymentCardsScreen() {
 
     /** Avoid double confirm; reset each new checkout session. */
     const paymobReturnLockRef = useRef(false);
+    /** Reused while user stays on this checkout screen to prevent duplicate orders on retries. */
+    const orderIdempotencyKeyRef = useRef<string | null>(null);
 
     const selectedCard = useMemo(
         () => cards.find((c) => c.id === selectedCardId) ?? null,
@@ -135,8 +142,14 @@ export default function PaymentCardsScreen() {
             try {
                 let oid = Number(order_id);
                 if (!oid && service_id) {
+                    if (!orderIdempotencyKeyRef.current) {
+                        orderIdempotencyKeyRef.current =
+                            (typeof idempotency_key === 'string' && idempotency_key.trim()) ||
+                            buildOrderIdempotencyKey(service_id);
+                    }
                     const orderRes = await apiService.createOrder({
                         stylist_service_id: Number(service_id),
+                        idempotency_key: orderIdempotencyKeyRef.current,
                     });
                     const order = (orderRes?.data as { id?: number }) ?? orderRes;
                     oid = Number(order?.id);
@@ -160,7 +173,7 @@ export default function PaymentCardsScreen() {
         return () => {
             cancelled = true;
         };
-    }, [isCheckout, order_id, service_id]);
+    }, [idempotency_key, isCheckout, order_id, service_id]);
 
     useEffect(() => {
         if (!isCheckout || !continuedToPaymob || selectedCheckoutMethod !== 'card') return;
@@ -342,8 +355,14 @@ export default function PaymentCardsScreen() {
             let payableOrderId = resolvedOrderId ?? Number(order_id);
 
             if (!payableOrderId && service_id) {
+                if (!orderIdempotencyKeyRef.current) {
+                    orderIdempotencyKeyRef.current =
+                        (typeof idempotency_key === 'string' && idempotency_key.trim()) ||
+                        buildOrderIdempotencyKey(service_id);
+                }
                 const orderRes = await apiService.createOrder({
                     stylist_service_id: Number(service_id),
+                    idempotency_key: orderIdempotencyKeyRef.current,
                 });
                 const order = (orderRes?.data as any) ?? orderRes;
                 payableOrderId = Number(order?.id);

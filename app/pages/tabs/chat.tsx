@@ -1,13 +1,13 @@
 import BottomNav from '@/components/BottomNav';
 import ChatListSkeleton from '@/components/chat/ChatListSkeleton';
 import StylistBottomNav from '@/components/StylistBottomNav';
-import apiService, { Conversation } from '@/config/apiService';
+import ApiServiceClient, { Conversation } from '@/config/apiService';
 import { useAuth } from '@/config/authContext';
 import { isStylistUser, isStylistVerified } from '@/config/navigationFlow';
 import { useChatUnread } from '@/providers/ChatUnreadProvider';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     FlatList,
     Image,
@@ -30,31 +30,40 @@ export default function ChatListScreen() {
         if (!authLoading && !isAuthenticated) {
             router.replace('/pages/login');
         }
-    }, [isAuthenticated, authLoading]);
+    }, [isAuthenticated, authLoading, router]);
     const [searchQuery, setSearchQuery] = useState('');
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [loading, setLoading] = useState(true);
+    const hasLoadedRef = useRef(false);
 
     const stylistChatActive = isStylistUser(user) && isStylistVerified(user);
     const { syncUnreadFromConversations } = useChatUnread();
 
     const loadConversations = useCallback(async () => {
         if (!isAuthenticated) return;
-        setLoading(true);
+        const showLoading = !hasLoadedRef.current;
+        if (showLoading) {
+            setLoading(true);
+        }
         try {
             const res = stylistChatActive
-                ? await apiService.listStylistConversations()
-                : await apiService.listConversations();
+                ? await ApiServiceClient.listStylistConversations()
+                : await ApiServiceClient.listConversations();
             const data = res?.data;
             const list = Array.isArray(data) ? data : [];
             setConversations(list);
             syncUnreadFromConversations(list);
+            hasLoadedRef.current = true;
         } catch (error) {
             console.error('Conversations fetch error:', error);
-            setConversations([]);
-            syncUnreadFromConversations([]);
+            if (!hasLoadedRef.current) {
+                setConversations([]);
+                syncUnreadFromConversations([]);
+            }
         } finally {
-            setLoading(false);
+            if (showLoading) {
+                setLoading(false);
+            }
         }
     }, [isAuthenticated, stylistChatActive, syncUnreadFromConversations]);
 
@@ -177,18 +186,20 @@ export default function ChatListScreen() {
             {loading ? (
                 <ChatListSkeleton />
             ) : (
-                <FlatList
-                    data={filteredConversations}
-                    keyExtractor={(item) => String(item.id)}
-                    renderItem={renderConversation}
-                    contentContainerStyle={styles.listContent}
-                    showsVerticalScrollIndicator={false}
-                    ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                            <Text style={styles.emptyText}>لا توجد محادثات</Text>
-                        </View>
-                    }
-                />
+                <View style={{ flex: 1 }}>
+                    <FlatList
+                        data={filteredConversations}
+                        keyExtractor={(item) => String(item.id)}
+                        renderItem={renderConversation}
+                        contentContainerStyle={styles.listContent}
+                        showsVerticalScrollIndicator={false}
+                        ListEmptyComponent={
+                            <View style={styles.emptyContainer}>
+                                <Text style={styles.emptyText}>لا توجد محادثات</Text>
+                            </View>
+                        }
+                    />
+                </View>
             )}
 
             {stylistChatActive ? <StylistBottomNav /> : <BottomNav />}

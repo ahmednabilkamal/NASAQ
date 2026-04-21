@@ -50,6 +50,7 @@ export default function StylistEditProfileScreen() {
     const [coverImage, setCoverImage] = useState<string | null>(null);
     const [pickingCover, setPickingCover] = useState(false);
     const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
     const [tagline, setTagline] = useState('');
     const [bio, setBio] = useState('');
     const [hourlyPrice, setHourlyPrice] = useState('');
@@ -93,6 +94,7 @@ export default function StylistEditProfileScreen() {
             if (profileRes.status === 'fulfilled') {
                 const p = profileRes.value?.data;
                 setName(user?.name || p?.name || '');
+                setEmail(user?.email || p?.email || '');
                 setTagline(p?.bio || '');
                 setBio(p?.about || '');
                 setCoverImage(p?.cover_url || p?.image_url || p?.cover || p?.image || null);
@@ -312,6 +314,20 @@ export default function StylistEditProfileScreen() {
                             placeholderTextColor="#B0B0B0"
                             value={name}
                             onChangeText={setName}
+                        />
+                    </View>
+
+                    {/* Email (read-only) */}
+                    <Text style={styles.fieldLabel}>البريد الإلكتروني</Text>
+                    <View style={[styles.inputContainer, styles.disabledInputContainer]}>
+                        <TextInput
+                            style={[styles.input, styles.disabledInput]}
+                            placeholder="البريد الإلكتروني"
+                            placeholderTextColor="#B0B0B0"
+                            value={email}
+                            editable={false}
+                            autoCapitalize="none"
+                            keyboardType="email-address"
                         />
                     </View>
 
@@ -621,6 +637,9 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#F0F0F0',
     },
+    disabledInputContainer: {
+        backgroundColor: '#F7F7F7',
+    },
     textAreaContainer: {
         height: 110,
         paddingVertical: 14,
@@ -631,6 +650,9 @@ const styles = StyleSheet.create({
         fontFamily: 'Cairo_400Regular',
         color: '#000',
         ...rtlInput,
+    },
+    disabledInput: {
+        color: '#6B7280',
     },
     textArea: {
         flex: 1,

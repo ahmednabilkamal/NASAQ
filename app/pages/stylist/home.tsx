@@ -3,6 +3,7 @@ import {
     View,
     Text,
     StyleSheet,
+    Animated,
     ScrollView,
     TouchableOpacity,
     Image,
@@ -34,6 +35,8 @@ interface DashboardStats {
     averageRating: number;
 }
 
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+
 export default function StylistHomeScreen() {
     const router = useRouter();
     const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -48,6 +51,43 @@ export default function StylistHomeScreen() {
     const [refreshing, setRefreshing] = useState(false);
     /** Dedupes overlapping dashboard loads (Strict Mode double-mount, rapid re-renders). */
     const dashboardFetchRef = useRef<Promise<void> | null>(null);
+    const sectionAnims = useRef([new Animated.Value(0), new Animated.Value(0), new Animated.Value(0)]).current;
+    const statCardAnims = useRef([
+        new Animated.Value(0),
+        new Animated.Value(0),
+        new Animated.Value(0),
+        new Animated.Value(0),
+    ]).current;
+
+    const sectionAnimatedStyle = (anim: Animated.Value) => ({
+        opacity: anim,
+        transform: [
+            {
+                translateY: anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [20, 0],
+                }),
+            },
+        ],
+    });
+
+    const cardAnimatedStyle = (anim: Animated.Value) => ({
+        opacity: anim,
+        transform: [
+            {
+                translateY: anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [14, 0],
+                }),
+            },
+            {
+                scale: anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.96, 1],
+                }),
+            },
+        ],
+    });
 
     useEffect(() => {
         if (!authLoading && !isAuthenticated) {
@@ -145,6 +185,36 @@ export default function StylistHomeScreen() {
         if (isAuthenticated && isStylistUser(user)) fetchDashboardData();
     }, [isAuthenticated, user, fetchDashboardData]);
 
+    useEffect(() => {
+        if (loading || !isAuthenticated || !isStylistUser(user)) return;
+
+        sectionAnims.forEach((anim) => anim.setValue(0));
+        statCardAnims.forEach((anim) => anim.setValue(0));
+
+        Animated.parallel([
+            Animated.stagger(
+                100,
+                sectionAnims.map((anim) =>
+                    Animated.timing(anim, {
+                        toValue: 1,
+                        duration: 340,
+                        useNativeDriver: true,
+                    })
+                )
+            ),
+            Animated.stagger(
+                70,
+                statCardAnims.map((anim) =>
+                    Animated.timing(anim, {
+                        toValue: 1,
+                        duration: 280,
+                        useNativeDriver: true,
+                    })
+                )
+            ),
+        ]).start();
+    }, [isAuthenticated, loading, sectionAnims, statCardAnims, user]);
+
     const onRefresh = () => {
         setRefreshing(true);
         fetchDashboardData();
@@ -232,11 +302,12 @@ export default function StylistHomeScreen() {
                     }
                 >
                     {/* Overview Section */}
+                    <Animated.View style={sectionAnimatedStyle(sectionAnims[0])}>
                     <Text style={styles.sectionTitle}>نظرة عامة</Text>
 
                     <View style={styles.statsGrid}>
                         {/* New Orders */}
-                        <View style={styles.statCard}>
+                        <Animated.View style={[styles.statCard, cardAnimatedStyle(statCardAnims[0])]}>
                             <View style={styles.statHeader}>
                                 <View style={styles.statIconContainer}>
                                     <Ionicons name="clipboard-outline" size={16} color="#064E3B" />
@@ -247,10 +318,10 @@ export default function StylistHomeScreen() {
                             </View>
                             <Text style={styles.statValue}>{stats.newOrders}</Text>
                             <Text style={styles.statLabel}>طلبات جديدة اليوم</Text>
-                        </View>
+                        </Animated.View>
 
                         {/* Completed Orders */}
-                        <View style={styles.statCard}>
+                        <Animated.View style={[styles.statCard, cardAnimatedStyle(statCardAnims[1])]}>
                             <View style={styles.statHeader}>
                                 <View style={styles.statIconContainer}>
                                     <Ionicons name="clipboard-outline" size={16} color="#064E3B" />
@@ -261,11 +332,11 @@ export default function StylistHomeScreen() {
                             </View>
                             <Text style={styles.statValue}>{stats.completedOrders}</Text>
                             <Text style={styles.statLabel}>طلبات مكتملة</Text>
-                        </View>
+                        </Animated.View>
 
                         {/* Earnings */}
-                        <TouchableOpacity
-                            style={styles.statCard}
+                        <AnimatedTouchableOpacity
+                            style={[styles.statCard, cardAnimatedStyle(statCardAnims[2])]}
                             activeOpacity={0.7}
                             onPress={() => router.push('/pages/stylist/earnings' as any)}
                         >
@@ -282,10 +353,10 @@ export default function StylistHomeScreen() {
                                 <Ionicons name="trending-up-outline" size={14} color="#10B981" />
                                 <Text style={styles.statLabel}>هذا الشهر</Text>
                             </View>
-                        </TouchableOpacity>
+                        </AnimatedTouchableOpacity>
 
                         {/* Average Rating */}
-                        <View style={styles.statCard}>
+                        <Animated.View style={[styles.statCard, cardAnimatedStyle(statCardAnims[3])]}>
                             <View style={styles.statHeader}>
                                 <Ionicons name="star" size={16} color="#F59E0B" />
                                 <View style={[styles.statBadge, styles.statBadgeYellow]}>
@@ -294,73 +365,78 @@ export default function StylistHomeScreen() {
                             </View>
                             <Text style={styles.statValue}>{stats.averageRating.toFixed(1)}</Text>
                             <Text style={styles.statLabel}>متوسط التقييم</Text>
-                        </View>
+                        </Animated.View>
                     </View>
+                    </Animated.View>
 
                     {/* Quick Actions */}
-                    <Text style={styles.sectionTitle}>إجراءات سريعة</Text>
+                    <Animated.View style={sectionAnimatedStyle(sectionAnims[1])}>
+                        <Text style={styles.sectionTitle}>إجراءات سريعة</Text>
 
-                    <TouchableOpacity
-                        style={styles.quickActionPrimary}
-                        activeOpacity={0.8}
-                        onPress={() => router.push('/pages/stylist/services' as any)}
-                    >
-                        <View style={styles.quickActionPrimaryIcon}>
-                            <Ionicons name="add-circle" size={26} color="#FFF" />
-                        </View>
-                        <Text style={styles.quickActionPrimaryText}>اضافة خدمة جديدة</Text>
-                        <Ionicons name={getForwardChevron()} size={20} color="#FFF" />
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.quickActionPrimary}
+                            activeOpacity={0.8}
+                            onPress={() => router.push('/pages/stylist/services' as any)}
+                        >
+                            <View style={styles.quickActionPrimaryIcon}>
+                                <Ionicons name="add-circle" size={26} color="#FFF" />
+                            </View>
+                            <Text style={styles.quickActionPrimaryText}>اضافة خدمة جديدة</Text>
+                            <Ionicons name={getForwardChevron()} size={20} color="#FFF" />
+                        </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={styles.quickActionSecondary}
-                        activeOpacity={0.7}
-                        onPress={() => router.push('/pages/stylist/orders' as any)}
-                    >
-                        <View style={styles.quickActionSecondaryIcon}>
-                            <Ionicons name="clipboard-outline" size={18} color="#064E3B" />
-                        </View>
-                        <Text style={styles.quickActionSecondaryText}>الطلبات الجديدة</Text>
-                        <Ionicons name={getForwardChevron()} size={18} color="#666" />
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.quickActionSecondary}
+                            activeOpacity={0.7}
+                            onPress={() => router.push('/pages/stylist/orders' as any)}
+                        >
+                            <View style={styles.quickActionSecondaryIcon}>
+                                <Ionicons name="clipboard-outline" size={18} color="#064E3B" />
+                            </View>
+                            <Text style={styles.quickActionSecondaryText}>الطلبات الجديدة</Text>
+                            <Ionicons name={getForwardChevron()} size={18} color="#666" />
+                        </TouchableOpacity>
+                    </Animated.View>
 
                     {/* Today's Orders */}
-                    <Text style={styles.sectionTitle}>طلبات اليوم</Text>
+                    <Animated.View style={sectionAnimatedStyle(sectionAnims[2])}>
+                        <Text style={styles.sectionTitle}>طلبات اليوم</Text>
 
-                    {todayOrders.length === 0 ? (
-                        <View style={styles.emptyOrders}>
-                            <Ionicons name="calendar-outline" size={36} color="#CCC" />
-                            <Text style={styles.emptyOrdersText}>لا توجد طلبات اليوم</Text>
-                        </View>
-                    ) : (
-                        todayOrders.map((order) => (
-                            <TouchableOpacity
-                                key={String(order.id)}
-                                style={styles.orderCard}
-                                activeOpacity={0.7}
-                                onPress={() =>
-                                    router.push(`/pages/order_details?id=${order.id}` as any)
-                                }
-                            >
-                                <View style={styles.orderDateBadge}>
-                                    <Text style={styles.orderDateText}>
-                                        {formatOrderDate(order)}
-                                    </Text>
-                                </View>
+                        {todayOrders.length === 0 ? (
+                            <View style={styles.emptyOrders}>
+                                <Ionicons name="calendar-outline" size={36} color="#CCC" />
+                                <Text style={styles.emptyOrdersText}>لا توجد طلبات اليوم</Text>
+                            </View>
+                        ) : (
+                            todayOrders.map((order) => (
+                                <TouchableOpacity
+                                    key={String(order.id)}
+                                    style={styles.orderCard}
+                                    activeOpacity={0.7}
+                                    onPress={() =>
+                                        router.push(`/pages/order_details?id=${order.id}` as any)
+                                    }
+                                >
+                                    <View style={styles.orderDateBadge}>
+                                        <Text style={styles.orderDateText}>
+                                            {formatOrderDate(order)}
+                                        </Text>
+                                    </View>
 
-                                <View style={styles.orderInfo}>
-                                    <Text style={styles.orderTitle}>
-                                        {order.service_name || order.title || 'طقم كامل'}
-                                    </Text>
-                                    <Text style={styles.orderSub}>
-                                        {order.client_name || order.user?.name || 'عميل'} - {formatOrderTime(order)}
-                                    </Text>
-                                </View>
+                                    <View style={styles.orderInfo}>
+                                        <Text style={styles.orderTitle}>
+                                            {order.service_name || order.title || 'طقم كامل'}
+                                        </Text>
+                                        <Text style={styles.orderSub}>
+                                            {order.client_name || order.user?.name || 'عميل'} - {formatOrderTime(order)}
+                                        </Text>
+                                    </View>
 
-                                <Ionicons name={getForwardChevron()} size={18} color="#999" />
-                            </TouchableOpacity>
-                        ))
-                    )}
+                                    <Ionicons name={getForwardChevron()} size={18} color="#999" />
+                                </TouchableOpacity>
+                            ))
+                        )}
+                    </Animated.View>
 
                     {/* Bottom spacer for nav */}
                     <View style={{ height: 100 }} />

@@ -1,8 +1,11 @@
 import { useAuth } from '@/config/authContext';
 import authService from '@/config/authService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Toast from 'react-native-toast-message';
+
+const REMEMBER_LOGIN_IDENTIFIER_KEY = '@venus/login_identifier';
 
 export interface FieldErrors {
     name?: string;
@@ -23,6 +26,7 @@ export const useAuthForm = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+    const [rememberMe, setRememberMe] = useState(true);
 
     const convertArabicToWesternNumerals = (text: string): string => {
         const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
@@ -77,6 +81,23 @@ export const useAuthForm = () => {
     const router = useRouter();
     const { login, getOnboardingStep } = useAuth();
 
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            try {
+                const saved = await AsyncStorage.getItem(REMEMBER_LOGIN_IDENTIFIER_KEY);
+                if (!cancelled && saved?.trim()) {
+                    setIdentifierWithConversion(saved.trim());
+                }
+            } catch {
+                /* ignore */
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
     const toggleAuthMode = () => {
         setIsLogin(prev => !prev);
         setFieldErrors({});
@@ -102,7 +123,20 @@ export const useAuthForm = () => {
                     return;
                 }
 
-                const profile = await login({ login: identifier.trim(), password });
+                const profile = await login({
+                    login: identifier.trim(),
+                    password,
+                    remember_me: rememberMe,
+                });
+                try {
+                    if (rememberMe) {
+                        await AsyncStorage.setItem(REMEMBER_LOGIN_IDENTIFIER_KEY, identifier.trim());
+                    } else {
+                        await AsyncStorage.removeItem(REMEMBER_LOGIN_IDENTIFIER_KEY);
+                    }
+                } catch {
+                    /* ignore */
+                }
                 const nextStep = getOnboardingStep(profile);
                 if (nextStep) {
                     router.replace(nextStep as any);
@@ -199,5 +233,7 @@ export const useAuthForm = () => {
         toggleAuthMode,
         setAuthMode,
         handleNext,
+        rememberMe,
+        toggleRememberMe: () => setRememberMe((v) => !v),
     };
 };

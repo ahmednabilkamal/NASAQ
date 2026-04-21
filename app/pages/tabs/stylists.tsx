@@ -100,10 +100,7 @@ export default function StylistsScreen() {
     );
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            fetchStylists();
-        }, 400);
-        return () => clearTimeout(timer);
+        fetchStylists();
     }, [fetchStylists]);
 
     const filtersActive = useMemo(() => {

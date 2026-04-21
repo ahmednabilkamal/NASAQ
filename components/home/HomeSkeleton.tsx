@@ -16,6 +16,27 @@ export default function HomeScreenSkeleton() {
 
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
+          <SkeletonBox width="35%" height={20} borderRadius={8} />
+          <SkeletonBox width={56} height={16} borderRadius={6} />
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.row}
+        >
+          {[0, 1, 2].map((i) => (
+            <View key={`why-${i}`} style={styles.whyCardSk}>
+              <SkeletonBox width={40} height={40} borderRadius={20} />
+              <SkeletonBox width="70%" height={13} style={styles.mt10} />
+              <SkeletonBox width="100%" height={10} style={styles.mt6} />
+              <SkeletonBox width="85%" height={10} style={styles.mt4} />
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
           <SkeletonBox width="45%" height={20} borderRadius={8} />
           <SkeletonBox width={56} height={16} borderRadius={6} />
         </View>
@@ -29,6 +50,30 @@ export default function HomeScreenSkeleton() {
               <SkeletonBox width={170} height={160} borderRadius={20} />
               <SkeletonBox width="80%" height={14} style={styles.mt8} />
               <SkeletonBox width="55%" height={11} style={styles.mt6} />
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <SkeletonBox width="38%" height={20} borderRadius={8} />
+          <SkeletonBox width={56} height={16} borderRadius={6} />
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.row}
+        >
+          {[0, 1, 2].map((i) => (
+            <View key={`rv-${i}`} style={styles.reviewCardSk}>
+              <SkeletonBox width={40} height={40} borderRadius={20} />
+              <View style={styles.reviewTextSk}>
+                <SkeletonBox width="70%" height={12} borderRadius={6} />
+                <SkeletonBox width="100%" height={10} borderRadius={6} style={styles.mt6} />
+                <SkeletonBox width="92%" height={10} borderRadius={6} style={styles.mt4} />
+                <SkeletonBox width="60%" height={10} borderRadius={6} style={styles.mt4} />
+              </View>
             </View>
           ))}
         </ScrollView>
@@ -79,6 +124,28 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   cardSk: { width: 170 },
+  whyCardSk: {
+    width: 170,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#EEF0F4',
+  },
+  reviewCardSk: {
+    width: 268,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#EEF0F4',
+  },
+  reviewTextSk: { flex: 1 },
   mt8: { marginTop: 8 },
+  mt10: { marginTop: 10 },
   mt6: { marginTop: 6 },
+  mt4: { marginTop: 4 },
 });

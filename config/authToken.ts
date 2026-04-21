@@ -4,14 +4,40 @@ const TOKEN_KEY = 'venus_access_token';
 
 let accessTokenCache: string | null = null;
 
-export const setAccessToken = async (token: string | null): Promise<void> => {
+export type SetAccessTokenOptions = {
+  /**
+   * When false, the token is kept in memory only for this app session (SecureStore is cleared).
+   * Used for “remember me” unchecked — user must log in again after a full app restart.
+   */
+  persist?: boolean;
+};
+
+export const setAccessToken = async (
+  token: string | null,
+  options?: SetAccessTokenOptions
+): Promise<void> => {
+  const persist = options?.persist !== false;
   try {
-    accessTokenCache = token;
     if (token) {
-      await SecureStore.setItemAsync(TOKEN_KEY, token);
-      console.log('✅ Token stored securely');
+      accessTokenCache = token;
+      if (persist) {
+        await SecureStore.setItemAsync(TOKEN_KEY, token);
+        console.log('✅ Token stored securely');
+      } else {
+        try {
+          await SecureStore.deleteItemAsync(TOKEN_KEY);
+        } catch {
+          /* no existing key */
+        }
+        console.log('✅ Session token (not persisted to device storage)');
+      }
     } else {
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
+      accessTokenCache = null;
+      try {
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+      } catch {
+        /* ignore */
+      }
       console.log('✅ Token removed securely');
     }
   } catch (error) {

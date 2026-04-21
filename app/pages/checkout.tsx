@@ -9,7 +9,12 @@ import SarPriceText from '@/components/SarPriceText';
 
 export default function CheckoutScreen() {
     const router = useRouter();
-    const { service_id, service_title, price } = useLocalSearchParams<{ service_id?: string; service_title?: string; price?: string }>();
+    const { service_id, service_title, price, idempotency_key } = useLocalSearchParams<{
+        service_id?: string;
+        service_title?: string;
+        price?: string;
+        idempotency_key?: string;
+    }>();
 
     const amount = Number(price || 0);
     const formatted = Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
@@ -46,7 +51,7 @@ export default function CheckoutScreen() {
                     style={styles.payBtn}
                     onPress={() =>
                         router.push(
-                            `/pages/payment/cards?service_id=${service_id || ''}&price=${formatted}` as any
+                            `/pages/payment/cards?service_id=${service_id || ''}&price=${formatted}&idempotency_key=${encodeURIComponent(idempotency_key || '')}` as any
                         )
                     }
                 >
