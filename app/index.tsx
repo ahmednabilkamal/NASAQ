@@ -54,7 +54,7 @@ export default function Home() {
     <View style={styles.container}>
       <Animated.View style={[styles.imageContainer, imageStyle]}>
         <Image
-          source={require('@/assets/nasaq_logo.jpg')}
+          source={require('@/assets/splash_logo.png')}
           style={styles.image}
         />
       </Animated.View>
