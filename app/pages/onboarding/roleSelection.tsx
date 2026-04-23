@@ -20,7 +20,7 @@ export default function RoleSelectionScreen() {
     const handleStart = () => {
         if (!selectedRole) return;
         if (selectedRole === 'stylist') {
-            router.push(ROUTES.onboarding.stylistProfile as any);
+            router.push(ROUTES.onboarding.stylistGenderSelection as any);
         } else {
             router.push(ROUTES.onboarding.genderSelection as any);
         }

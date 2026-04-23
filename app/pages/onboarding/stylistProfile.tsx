@@ -131,13 +131,17 @@ export default function StylistProfileScreen() {
 
     const canProceed = tagline.trim().length > 0 && bio.trim().length > 0;
 
+    const backToGender = () => {
+        router.replace(ROUTES.onboarding.stylistGenderSelection as any);
+    };
+
     return (
         <SafeAreaView style={[styles.container, onboardingScreenDirection]}>
             <OnboardingHeader
-                currentStep={1}
-                totalSteps={3}
-                onBack={() => router.replace(ROUTES.onboarding.roleSelection as any)}
-                onClose={() => router.replace(ROUTES.onboarding.roleSelection as any)}
+                currentStep={2}
+                totalSteps={4}
+                onBack={backToGender}
+                onClose={backToGender}
             />
 
             <KeyboardAvoidingView

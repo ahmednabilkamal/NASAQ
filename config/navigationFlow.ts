@@ -94,6 +94,9 @@ export const getNextOnboardingStep = (user: any): string => {
     if (!user) return ROUTES.onboarding.roleSelection;
 
     if (isStylistUser(user) && !isStylistVerified(user)) {
+        if (!user.gender) {
+            return ROUTES.onboarding.stylistGenderSelection;
+        }
         return ROUTES.stylist.pendingVerification;
     }
 

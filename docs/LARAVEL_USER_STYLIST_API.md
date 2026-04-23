@@ -91,6 +91,10 @@ Used without auth (stylist listing, etc.).
 | GET | `/fashion-styles` | Fashion styles |
 | GET | `/categories` | Categories (e.g. for services) |
 
+**Stylist discovery and gender (client app)**
+
+These routes are public, but when the app sends a **Bearer** token for a **client** user (`users.role` = `client`) with `users.gender` set to `male` or `female`, the server filters results to stylists whose linked account has the **same** gender (`stylists.user_id` → `users.gender`). Stylists using the app (role `stylist`) are not filtered. If the user has no gender set yet, no extra filter is applied. `GET /stylists/{id}` is unchanged (detail by id).
+
 **Payment callbacks (server / Moyasar, not called from the app directly)**
 
 | Method | Path |

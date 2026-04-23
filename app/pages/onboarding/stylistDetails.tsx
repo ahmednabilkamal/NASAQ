@@ -102,8 +102,8 @@ export default function StylistDetailsScreen() {
     return (
         <SafeAreaView style={[styles.container, onboardingScreenDirection]}>
             <OnboardingHeader
-                currentStep={2}
-                totalSteps={3}
+                currentStep={3}
+                totalSteps={4}
                 onBack={() => router.back()}
             />
 

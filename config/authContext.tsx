@@ -2,7 +2,11 @@
 import AuthService, { LoginData, RegisterData, UpdateProfileData, GoogleLoginData } from './authService';
 import { initializeToken, clearAuthData } from './authToken';
 import { ROUTES } from '@/constants/routes';
-import { isStylistUser, isStylistVerified, hasClientMeasurementsComplete } from '@/config/navigationFlow';
+import {
+    isStylistUser,
+    isStylistVerified,
+    hasClientMeasurementsComplete,
+} from '@/config/navigationFlow';
 
 export interface User {
     id: number | string;
@@ -126,6 +130,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const getOnboardingStep = (u: User | null): string | null => {
         if (!u) return null;
         if (isStylistUser(u) && !isStylistVerified(u)) {
+            if (!u.gender) {
+                return ROUTES.onboarding.stylistGenderSelection;
+            }
             return ROUTES.stylist.pendingVerification;
         }
         if (isStylistUser(u) && isStylistVerified(u)) {

@@ -14,7 +14,7 @@ export default function GenderPage() {
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.genderSelection || (pageData as any)['ar'].genderSelection;
     const { selected, setSelected } = useGenderSelection();
-    const { updateProfile, isAuthenticated } = useAuth();
+    const { updateProfile } = useAuth();
     const [saving, setSaving] = useState(false);
 
     const handleNext = async () => {
@@ -22,9 +22,7 @@ export default function GenderPage() {
         setSaving(true);
         try {
             await updateProfile({ gender: selected });
-            router.push('/pages/onboarding/heightSelection' as any);
-
-
+            router.push(ROUTES.onboarding.heightSelection as any);
         } catch (error) {
             console.error('Failed to save gender:', error);
         } finally {
@@ -38,7 +36,7 @@ export default function GenderPage() {
                 title={content.title}
                 subtitle={content.subtitle}
                 currentStep={1}
-                    totalSteps={7}
+                totalSteps={7}
                 onNext={handleNext}
                 isNextDisabled={!selected}
                 nextButtonText={saving ? '...' : content.nextButton}

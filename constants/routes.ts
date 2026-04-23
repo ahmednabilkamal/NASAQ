@@ -20,6 +20,7 @@ export const ROUTES = {
         boyMeasurements: '/pages/onboarding/boyMeasurements',
         styleIdentity: '/pages/onboarding/styleIdentity',
         roleSelection: '/pages/onboarding/roleSelection',
+        stylistGenderSelection: '/pages/onboarding/stylistGenderSelection',
         stylistProfile: '/pages/onboarding/stylistProfile',
         stylistDetails: '/pages/onboarding/stylistDetails',
         stylistServices: '/pages/onboarding/stylistServices',
