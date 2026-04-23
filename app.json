@@ -3,7 +3,7 @@
     "name": "NASAQ",
     "displayName": "NASAQ",
     "slug": "nasaq",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/nasaq_logo.jpg",
     "scheme": "venus",
