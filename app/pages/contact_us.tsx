@@ -6,15 +6,39 @@ import { rtlText } from '@/config/rtlText';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '@/config/languageRef';
-import { useAuth } from '@/config/authContext';
+import { useEffect, useState } from 'react';
+import { apiService, type PlatformSettings } from '@/config/apiService';
 import pageData from '@/data/content';
 import { getBackChevron } from '@/config/directionalIcons';
 
 export default function ContactUsScreen() {
     const router = useRouter();
-    const { user } = useAuth();
     const { languageCode } = useLanguage();
     const content = (pageData as any)[languageCode]?.profile || (pageData as any)['ar'].profile;
+    const contactContent = (pageData as any)[languageCode]?.contactUs || (pageData as any)['ar'].contactUs;
+    const [platformContact, setPlatformContact] = useState<Pick<PlatformSettings, 'phone' | 'email'> | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await apiService.getPlatformSettings();
+                const phone = typeof res.data?.phone === 'string' ? res.data.phone.trim() : '';
+                const email = typeof res.data?.email === 'string' ? res.data.email.trim() : '';
+                if (!cancelled) {
+                    setPlatformContact({ phone, email });
+                }
+            } catch {
+                if (!cancelled) {
+                    setPlatformContact(null);
+                }
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const ContactItem = ({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }) => (
         <View style={styles.contactItem}>
@@ -40,11 +64,19 @@ export default function ContactUsScreen() {
 
             <View style={styles.content}>
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>دعم العملاء</Text>
+                    <Text style={styles.sectionTitle}>{contactContent.customerSupport}</Text>
                     <View style={styles.card}>
-                        <ContactItem icon="call-outline" label="رقم التواصل" value={user?.phone || '+20 25268652'} />
+                        <ContactItem
+                            icon="call-outline"
+                            label={contactContent.phoneLabel}
+                            value={platformContact?.phone || '+20 25268652'}
+                        />
                         <View style={styles.divider} />
-                        <ContactItem icon="mail-outline" label="عنوان البريد الإلكتروني" value={user?.email || 'help@venus.com'} />
+                        <ContactItem
+                            icon="mail-outline"
+                            label={contactContent.emailLabel}
+                            value={platformContact?.email || 'help@venus.com'}
+                        />
                     </View>
                 </View>
             </View>

@@ -396,6 +396,8 @@ export interface CreateStylistServiceData {
 
 /** Public platform copy (privacy, terms, notifications) — editable in admin Platform settings. */
 export interface PlatformSettings {
+    phone: string;
+    email: string;
     privacy: string;
     terms: string;
     notifications_policy: string;
