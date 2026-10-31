@@ -79,7 +79,6 @@ export default function RootLayout() {
                                     <Stack.Screen name="pages/onboarding/boyMeasurements" />
                                     <Stack.Screen name="pages/onboarding/styleIdentity" />
                                     <Stack.Screen name="pages/onboarding/roleSelection" />
-                                    <Stack.Screen name="pages/onboarding/stylistGenderSelection" />
                                     <Stack.Screen name="pages/onboarding/stylistProfile" />
                                     <Stack.Screen name="pages/onboarding/stylistDetails" />
                                     <Stack.Screen name="pages/onboarding/stylistServices" />
